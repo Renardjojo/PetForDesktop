@@ -1,8 +1,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include <functional>
-#include <chrono>
 #include <cmath>
 #include <stdio.h>
 #include <string>
