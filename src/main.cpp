@@ -1,10 +1,14 @@
 #include <glad/glad.h>
+
 #include <GLFW/glfw3.h>
 
 #include <cmath>
+#include <functional>
+#include <queue>
 #include <stdio.h>
 #include <string>
 
+#include "INIReader.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -20,20 +24,18 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-class ReadFile
+class FileReader
 {
 protected:
     char* buffer = NULL;
 
 public:
-
-    ReadFile(const char* filename)
+    FileReader(const char* filename)
     {
-        int   string_size, read_size;
-        FILE* handler;
+        int     string_size, read_size;
+        FILE*   handler;
         errno_t err;
 
-        // Open for read (will fail if file "crt_fopen_s.c" doesn't exist)
         err = fopen_s(&handler, filename, "rb");
         if (err != 0)
         {
@@ -72,7 +74,7 @@ public:
         }
     }
 
-    ~ReadFile()
+    ~FileReader()
     {
         free(buffer);
         buffer = NULL;
@@ -93,9 +95,9 @@ public:
     // ------------------------------------------------------------------------
     Shader(const char* vertexPath, const char* fragmentPath)
     {
-        ReadFile vertexCodeFile(vertexPath);
-        ReadFile fragmentCodeFile(fragmentPath);
-        const char* vShaderCode  = vertexCodeFile.get();
+        FileReader  vertexCodeFile(vertexPath);
+        FileReader  fragmentCodeFile(fragmentPath);
+        const char* vShaderCode = vertexCodeFile.get();
         const char* fShaderCode = fragmentCodeFile.get();
 
         // compile shaders
@@ -124,7 +126,6 @@ public:
         glDeleteShader(fragment);
     }
 
-
     void use()
     {
         glUseProgram(ID);
@@ -138,6 +139,11 @@ public:
     void setInt(const char* name, int value) const
     {
         glUniform1i(glGetUniformLocation(ID, name), value);
+    }
+
+    void setVec4(const char* name, float v1, float v2, float v3, float v4) const noexcept
+    {
+        glUniform4f(glGetUniformLocation(ID, name), v1, v2, v3, v4);
     }
 
     void setFloat(const char* name, float value) const
@@ -170,8 +176,8 @@ private:
             {
                 glGetProgramInfoLog(shader, 1024, NULL, infoLog);
                 printf("ERROR::PROGRAM_LINKING_ERROR of type: %s\n%s\n "
-                        "-------------------------------------------------------",
-                        type, infoLog);
+                       "-------------------------------------------------------",
+                       type, infoLog);
             }
         }
     }
@@ -219,33 +225,31 @@ public:
         glEnableVertexAttribArray(1);
     }
 
-   ~ScreenSpaceQuad()
+    ~ScreenSpaceQuad()
     {
-       glDeleteVertexArrays(1, &VAO);
-       glDeleteBuffers(1, &VBO);
-       glDeleteBuffers(1, &EBO);
-   }
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+        glDeleteBuffers(1, &EBO);
+    }
 
-   void use()
-   {
-       glBindVertexArray(VAO);
-   }
+    void use()
+    {
+        glBindVertexArray(VAO);
+    }
 
-   void draw()
-   {
-       glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
-   }
+    void draw()
+    {
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
 };
 
 class Texture
 {
 protected:
-
     unsigned int ID;
     int          width, height, nrChannels;
 
 public:
-
     Texture(const char* srcPath)
     {
         glGenTextures(1, &ID);
@@ -295,12 +299,158 @@ public:
     }
 };
 
+class SpriteSheet : public Texture
+{
+protected:
+    int tileCount;
+
+public:
+    SpriteSheet(const char* srcPath) : Texture(srcPath)
+    {
+        tileCount = width / height;
+    }
+
+    void useSection(GLFWwindow* win, Shader shader, int idSection, int scale)
+    {
+        glfwSetWindowSize(win, height * scale, height * scale);
+        shader.setVec4("uScaleOffSet", 1.f / tileCount, 1.f, idSection / (float)tileCount, 0.f);
+        use();
+    }
+
+    int getTileCount() const
+    {
+        return tileCount;
+    }
+};
+
+class Setting
+{
+protected:
+    int FPS;
+    int scale;
+        
+public:
+    Setting(const char* path)
+    {
+        INIReader reader(path);
+
+        if (reader.ParseError() == -1)
+        {
+            printf("Could not find setting file here: %s", path);
+            exit(-1);
+        }
+
+        FPS = reader.GetInteger("Game setting", "FPS", 60);
+        scale = reader.GetInteger("Game setting", "Scale", 1);
+    }
+
+    int getFPS() const
+    {
+        return FPS;
+    }
+
+    
+    int getScale() const
+    {
+        return scale;
+    }
+};
+
+struct TimerTask
+{
+    std::function<void()> task        = nullptr;
+    double                localTimer  = 0.; // if current time egal 1s and local timer egal 0.5 global time egal 1.5
+    double                globalTimer = 0.;
+    bool                  isLooping   = false;
+
+    TimerTask(const std::function<void()>& task = nullptr, double localTimer = .0, double globalTimer = .0,
+              bool isLooping = false)
+        : task{task}, localTimer{localTimer}, globalTimer{globalTimer}, isLooping{isLooping}
+    {
+    }
+
+    bool operator>(const TimerTask& other) const noexcept
+    {
+        return globalTimer > other.globalTimer;
+    }
+};
+
+class TimeManager
+{
+protected:
+    double m_time     = glfwGetTime();
+    double m_tempTime = m_time;
+
+    double m_timeAccLoop    = 0.;
+    double m_deltaTime      = 0.;
+    double m_timeAcc        = 0.f;
+    double m_fixedDeltaTime = 1. / 60.;
+
+    std::priority_queue<TimerTask, std::vector<TimerTask>, std::greater<TimerTask>> m_unscaledTimerQueue;
+
+public:
+    TimeManager(int frameRate) : m_fixedDeltaTime{1. / frameRate}
+    {
+    }
+
+    double getTimeAcc() const
+    {
+        return m_timeAcc;
+    }
+
+    void emplaceTimerEvent(std::function<void()> eventFunct, double delay, bool isLooping = false)
+    {
+        m_unscaledTimerQueue.emplace(eventFunct, delay, delay + m_timeAcc, isLooping);
+    }
+
+    void update(std::function<void(double deltaTime)> unlimitedUpdateFunction,
+                std::function<void(double deltaTime)> limitedUpdateFunction)
+    {
+        /*unfixed update*/
+        unlimitedUpdateFunction(m_deltaTime);
+
+        /*Prepar the next frame*/
+        m_tempTime  = glfwGetTime();
+        m_deltaTime = m_tempTime - m_time;
+        m_time      = m_tempTime;
+
+        // This is temporary
+        if (m_deltaTime > 0.25)
+            m_deltaTime = 0.25;
+
+        /*Add accumulator*/
+        m_timeAcc += m_deltaTime;
+        m_timeAcc *= !isinf(m_timeAcc); // reset if isInf (avoid conditionnal jump)
+
+        /*Fixed update*/
+        m_timeAccLoop += m_deltaTime;
+
+        while (m_timeAccLoop >= m_fixedDeltaTime)
+        {
+            limitedUpdateFunction(m_deltaTime);
+            m_timeAccLoop -= m_fixedDeltaTime;
+        }
+
+        /*Update timer queue task*/
+        while (!m_unscaledTimerQueue.empty() && m_unscaledTimerQueue.top().globalTimer <= m_timeAcc)
+        {
+            const TimerTask& timerTask = m_unscaledTimerQueue.top();
+            timerTask.task();
+
+            if (timerTask.isLooping)
+            {
+                emplaceTimerEvent(timerTask.task, timerTask.localTimer, timerTask.isLooping);
+            }
+            m_unscaledTimerQueue.pop();
+        }
+    }
+};
+
 class Game
 {
 protected:
-
-    GLFWwindow*        window = nullptr;
-    GLFWmonitor**      monitors = nullptr;
+    GLFWwindow*        window      = nullptr;
+    GLFWmonitor**      monitors    = nullptr;
     const GLFWvidmode* videoMode   = nullptr;
     int                windowSizeW = 640, windowSizeH = 480;
     int                monitorCount, windowWidth, windowHeight, monitorX, monitorY;
@@ -353,7 +503,6 @@ protected:
     }
 
 public:
-
     Game()
     {
         initWindow();
@@ -375,39 +524,47 @@ public:
     void run()
     {
         ScreenSpaceQuad screenSpaceQuad;
-        Texture         texture("./resources/sprites/LootIconepngLow.png");
-        Shader          shader("./resources/shader/image.vs", "./resources/shader/image.fs");
+        SpriteSheet     texture("./resources/sprites/Walk.png");
+        Shader          shader("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs");
+        Setting         setting("./resources/setting/setting.ini");
+        TimeManager     mainLoop(setting.getFPS());
 
-        glfwSetWindowSize(window, texture.getWidth(), texture.getHeight());
+        const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
+            processInput(window);
+
+            // poll for and process events
+            glfwPollEvents();
+        }};
+        const std::function<void(double)> limitedUpdate{[&](double deltaTime) {
+            // render
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            // bind textures on corresponding texture units
+            int index = fmod(mainLoop.getTimeAcc() * setting.getFPS(), texture.getTileCount());
+            texture.useSection(window, shader, index, setting.getScale());
+
+            screenSpaceQuad.draw();
+
+            // swap front and back buffers
+            glfwSwapBuffers(window);
+        }};
+        // setting.create("./resources/setting/setting.yml");
 
         shader.use();
-        shader.setInt("_texture", 0);
+        shader.setInt("uTexture", 0);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glActiveTexture(GL_TEXTURE0);
 
+        // render container
+        shader.use();
+        screenSpaceQuad.use();
+
         while (!glfwWindowShouldClose(window))
         {
-            processInput(window);
-
-            // render
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            // bind textures on corresponding texture units
-            texture.use();
-
-            // render container
-            shader.use();
-            screenSpaceQuad.use();
-            screenSpaceQuad.draw();
-
-            // swap front and back buffers
-            glfwSwapBuffers(window);
-
-            // poll for and process events
-            glfwPollEvents();
+            mainLoop.update(unlimitedUpdate, limitedUpdate);
         }
     }
 };
