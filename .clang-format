@@ -1,0 +1,8 @@
+# Fichier au format .clang généré par Visual Studio
+
+BasedOnStyle: Microsoft
+AlwaysBreakTemplateDeclarations: 'Yes'
+AlignConsecutiveAssignments: 'true'
+AlignConsecutiveDeclarations: 'true'
+PointerAlignment: Left
+AccessModifierOffset: '-4'
