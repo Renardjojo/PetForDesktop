@@ -21,15 +21,14 @@ struct GameData
     GLFWwindow*        window      = nullptr;
     GLFWmonitor**      monitors    = nullptr;
     const GLFWvidmode* videoMode   = nullptr;
-    int                windowSizeW = 1, windowSizeH = 1;
     int                monitorCount = 0, windowWidth = 0, windowHeight = 0, monitorX = 0, monitorY = 0;
     vec2               windowPos = {0.f, 0.f};
 
     // Inputs
-    int prevCursorPosX  = 0;
-    int prevCursorPosY  = 0;
-    int deltaCursorPosX = 0;
-    int deltaCursorPosY = 0;
+    float prevCursorPosX  = 0;
+    float prevCursorPosY  = 0;
+    float deltaCursorPosX = 0;
+    float deltaCursorPosY = 0;
     int leftButtonEvent = 0;
 
     // Settings
@@ -70,9 +69,11 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
             glfwGetCursorPos(window, &x, &y);
             datas.prevCursorPosX = floor(x);
             datas.prevCursorPosY = floor(y);
+            datas.deltaCursorPosX = 0.f;
+            datas.deltaCursorPosY = 0.f;
             break;
         case GLFW_RELEASE:
-            datas.velocity = vec2{datas.deltaCursorPosX / (float)datas.FPS, datas.deltaCursorPosY / (float)datas.FPS};
+            datas.velocity = vec2{datas.deltaCursorPosX / datas.FPS, datas.deltaCursorPosY / datas.FPS};
             break;
         default:
             break;
@@ -92,9 +93,7 @@ void processInput(GLFWwindow* window)
 
     if (datas.leftButtonEvent == GLFW_PRESS)
     {
-        int windowPosX, windowPosY;
-        glfwGetWindowPos(window, &windowPosX, &windowPosY);
-        datas.windowPos = vec2{(float)windowPosX + datas.deltaCursorPosX, (float)windowPosY + datas.deltaCursorPosY};
+        datas.windowPos += vec2{datas.deltaCursorPosX, datas.deltaCursorPosY};
         datas.deltaCursorPosX = 0;
         datas.deltaCursorPosY = 0;
     }
@@ -391,9 +390,11 @@ public:
         tileCount = width / height;
     }
 
-    void useSection(GLFWwindow* win, Shader shader, int idSection, int scale)
+    void useSection(GameData& data, Shader shader, int idSection)
     {
-        glfwSetWindowSize(win, height * scale, height * scale);
+        data.windowWidth = height * data.scale;
+        data.windowHeight = height * data.scale;
+        glfwSetWindowSize(data.window, data.windowWidth, data.windowHeight); 
         shader.setVec4("uScaleOffSet", 1.f / tileCount, 1.f, idSection / (float)tileCount, 0.f);
         use();
     }
@@ -442,12 +443,8 @@ public:
     {
     }
 
-    void computeMonitorCollisions(GLFWwindow*& window, const GLFWvidmode*& monitorVid)
+    void computeMonitorCollisions()
     {
-        int winSizeX, winSizeY;
-        int monitorSizeX, monitorSizeY;
-        glfwGetWindowSize(window, &winSizeX, &winSizeY);
-
         if (data.windowPos.x < 0.f)
         {
             data.windowPos.x = 0.f;
@@ -460,8 +457,8 @@ public:
             data.velocity    = data.velocity.reflect(vec2::down()) * data.bounciness;
         }
 
-        float maxWinPosX = monitorVid->width - winSizeX;
-        float maxWinPosY = monitorVid->height - winSizeY;
+        float maxWinPosX = data.videoMode->width - data.windowWidth;
+        float maxWinPosY = data.videoMode->height - data.windowHeight;
 
         if (data.windowPos.x > maxWinPosX)
         {
@@ -476,7 +473,7 @@ public:
         }
     }
 
-    void update(GLFWwindow*& window, GLFWmonitor**& monitor, const GLFWvidmode*& monitorVid, double deltaTime)
+    void update(double deltaTime)
     {
         // Apply gravity if not selected
         if (data.leftButtonEvent != GLFW_PRESS)
@@ -490,19 +487,19 @@ public:
 
             // Evaluate pixel distance based on dpi and monitor size
             int width_mm, height_mm;
-            glfwGetMonitorPhysicalSize(monitor[0], &width_mm, &height_mm);
+            glfwGetMonitorPhysicalSize(data.monitors[0], &width_mm, &height_mm);
 
-            vec2 pixelPerMeter{(float)monitorVid->width / (width_mm * 0.001f),
-                               (float)monitorVid->height / (height_mm * 0.001f)};
+            vec2 pixelPerMeter{(float)data.videoMode->width / (width_mm * 0.001f),
+                               (float)data.videoMode->height / (height_mm * 0.001f)};
 
             // Pos = PrevPos + V * Time
-            data.windowPos = data.windowPos + data.velocity * (1.f - data.friction) * pixelPerMeter * deltaTime;
+            data.windowPos += data.velocity * (1.f - data.friction) * pixelPerMeter * deltaTime;
+
+            // Apply monitor collision
+            computeMonitorCollisions();
         }
 
-        // Apply monitor collision
-        computeMonitorCollisions(window, monitorVid);
-
-        glfwSetWindowPos(window, data.windowPos.x, data.windowPos.y);
+        glfwSetWindowPos(data.window, data.windowPos.x, data.windowPos.y);
     }
 };
 
@@ -623,7 +620,7 @@ protected:
         datas.monitors  = glfwGetMonitors(&datas.monitorCount);
         datas.videoMode = glfwGetVideoMode(datas.monitors[0]);
 
-        datas.window = glfwCreateWindow(datas.windowSizeW, datas.windowSizeH, "PetDesktop", NULL, NULL);
+        datas.window = glfwCreateWindow(1, 1, "PetDesktop", NULL, NULL);
         if (!datas.window)
         {
             glfwTerminate();
@@ -656,8 +653,8 @@ public:
 
         glfwGetMonitorPos(datas.monitors[0], &datas.monitorX, &datas.monitorY);
 
-        datas.windowPos = vec2{datas.monitorX + (datas.videoMode->width - datas.windowSizeW) / 2.f,
-                               datas.monitorY + (datas.videoMode->height - datas.windowSizeH) / 2.f};
+        datas.windowPos = vec2{datas.monitorX + (datas.videoMode->width) / 2.f,
+                               datas.monitorY + (datas.videoMode->height) / 2.f};
 
         glfwSetWindowPos(datas.window, datas.windowPos.x, datas.windowPos.y);
 
@@ -684,9 +681,8 @@ public:
         PhysicSystem    physicSystem(datas);
 
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
+            physicSystem.update(deltaTime);
             processInput(datas.window);
-
-            physicSystem.update(datas.window, datas.monitors, datas.videoMode, deltaTime);
 
             // poll for and process events
             glfwPollEvents();
@@ -697,7 +693,7 @@ public:
 
             // bind textures on corresponding texture units
             int index = fmod(mainLoop.getTimeAcc() * datas.FPS, texture.getTileCount());
-            texture.useSection(datas.window, shader, index, datas.scale);
+            texture.useSection(datas, shader, index);
 
             screenSpaceQuad.draw();
 
