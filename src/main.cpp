@@ -17,11 +17,30 @@
 
 struct GameData
 {
-    int prevCursorPosX;
-    int prevCursorPosY;
-    int deltaCursorPosX;
-    int deltaCursorPosY;
-    int leftButtonEvent;
+    // Window and monitor
+    GLFWwindow*        window      = nullptr;
+    GLFWmonitor**      monitors    = nullptr;
+    const GLFWvidmode* videoMode   = nullptr;
+    int                windowSizeW = 1, windowSizeH = 1;
+    int                monitorCount = 0, windowWidth = 0, windowHeight = 0, monitorX = 0, monitorY = 0;
+    vec2               windowPos = {0.f, 0.f};
+
+    // Inputs
+    int prevCursorPosX  = 0;
+    int prevCursorPosY  = 0;
+    int deltaCursorPosX = 0;
+    int deltaCursorPosY = 0;
+    int leftButtonEvent = 0;
+
+    // Settings
+    int FPS   = 0;
+    int scale = 0;
+
+    // Physic
+    vec2  velocity   = {0.f, 0.f};
+    vec2  gravity    = {0.f, 0.f};
+    float bounciness = 0.f;
+    float friction   = 0.f;
 };
 
 void cursorPositionCallback(GLFWwindow* window, double x, double y)
@@ -52,6 +71,9 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
             datas.prevCursorPosX = floor(x);
             datas.prevCursorPosY = floor(y);
             break;
+        case GLFW_RELEASE:
+            datas.velocity = vec2{datas.deltaCursorPosX / (float)datas.FPS, datas.deltaCursorPosY / (float)datas.FPS};
+            break;
         default:
             break;
         }
@@ -72,7 +94,7 @@ void processInput(GLFWwindow* window)
     {
         int windowPosX, windowPosY;
         glfwGetWindowPos(window, &windowPosX, &windowPosY);
-        glfwSetWindowPos(window, windowPosX + datas.deltaCursorPosX, windowPosY + datas.deltaCursorPosY);
+        datas.windowPos = vec2{(float)windowPosX + datas.deltaCursorPosX, (float)windowPosY + datas.deltaCursorPosY};
         datas.deltaCursorPosX = 0;
         datas.deltaCursorPosY = 0;
     }
@@ -384,16 +406,8 @@ public:
 
 class Setting
 {
-protected:
-    int   FPS;
-    int   scale;
-    float bounciness;
-    float gravityX;
-    float gravityY;
-    float friction;
-
 public:
-    Setting(const char* path)
+    Setting(const char* path, GameData& data)
     {
         INIReader reader(path);
 
@@ -405,67 +419,27 @@ public:
 
         std::string gameSettingSection = "Game setting";
 
-        FPS   = std::max(reader.GetInteger(gameSettingSection, "FPS", 60), 1l);
-        scale = std::max(reader.GetInteger(gameSettingSection, "Scale", 1), 1l);
+        data.FPS   = std::max(reader.GetInteger(gameSettingSection, "FPS", 60), 1l);
+        data.scale = std::max(reader.GetInteger(gameSettingSection, "Scale", 1), 1l);
 
         std::string physicSettingSection = "Physic";
 
-        bounciness = std::clamp(reader.GetReal(physicSettingSection, "Friction", 0.5), 0.0, 1.0);
-        gravityX   = std::max(reader.GetReal(physicSettingSection, "GravityX", 0.0), 0.0);
-        gravityY   = std::max(reader.GetReal(physicSettingSection, "GravityY", 9.81), 0.0);
-        friction   = std::clamp(reader.GetReal(physicSettingSection, "Bounciness", 0.1), 0.0, 1.0);
-    }
+        data.bounciness = std::clamp(reader.GetReal(physicSettingSection, "Bounciness", 0.1), 0.0, 1.0);
+        data.gravity    = vec2{(float)reader.GetReal(physicSettingSection, "GravityX", 0.0),
+                            (float)reader.GetReal(physicSettingSection, "GravityY", 9.81)};
 
-    int getFPS() const
-    {
-        return FPS;
-    }
-
-    int getScale() const
-    {
-        return scale;
-    }
-
-    float getBounciness() const
-    {
-        return bounciness;
-    }
-
-    float getGravityX() const
-    {
-        return gravityX;
-    }
-
-    float getGravityY() const
-    {
-        return gravityY;
-    }
-
-    float getFriction() const
-    {
-        return friction;
+        data.friction = std::clamp(reader.GetReal(physicSettingSection, "Friction", 0.5), 0.0, 1.0);
     }
 };
 
 class PhysicSystem
 {
 protected:
-    vec2 windowPos;
-    vec2 velocity;
-
-    float bounciness;
-    vec2  gravity;
-    float friction;
+    GameData& data;
 
 public:
-    PhysicSystem(GLFWwindow*& window, const Setting& setting)
-        : velocity{0.f, 0.f}, bounciness{setting.getBounciness()},
-          gravity{setting.getGravityX(), setting.getGravityY()}, friction{setting.getFriction()}
+    PhysicSystem(GameData& data) : data{data}
     {
-        int winPosX, winPosY;
-        glfwGetWindowPos(window, &winPosX, &winPosY);
-
-        windowPos = vec2{static_cast<float>(winPosX), static_cast<float>(winPosY)};
     }
 
     void computeMonitorCollisions(GLFWwindow*& window, const GLFWvidmode*& monitorVid)
@@ -474,52 +448,64 @@ public:
         int monitorSizeX, monitorSizeY;
         glfwGetWindowSize(window, &winSizeX, &winSizeY);
 
-        if (windowPos.x < 0.f)
+        if (data.windowPos.x < 0.f)
         {
-            windowPos.x = 0.f;
-            velocity    = velocity.reflect(vec2::right()) * bounciness;
+            data.windowPos.x = 0.f;
+            data.velocity    = data.velocity.reflect(vec2::right()) * data.bounciness;
         }
 
-        if (windowPos.y < 0.f)
+        if (data.windowPos.y < 0.f)
         {
-            windowPos.y = 0.f;
-            velocity    = velocity.reflect(vec2::down()) * bounciness;
+            data.windowPos.y = 0.f;
+            data.velocity    = data.velocity.reflect(vec2::down()) * data.bounciness;
         }
 
         float maxWinPosX = monitorVid->width - winSizeX;
         float maxWinPosY = monitorVid->height - winSizeY;
 
-        if (windowPos.x > maxWinPosX)
+        if (data.windowPos.x > maxWinPosX)
         {
-            windowPos.x = maxWinPosX;
-            velocity    = velocity.reflect(vec2::left()) * bounciness;
+            data.windowPos.x = maxWinPosX;
+            data.velocity    = data.velocity.reflect(vec2::left()) * data.bounciness;
         }
 
-        if (windowPos.y > maxWinPosY)
+        if (data.windowPos.y > maxWinPosY)
         {
-            windowPos.y = maxWinPosY;
-            velocity    = velocity.reflect(vec2::up()) * bounciness;
+            data.windowPos.y = maxWinPosY;
+            data.velocity    = data.velocity.reflect(vec2::up()) * data.bounciness;
         }
     }
 
-    void update(GLFWwindow*& window, const GLFWvidmode*& monitorVid, double deltaTime)
+    void update(GLFWwindow*& window, GLFWmonitor**& monitor, const GLFWvidmode*& monitorVid, double deltaTime)
     {
-        // Acc = Sum of force / Mass
-        // G is already an acceleration
-        vec2 acc = gravity;
+        // Apply gravity if not selected
+        if (data.leftButtonEvent != GLFW_PRESS)
+        {
+            // Acc = Sum of force / Mass
+            // G is already an acceleration
+            vec2 acc = data.gravity;
 
-        // V = Acc * Time
-        velocity += acc * deltaTime;
+            // V = Acc * Time
+            data.velocity += acc * deltaTime;
 
-        // Pos = PrevPos + V * Time
-        windowPos = windowPos + velocity * deltaTime;
+            // Evaluate pixel distance based on dpi and monitor size
+            int width_mm, height_mm;
+            glfwGetMonitorPhysicalSize(monitor[0], &width_mm, &height_mm);
+
+            vec2 pixelPerMeter{(float)monitorVid->width / (width_mm * 0.001f),
+                               (float)monitorVid->height / (height_mm * 0.001f)};
+
+            // Pos = PrevPos + V * Time
+            data.windowPos = data.windowPos + data.velocity * (1.f - data.friction) * pixelPerMeter * deltaTime;
+        }
 
         // Apply monitor collision
         computeMonitorCollisions(window, monitorVid);
 
-        glfwSetWindowPos(window, windowPos.x, windowPos.y);
+        glfwSetWindowPos(window, data.windowPos.x, data.windowPos.y);
     }
 };
+
 struct TimerTask
 {
     std::function<void()> task        = nullptr;
@@ -613,12 +599,7 @@ public:
 class Game
 {
 protected:
-    GLFWwindow*        window      = nullptr;
-    GLFWmonitor**      monitors    = nullptr;
-    const GLFWvidmode* videoMode   = nullptr;
-    int                windowSizeW = 1, windowSizeH = 1;
-    int                monitorCount, windowWidth, windowHeight, monitorX, monitorY;
-    GameData           data;
+    GameData datas;
 
 protected:
     void initWindow()
@@ -639,21 +620,21 @@ protected:
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
 
-        monitors  = glfwGetMonitors(&monitorCount);
-        videoMode = glfwGetVideoMode(monitors[0]);
+        datas.monitors  = glfwGetMonitors(&datas.monitorCount);
+        datas.videoMode = glfwGetVideoMode(datas.monitors[0]);
 
-        window = glfwCreateWindow(windowSizeW, windowSizeH, "PetDesktop", NULL, NULL);
-        if (!window)
+        datas.window = glfwCreateWindow(datas.windowSizeW, datas.windowSizeH, "PetDesktop", NULL, NULL);
+        if (!datas.window)
         {
             glfwTerminate();
             exit(-1);
         }
 
-        glfwMakeContextCurrent(window);
-        glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+        glfwMakeContextCurrent(datas.window);
+        glfwSetFramebufferSizeCallback(datas.window, framebufferSizeCallback);
 
-        glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
-        glfwSetWindowAttrib(window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+        glfwSetWindowAttrib(datas.window, GLFW_DECORATED, GLFW_FALSE);
+        glfwSetWindowAttrib(datas.window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
         glfwDefaultWindowHints();
     }
 
@@ -673,17 +654,19 @@ public:
         initWindow();
         initOpenGL();
 
-        glfwGetMonitorPos(monitors[0], &monitorX, &monitorY);
+        glfwGetMonitorPos(datas.monitors[0], &datas.monitorX, &datas.monitorY);
 
-        glfwSetWindowPos(window, monitorX + (videoMode->width - windowSizeW) / 2,
-                         monitorY + (videoMode->height - windowSizeH) / 2);
+        datas.windowPos = vec2{datas.monitorX + (datas.videoMode->width - datas.windowSizeW) / 2.f,
+                               datas.monitorY + (datas.videoMode->height - datas.windowSizeH) / 2.f};
 
-        glfwShowWindow(window);
+        glfwSetWindowPos(datas.window, datas.windowPos.x, datas.windowPos.y);
 
-        glfwSetWindowUserPointer(window, &data);
+        glfwShowWindow(datas.window);
 
-        glfwSetMouseButtonCallback(window, mousButtonCallBack);
-        glfwSetCursorPosCallback(window, cursorPositionCallback);
+        glfwSetWindowUserPointer(datas.window, &datas);
+
+        glfwSetMouseButtonCallback(datas.window, mousButtonCallBack);
+        glfwSetCursorPosCallback(datas.window, cursorPositionCallback);
     }
 
     ~Game()
@@ -696,14 +679,14 @@ public:
         ScreenSpaceQuad screenSpaceQuad;
         SpriteSheet     texture("./resources/sprites/Walk.png");
         Shader          shader("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs");
-        Setting         setting("./resources/setting/setting.ini");
-        TimeManager     mainLoop(setting.getFPS());
-        PhysicSystem    physicSystem(window, setting);
+        Setting         setting("./resources/setting/setting.ini", datas);
+        TimeManager     mainLoop(datas.FPS);
+        PhysicSystem    physicSystem(datas);
 
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
-            processInput(window);
+            processInput(datas.window);
 
-            physicSystem.update(window, videoMode, deltaTime);
+            physicSystem.update(datas.window, datas.monitors, datas.videoMode, deltaTime);
 
             // poll for and process events
             glfwPollEvents();
@@ -713,13 +696,13 @@ public:
             glClear(GL_COLOR_BUFFER_BIT);
 
             // bind textures on corresponding texture units
-            int index = fmod(mainLoop.getTimeAcc() * setting.getFPS(), texture.getTileCount());
-            texture.useSection(window, shader, index, setting.getScale());
+            int index = fmod(mainLoop.getTimeAcc() * datas.FPS, texture.getTileCount());
+            texture.useSection(datas.window, shader, index, datas.scale);
 
             screenSpaceQuad.draw();
 
             // swap front and back buffers
-            glfwSwapBuffers(window);
+            glfwSwapBuffers(datas.window);
         }};
         // setting.create("./resources/setting/setting.yml");
 
@@ -735,7 +718,7 @@ public:
         shader.use();
         screenSpaceQuad.use();
 
-        while (!glfwWindowShouldClose(window))
+        while (!glfwWindowShouldClose(datas.window))
         {
             mainLoop.update(unlimitedUpdate, limitedUpdate);
         }
