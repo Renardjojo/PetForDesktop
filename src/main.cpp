@@ -681,8 +681,9 @@ public:
         PhysicSystem    physicSystem(datas);
 
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
-            physicSystem.update(deltaTime);
             processInput(datas.window);
+
+            physicSystem.update(deltaTime);
 
             // poll for and process events
             glfwPollEvents();
