@@ -18,9 +18,9 @@
 struct GameData
 {
     // Window and monitor
-    GLFWwindow*        window      = nullptr;
-    GLFWmonitor**      monitors    = nullptr;
-    const GLFWvidmode* videoMode   = nullptr;
+    GLFWwindow*        window       = nullptr;
+    GLFWmonitor**      monitors     = nullptr;
+    const GLFWvidmode* videoMode    = nullptr;
     int                monitorCount = 0, windowWidth = 0, windowHeight = 0, monitorX = 0, monitorY = 0;
     vec2               windowPos = {0.f, 0.f};
 
@@ -29,7 +29,7 @@ struct GameData
     float prevCursorPosY  = 0;
     float deltaCursorPosX = 0;
     float deltaCursorPosY = 0;
-    int leftButtonEvent = 0;
+    int   leftButtonEvent = 0;
 
     // Settings
     int FPS   = 0;
@@ -40,6 +40,16 @@ struct GameData
     vec2  gravity    = {0.f, 0.f};
     float bounciness = 0.f;
     float friction   = 0.f;
+
+    // Animation
+    int animationFrameRate;
+
+    // Time
+    double timeAcc = 0.f;
+
+    // Debug
+    bool showWindow;
+    bool showFrameBufferBackground;
 };
 
 void cursorPositionCallback(GLFWwindow* window, double x, double y)
@@ -67,8 +77,8 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
         case GLFW_PRESS:
             double x, y;
             glfwGetCursorPos(window, &x, &y);
-            datas.prevCursorPosX = floor(x);
-            datas.prevCursorPosY = floor(y);
+            datas.prevCursorPosX  = floor(x);
+            datas.prevCursorPosY  = floor(y);
             datas.deltaCursorPosX = 0.f;
             datas.deltaCursorPosY = 0.f;
             break;
@@ -392,9 +402,9 @@ public:
 
     void useSection(GameData& data, Shader shader, int idSection)
     {
-        data.windowWidth = height * data.scale;
+        data.windowWidth  = height * data.scale;
         data.windowHeight = height * data.scale;
-        glfwSetWindowSize(data.window, data.windowWidth, data.windowHeight); 
+        glfwSetWindowSize(data.window, data.windowWidth, data.windowHeight);
         shader.setVec4("uScaleOffSet", 1.f / tileCount, 1.f, idSection / (float)tileCount, 0.f);
         use();
     }
@@ -428,8 +438,16 @@ public:
         data.bounciness = std::clamp(reader.GetReal(physicSettingSection, "Bounciness", 0.1), 0.0, 1.0);
         data.gravity    = vec2{(float)reader.GetReal(physicSettingSection, "GravityX", 0.0),
                             (float)reader.GetReal(physicSettingSection, "GravityY", 9.81)};
+        data.friction   = std::clamp(reader.GetReal(physicSettingSection, "Friction", 0.5), 0.0, 1.0);
 
-        data.friction = std::clamp(reader.GetReal(physicSettingSection, "Friction", 0.5), 0.0, 1.0);
+        std::string animationSection = "Animation";
+
+        data.animationFrameRate = std::max(reader.GetInteger(animationSection, "AnimationFrameRate", 1), 1l);
+
+        std::string debugSection = "Debug";
+
+        data.showWindow                = reader.GetBoolean(debugSection, "ShowWindow", true);
+        data.showFrameBufferBackground = reader.GetBoolean(debugSection, "ShowFrameBufferBackground", true);
     }
 };
 
@@ -503,51 +521,20 @@ public:
     }
 };
 
-struct TimerTask
-{
-    std::function<void()> task        = nullptr;
-    double                localTimer  = 0.; // if current time egal 1s and local timer egal 0.5 global time egal 1.5
-    double                globalTimer = 0.;
-    bool                  isLooping   = false;
-
-    TimerTask(const std::function<void()>& task = nullptr, double localTimer = .0, double globalTimer = .0,
-              bool isLooping = false)
-        : task{task}, localTimer{localTimer}, globalTimer{globalTimer}, isLooping{isLooping}
-    {
-    }
-
-    bool operator>(const TimerTask& other) const noexcept
-    {
-        return globalTimer > other.globalTimer;
-    }
-};
-
 class TimeManager
 {
 protected:
     double m_time     = glfwGetTime();
     double m_tempTime = m_time;
 
-    double m_timeAccLoop    = 0.;
-    double m_deltaTime      = 0.;
-    double m_timeAcc        = 0.f;
-    double m_fixedDeltaTime = 1. / 60.;
-
-    std::priority_queue<TimerTask, std::vector<TimerTask>, std::greater<TimerTask>> m_unscaledTimerQueue;
+    double    m_timeAccLoop    = 0.;
+    double    m_deltaTime      = 0.;
+    double    m_fixedDeltaTime = 1. / 60.;
+    GameData& datas;
 
 public:
-    TimeManager(int frameRate) : m_fixedDeltaTime{1. / frameRate}
+    TimeManager(GameData& data) : m_fixedDeltaTime{1. / data.FPS}, datas{data}
     {
-    }
-
-    double getTimeAcc() const
-    {
-        return m_timeAcc;
-    }
-
-    void emplaceTimerEvent(std::function<void()> eventFunct, double delay, bool isLooping = false)
-    {
-        m_unscaledTimerQueue.emplace(eventFunct, delay, delay + m_timeAcc, isLooping);
     }
 
     void update(std::function<void(double deltaTime)> unlimitedUpdateFunction,
@@ -566,8 +553,8 @@ public:
             m_deltaTime = 0.25;
 
         /*Add accumulator*/
-        m_timeAcc += m_deltaTime;
-        m_timeAcc *= !isinf(m_timeAcc); // reset if isInf (avoid conditionnal jump)
+        datas.timeAcc += m_deltaTime;
+        datas.timeAcc *= !isinf(datas.timeAcc); // reset if isInf (avoid conditionnal jump)
 
         /*Fixed update*/
         m_timeAccLoop += m_deltaTime;
@@ -577,26 +564,71 @@ public:
             limitedUpdateFunction(m_fixedDeltaTime);
             m_timeAccLoop -= m_fixedDeltaTime;
         }
+    }
+};
 
-        /*Update timer queue task*/
-        while (!m_unscaledTimerQueue.empty() && m_unscaledTimerQueue.top().globalTimer <= m_timeAcc)
-        {
-            const TimerTask& timerTask = m_unscaledTimerQueue.top();
-            timerTask.task();
+class Pet
+{
 
-            if (timerTask.isLooping)
-            {
-                emplaceTimerEvent(timerTask.task, timerTask.localTimer, timerTask.isLooping);
-            }
-            m_unscaledTimerQueue.pop();
-        }
+protected:
+    enum class EBehaviour : int
+    {
+        idle = 0,
+        idle1 = 1,
+        walk = 2
+    };
+
+    enum class ESide
+    {
+        left,
+        right
+    };
+
+    std::vector<SpriteSheet> spriteSheets;
+    EBehaviour               state{EBehaviour::idle1};
+    ESide                    side{ESide::left};
+
+    ScreenSpaceQuad screenSpaceQuad;
+    Shader          shader;
+    GameData&       datas;
+    int             indexCurrentAnimSprite = 0;
+
+public:
+    Pet(GameData& data) : shader("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs"), datas{data}
+    {
+        spriteSheets.reserve(4);
+        spriteSheets.emplace_back("./resources/sprites/idle.png");
+        spriteSheets.emplace_back("./resources/sprites/idle2.png");
+        spriteSheets.emplace_back("./resources/sprites/walk.png");
+
+        // Assuming pet is alone on window
+        shader.use();
+        shader.setInt("uTexture", 0);
+
+        shader.use();
+        screenSpaceQuad.use();
+    }
+
+    void update()
+    {
+        indexCurrentAnimSprite = fmod(datas.timeAcc * datas.animationFrameRate, spriteSheets[(int)state].getTileCount());
+    }
+
+    void draw()
+    {
+        // bind textures on corresponding texture units
+        spriteSheets[(int)state].useSection(datas, shader, indexCurrentAnimSprite);
+        screenSpaceQuad.draw();
     }
 };
 
 class Game
 {
 protected:
-    GameData datas;
+    GameData     datas;
+    Setting      setting;
+    TimeManager  mainLoop;
+    PhysicSystem physicSystem;
 
 protected:
     void initWindow()
@@ -613,8 +645,8 @@ protected:
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, !datas.showFrameBufferBackground);
+        glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
         glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
 
         datas.monitors  = glfwGetMonitors(&datas.monitorCount);
@@ -630,7 +662,7 @@ protected:
         glfwMakeContextCurrent(datas.window);
         glfwSetFramebufferSizeCallback(datas.window, framebufferSizeCallback);
 
-        glfwSetWindowAttrib(datas.window, GLFW_DECORATED, GLFW_FALSE);
+        glfwSetWindowAttrib(datas.window, GLFW_DECORATED, datas.showWindow);
         glfwSetWindowAttrib(datas.window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
         glfwDefaultWindowHints();
     }
@@ -646,15 +678,15 @@ protected:
     }
 
 public:
-    Game()
+    Game() : setting("./resources/setting/setting.ini", datas), mainLoop(datas), physicSystem(datas)
     {
         initWindow();
         initOpenGL();
 
         glfwGetMonitorPos(datas.monitors[0], &datas.monitorX, &datas.monitorY);
 
-        datas.windowPos = vec2{datas.monitorX + (datas.videoMode->width) / 2.f,
-                               datas.monitorY + (datas.videoMode->height) / 2.f};
+        datas.windowPos =
+            vec2{datas.monitorX + (datas.videoMode->width) / 2.f, datas.monitorY + (datas.videoMode->height) / 2.f};
 
         glfwSetWindowPos(datas.window, datas.windowPos.x, datas.windowPos.y);
 
@@ -673,17 +705,13 @@ public:
 
     void run()
     {
-        ScreenSpaceQuad screenSpaceQuad;
-        SpriteSheet     texture("./resources/sprites/Walk.png");
-        Shader          shader("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs");
-        Setting         setting("./resources/setting/setting.ini", datas);
-        TimeManager     mainLoop(datas.FPS);
-        PhysicSystem    physicSystem(datas);
+        Pet pet(datas);
 
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
             processInput(datas.window);
 
             physicSystem.update(deltaTime);
+            pet.update();
 
             // poll for and process events
             glfwPollEvents();
@@ -692,28 +720,16 @@ public:
             // render
             glClear(GL_COLOR_BUFFER_BIT);
 
-            // bind textures on corresponding texture units
-            int index = fmod(mainLoop.getTimeAcc() * datas.FPS, texture.getTileCount());
-            texture.useSection(datas, shader, index);
-
-            screenSpaceQuad.draw();
+            pet.draw();
 
             // swap front and back buffers
             glfwSwapBuffers(datas.window);
         }};
-        // setting.create("./resources/setting/setting.yml");
-
-        shader.use();
-        shader.setInt("uTexture", 0);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glActiveTexture(GL_TEXTURE0);
-
-        // render container
-        shader.use();
-        screenSpaceQuad.use();
 
         while (!glfwWindowShouldClose(datas.window))
         {
