@@ -2,6 +2,7 @@
 
 #include <GLFW/glfw3.h>
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <queue>
@@ -9,6 +10,7 @@
 #include <string>
 
 #include "INIReader.h"
+#include "Vector2.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -383,8 +385,12 @@ public:
 class Setting
 {
 protected:
-    int FPS;
-    int scale;
+    int   FPS;
+    int   scale;
+    float bounciness;
+    float gravityX;
+    float gravityY;
+    float friction;
 
 public:
     Setting(const char* path)
@@ -397,8 +403,17 @@ public:
             exit(-1);
         }
 
-        FPS   = reader.GetInteger("Game setting", "FPS", 60);
-        scale = reader.GetInteger("Game setting", "Scale", 1);
+        std::string gameSettingSection = "Game setting";
+
+        FPS   = std::max(reader.GetInteger(gameSettingSection, "FPS", 60), 1l);
+        scale = std::max(reader.GetInteger(gameSettingSection, "Scale", 1), 1l);
+
+        std::string physicSettingSection = "Physic";
+
+        bounciness = std::clamp(reader.GetReal(physicSettingSection, "Friction", 0.5), 0.0, 1.0);
+        gravityX   = std::max(reader.GetReal(physicSettingSection, "GravityX", 0.0), 0.0);
+        gravityY   = std::max(reader.GetReal(physicSettingSection, "GravityY", 9.81), 0.0);
+        friction   = std::clamp(reader.GetReal(physicSettingSection, "Bounciness", 0.1), 0.0, 1.0);
     }
 
     int getFPS() const
@@ -410,8 +425,101 @@ public:
     {
         return scale;
     }
+
+    float getBounciness() const
+    {
+        return bounciness;
+    }
+
+    float getGravityX() const
+    {
+        return gravityX;
+    }
+
+    float getGravityY() const
+    {
+        return gravityY;
+    }
+
+    float getFriction() const
+    {
+        return friction;
+    }
 };
 
+class PhysicSystem
+{
+protected:
+    vec2 windowPos;
+    vec2 velocity;
+
+    float bounciness;
+    vec2  gravity;
+    float friction;
+
+public:
+    PhysicSystem(GLFWwindow*& window, const Setting& setting)
+        : velocity{0.f, 0.f}, bounciness{setting.getBounciness()},
+          gravity{setting.getGravityX(), setting.getGravityY()}, friction{setting.getFriction()}
+    {
+        int winPosX, winPosY;
+        glfwGetWindowPos(window, &winPosX, &winPosY);
+
+        windowPos = vec2{static_cast<float>(winPosX), static_cast<float>(winPosY)};
+    }
+
+    void computeMonitorCollisions(GLFWwindow*& window, const GLFWvidmode*& monitorVid)
+    {
+        int winSizeX, winSizeY;
+        int monitorSizeX, monitorSizeY;
+        glfwGetWindowSize(window, &winSizeX, &winSizeY);
+
+        if (windowPos.x < 0.f)
+        {
+            windowPos.x = 0.f;
+            velocity    = velocity.reflect(vec2::right()) * bounciness;
+        }
+
+        if (windowPos.y < 0.f)
+        {
+            windowPos.y = 0.f;
+            velocity    = velocity.reflect(vec2::down()) * bounciness;
+        }
+
+        float maxWinPosX = monitorVid->width - winSizeX;
+        float maxWinPosY = monitorVid->height - winSizeY;
+
+        if (windowPos.x > maxWinPosX)
+        {
+            windowPos.x = maxWinPosX;
+            velocity    = velocity.reflect(vec2::left()) * bounciness;
+        }
+
+        if (windowPos.y > maxWinPosY)
+        {
+            windowPos.y = maxWinPosY;
+            velocity    = velocity.reflect(vec2::up()) * bounciness;
+        }
+    }
+
+    void update(GLFWwindow*& window, const GLFWvidmode*& monitorVid, double deltaTime)
+    {
+        // Acc = Sum of force / Mass
+        // G is already an acceleration
+        vec2 acc = gravity;
+
+        // V = Acc * Time
+        velocity += acc * deltaTime;
+
+        // Pos = PrevPos + V * Time
+        windowPos = windowPos + velocity * deltaTime;
+
+        // Apply monitor collision
+        computeMonitorCollisions(window, monitorVid);
+
+        glfwSetWindowPos(window, windowPos.x, windowPos.y);
+    }
+};
 struct TimerTask
 {
     std::function<void()> task        = nullptr;
@@ -483,7 +591,7 @@ public:
 
         while (m_timeAccLoop >= m_fixedDeltaTime)
         {
-            limitedUpdateFunction(m_deltaTime);
+            limitedUpdateFunction(m_fixedDeltaTime);
             m_timeAccLoop -= m_fixedDeltaTime;
         }
 
@@ -508,7 +616,7 @@ protected:
     GLFWwindow*        window      = nullptr;
     GLFWmonitor**      monitors    = nullptr;
     const GLFWvidmode* videoMode   = nullptr;
-    int                windowSizeW = 640, windowSizeH = 480;
+    int                windowSizeW = 1, windowSizeH = 1;
     int                monitorCount, windowWidth, windowHeight, monitorX, monitorY;
     GameData           data;
 
@@ -590,9 +698,12 @@ public:
         Shader          shader("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs");
         Setting         setting("./resources/setting/setting.ini");
         TimeManager     mainLoop(setting.getFPS());
+        PhysicSystem    physicSystem(window, setting);
 
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
             processInput(window);
+
+            physicSystem.update(window, videoMode, deltaTime);
 
             // poll for and process events
             glfwPollEvents();
