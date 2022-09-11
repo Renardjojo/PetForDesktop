@@ -567,15 +567,193 @@ public:
     }
 };
 
+class SpriteAnimator
+{
+protected:
+    SpriteSheet* pSheet = nullptr;
+    float        timer;
+    bool         loop;
+    int          frameRate;
+
+    int indexCurrentAnimSprite;
+
+public:
+    void play(SpriteSheet& inSheet, bool inLoop, int inFrameRate)
+    {
+        pSheet                 = &inSheet;
+        loop                   = inLoop;
+        frameRate              = inFrameRate;
+        indexCurrentAnimSprite = 0;
+        timer                  = 0.f;
+    }
+
+    void update(double deltaTime)
+    {
+        if (!isDone())
+        {
+            timer += deltaTime;
+            indexCurrentAnimSprite = timer * frameRate;
+
+            if (indexCurrentAnimSprite >= pSheet->getTileCount() && loop)
+            {
+                indexCurrentAnimSprite = 0;
+                timer -= pSheet->getTileCount() / (float)frameRate;
+            }
+        }
+    }
+
+    void draw(GameData& datas, Shader& shader)
+    {
+        if (!isDone())
+            pSheet->useSection(datas, shader, indexCurrentAnimSprite);
+    }
+
+    bool isDone() const
+    {
+        if (pSheet != nullptr)
+            return indexCurrentAnimSprite > pSheet->getTileCount();
+        return true;
+    }
+};
+
+class StateMachine
+{
+public:
+    struct Node
+    {
+        struct Transition
+        {
+            std::shared_ptr<Node> to;
+
+            virtual bool canTransition(GameData& blackBoard)
+            {
+                return false;
+            };
+        };
+
+        std::vector<Transition> transitions;
+
+        virtual void onEnter(GameData& blackBoard){};
+        virtual void onUpdate(GameData& blackBoard, double dt){};
+        virtual void onExit(GameData& blackBoard){};
+    };
+
+protected:
+    std::shared_ptr<Node> pCurrentNode = nullptr;
+
+    GameData& blackBoard;
+
+public:
+    StateMachine(GameData& inBlackBoard) : blackBoard{inBlackBoard}
+    {
+    }
+
+    void init(const std::shared_ptr<Node>& initialState)
+    {
+        assert(initialState != nullptr);
+        pCurrentNode = initialState;
+        pCurrentNode->onEnter(blackBoard);
+    }
+
+    void update(double dt)
+    {
+        assert(pCurrentNode != nullptr);
+
+        pCurrentNode->onUpdate(blackBoard, dt);
+
+        for (Node::Transition& nodeTransition : pCurrentNode->transitions)
+        {
+            if (nodeTransition.canTransition(blackBoard))
+            {
+                assert(nodeTransition.to != nullptr);
+
+                pCurrentNode->onExit(blackBoard);
+                pCurrentNode = nodeTransition.to;
+                pCurrentNode->onEnter(blackBoard);
+                break;
+            }
+        }
+    }
+};
+
+class AnimationNode : public StateMachine::Node
+{
+protected:
+    SpriteAnimator& spriteAnimator;
+    SpriteSheet&    spriteSheets;
+    int             frameRate;
+    bool            loop;
+
+public:
+    AnimationNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, bool inLoop = true)
+        : spriteAnimator{inSpriteAnimator}, spriteSheets{inSpriteSheets}, frameRate{inFrameRate}, loop{inLoop}
+    {
+    }
+
+    void onEnter(GameData& blackBoard) final
+    {
+        spriteAnimator.play(spriteSheets, loop, frameRate);
+    }
+
+    void onUpdate(GameData& blackBoard, double dt) final
+    {
+        spriteAnimator.update(dt);
+    }
+};
+
+struct StartLeftClicTransition : public StateMachine::Node::Transition
+{
+protected:
+    bool leftWasPressed = false;
+
+public:
+
+    bool canTransition(GameData& blackBoard) final
+    {
+        if (blackBoard.leftButtonEvent == GLFW_PRESS)
+        {
+            if (leftWasPressed)
+            {
+                leftWasPressed = false;
+                return true;
+            }
+            leftWasPressed = true;
+        }
+        return false;
+    };
+};
+
+struct EndLeftClicTransition : public StateMachine::Node::Transition
+{
+protected:
+    bool leftWasPressed = false;
+
+public:
+    bool canTransition(GameData& blackBoard) final
+    {
+        if (blackBoard.leftButtonEvent == GLFW_PRESS)
+        {
+            leftWasPressed = true;
+        }
+
+        if (blackBoard.leftButtonEvent != GLFW_PRESS && leftWasPressed)
+        {
+            leftWasPressed = false;
+            return true;
+        }
+        return false;
+    };
+};
+
 class Pet
 {
-
 protected:
     enum class EBehaviour : int
     {
-        idle = 0,
+        idle  = 0,
         idle1 = 1,
-        walk = 2
+        walk  = 2,
+        drag  = 3
     };
 
     enum class ESide
@@ -585,39 +763,74 @@ protected:
     };
 
     std::vector<SpriteSheet> spriteSheets;
-    EBehaviour               state{EBehaviour::idle1};
+    EBehaviour               state{EBehaviour::idle};
     ESide                    side{ESide::left};
 
     ScreenSpaceQuad screenSpaceQuad;
     Shader          shader;
     GameData&       datas;
-    int             indexCurrentAnimSprite = 0;
+
+    StateMachine   animator;
+    SpriteAnimator spriteAnimator;
+    int            indexCurrentAnimSprite = 0;
+    bool           loopCurrentAnim;
+
+    bool leftWasPressed = false;
 
 public:
-    Pet(GameData& data) : shader("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs"), datas{data}
+    Pet(GameData& data)
+        : shader("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs"), datas{data}, animator{data}
     {
         spriteSheets.reserve(4);
         spriteSheets.emplace_back("./resources/sprites/idle.png");
         spriteSheets.emplace_back("./resources/sprites/idle2.png");
         spriteSheets.emplace_back("./resources/sprites/walk.png");
+        spriteSheets.emplace_back("./resources/sprites/drag2.png");
 
         // Assuming pet is alone on window
         shader.use();
         shader.setInt("uTexture", 0);
-
-        shader.use();
         screenSpaceQuad.use();
+
+        createAnimationGraph();
     }
 
-    void update()
+    void createAnimationGraph()
     {
-        indexCurrentAnimSprite = fmod(datas.timeAcc * datas.animationFrameRate, spriteSheets[(int)state].getTileCount());
+        // Init all nodes
+        std::shared_ptr<AnimationNode> idleNode =
+            std::make_shared<AnimationNode>(spriteAnimator, spriteSheets[0], datas.animationFrameRate, true);
+
+        std::shared_ptr<AnimationNode> grabNode =
+            std::make_shared<AnimationNode>(spriteAnimator, spriteSheets[3], datas.animationFrameRate, false);
+
+        // Create all transitions
+        // Idle to grab
+        {
+            StartLeftClicTransition transition;
+            transition.to = grabNode;
+            idleNode->transitions.emplace_back(transition);
+        }
+
+        // Grab to idle
+        {
+            EndLeftClicTransition transition;
+            transition.to = idleNode;
+            grabNode->transitions.emplace_back(transition);
+        }
+
+        // Start state machine
+        animator.init(std::static_pointer_cast<StateMachine::Node>(idleNode));
+    }
+
+    void update(double deltaTime)
+    {
+        animator.update(deltaTime);
     }
 
     void draw()
     {
-        // bind textures on corresponding texture units
-        spriteSheets[(int)state].useSection(datas, shader, indexCurrentAnimSprite);
+        spriteAnimator.draw(datas, shader);
         screenSpaceQuad.draw();
     }
 };
@@ -711,7 +924,7 @@ public:
             processInput(datas.window);
 
             physicSystem.update(deltaTime);
-            pet.update();
+            pet.update(deltaTime);
 
             // poll for and process events
             glfwPollEvents();
