@@ -13,13 +13,70 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-void processInput(GLFWwindow* window)
+struct GameData
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
+    int prevCursorPosX;
+    int prevCursorPosY;
+    int deltaCursorPosX;
+    int deltaCursorPosY;
+    int leftButtonEvent;
+};
+
+void cursorPositionCallback(GLFWwindow* window, double x, double y)
+{
+    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
+
+    if (datas.leftButtonEvent == GLFW_PRESS)
+    {
+        datas.deltaCursorPosX = x - datas.prevCursorPosX;
+        datas.deltaCursorPosY = y - datas.prevCursorPosY;
+    }
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
+{
+    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
+
+    switch (button)
+    {
+    case GLFW_MOUSE_BUTTON_LEFT:
+        datas.leftButtonEvent = action;
+
+        switch (action)
+        {
+        case GLFW_PRESS:
+            double x, y;
+            glfwGetCursorPos(window, &x, &y);
+            datas.prevCursorPosX = floor(x);
+            datas.prevCursorPosY = floor(y);
+            break;
+        default:
+            break;
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+void processInput(GLFWwindow* window)
+{
+    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
+
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    if (datas.leftButtonEvent == GLFW_PRESS)
+    {
+        int windowPosX, windowPosY;
+        glfwGetWindowPos(window, &windowPosX, &windowPosY);
+        glfwSetWindowPos(window, windowPosX + datas.deltaCursorPosX, windowPosY + datas.deltaCursorPosY);
+        datas.deltaCursorPosX = 0;
+        datas.deltaCursorPosY = 0;
+    }
+}
+
+void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
@@ -328,7 +385,7 @@ class Setting
 protected:
     int FPS;
     int scale;
-        
+
 public:
     Setting(const char* path)
     {
@@ -340,7 +397,7 @@ public:
             exit(-1);
         }
 
-        FPS = reader.GetInteger("Game setting", "FPS", 60);
+        FPS   = reader.GetInteger("Game setting", "FPS", 60);
         scale = reader.GetInteger("Game setting", "Scale", 1);
     }
 
@@ -349,7 +406,6 @@ public:
         return FPS;
     }
 
-    
     int getScale() const
     {
         return scale;
@@ -454,6 +510,7 @@ protected:
     const GLFWvidmode* videoMode   = nullptr;
     int                windowSizeW = 640, windowSizeH = 480;
     int                monitorCount, windowWidth, windowHeight, monitorX, monitorY;
+    GameData           data;
 
 protected:
     void initWindow()
@@ -485,7 +542,7 @@ protected:
         }
 
         glfwMakeContextCurrent(window);
-        glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+        glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
         glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
         glfwSetWindowAttrib(window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
@@ -514,6 +571,11 @@ public:
                          monitorY + (videoMode->height - windowSizeH) / 2);
 
         glfwShowWindow(window);
+
+        glfwSetWindowUserPointer(window, &data);
+
+        glfwSetMouseButtonCallback(window, mousButtonCallBack);
+        glfwSetCursorPosCallback(window, cursorPositionCallback);
     }
 
     ~Game()
