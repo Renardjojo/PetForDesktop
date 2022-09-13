@@ -36,13 +36,22 @@ struct GameData
     int scale = 0;
 
     // Physic
-    vec2  velocity   = {0.f, 0.f};
+    vec2 velocity         = {0.f, 0.f};
+    vec2 continusVelocity = {
+        0.f,
+        0.f}; // This value is not changed by the physic system. Usefull for movement. Friction is applied to this value
     vec2  gravity    = {0.f, 0.f};
     float bounciness = 0.f;
     float friction   = 0.f;
 
     // Animation
-    int animationFrameRate;
+    int   animationFrameRate   = 10;
+    float walkSpeed            = 0.f;
+    int   walkDuration         = 1000;
+    int   walkDurationInterval = 500;
+    int   idleDuration         = 1000;
+    int   idleDurationInterval = 500;
+    bool  side; // false left / true right
 
     // Time
     double timeAcc = 0.f;
@@ -112,6 +121,11 @@ void processInput(GLFWwindow* window)
 void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+}
+
+int randNum(int min, int max)
+{
+    return (rand() % (((max) + 1) - (min))) + (min);
 }
 
 class FileReader
@@ -400,12 +414,24 @@ public:
         tileCount = width / height;
     }
 
-    void useSection(GameData& data, Shader shader, int idSection)
+    void useSection(GameData& data, Shader shader, int idSection, bool hFlip = false)
     {
         data.windowWidth  = height * data.scale;
         data.windowHeight = height * data.scale;
         glfwSetWindowSize(data.window, data.windowWidth, data.windowHeight);
-        shader.setVec4("uScaleOffSet", 1.f / tileCount, 1.f, idSection / (float)tileCount, 0.f);
+
+        float hScale  = 1.f / tileCount;
+        float vScale  = 1.f; // This field can be used
+        float hOffSet = idSection / (float)tileCount;
+        float vOffset = 0.f; // This field can be used
+
+        if (hFlip)
+        {
+            hOffSet += hScale;
+            hScale *= -1;
+        }
+
+        shader.setVec4("uScaleOffSet", hScale, vScale, hOffSet, vOffset);
         use();
     }
 
@@ -443,6 +469,12 @@ public:
         std::string animationSection = "Animation";
 
         data.animationFrameRate = std::max(reader.GetInteger(animationSection, "AnimationFrameRate", 1), 1l);
+        data.walkSpeed          = std::max(reader.GetReal(animationSection, "WalkSpeed", 1.0), 0.0);
+
+        data.walkDuration         = std::max(reader.GetInteger(animationSection, "WalkDuration", 1000), 0l);
+        data.walkDurationInterval = reader.GetInteger(animationSection, "WalkDurationInterval", 500);
+        data.idleDuration         = std::max(reader.GetInteger(animationSection, "IdleDuration", 1000), 0l);
+        data.idleDurationInterval = reader.GetInteger(animationSection, "IdleDurationInterval", 500);
 
         std::string debugSection = "Debug";
 
@@ -511,7 +543,8 @@ public:
                                (float)data.videoMode->height / (height_mm * 0.001f)};
 
             // Pos = PrevPos + V * Time
-            data.windowPos += data.velocity * (1.f - data.friction) * pixelPerMeter * deltaTime;
+            data.windowPos +=
+                (data.continusVelocity + data.velocity) * (1.f - data.friction) * pixelPerMeter * deltaTime;
 
             // Apply monitor collision
             computeMonitorCollisions();
@@ -573,6 +606,7 @@ protected:
     SpriteSheet* pSheet = nullptr;
     float        timer;
     bool         loop;
+    bool         isEnd;
     int          frameRate;
 
     int indexCurrentAnimSprite;
@@ -585,6 +619,7 @@ public:
         frameRate              = inFrameRate;
         indexCurrentAnimSprite = 0;
         timer                  = 0.f;
+        isEnd                  = false;
     }
 
     void update(double deltaTime)
@@ -594,25 +629,32 @@ public:
             timer += deltaTime;
             indexCurrentAnimSprite = timer * frameRate;
 
-            if (indexCurrentAnimSprite >= pSheet->getTileCount() && loop)
+            if (indexCurrentAnimSprite >= pSheet->getTileCount())
             {
-                indexCurrentAnimSprite = 0;
-                timer -= pSheet->getTileCount() / (float)frameRate;
+                if (loop)
+                {
+
+                    indexCurrentAnimSprite = 0;
+                    timer -= pSheet->getTileCount() / (float)frameRate;
+                }
+                else
+                {
+                    indexCurrentAnimSprite = pSheet->getTileCount() - 1;
+                    isEnd                  = true;
+                }
             }
         }
     }
 
-    void draw(GameData& datas, Shader& shader)
+    void draw(GameData& datas, Shader& shader, bool donthFlip)
     {
-        if (!isDone())
-            pSheet->useSection(datas, shader, indexCurrentAnimSprite);
+        if (pSheet != nullptr)
+            pSheet->useSection(datas, shader, indexCurrentAnimSprite, !donthFlip);
     }
 
     bool isDone() const
     {
-        if (pSheet != nullptr)
-            return indexCurrentAnimSprite > pSheet->getTileCount();
-        return true;
+        return pSheet == nullptr || isEnd;
     }
 };
 
@@ -625,17 +667,39 @@ public:
         {
             std::shared_ptr<Node> to;
 
+            virtual void onEnter(GameData& blackBoard){};
+            virtual void onUpdate(GameData& blackBoard, double dt){};
+            virtual void onExit(GameData& blackBoard){};
+
             virtual bool canTransition(GameData& blackBoard)
             {
                 return false;
             };
         };
 
-        std::vector<Transition> transitions;
+        std::vector<std::shared_ptr<Transition>> transitions;
 
-        virtual void onEnter(GameData& blackBoard){};
-        virtual void onUpdate(GameData& blackBoard, double dt){};
-        virtual void onExit(GameData& blackBoard){};
+        virtual void onEnter(GameData& blackBoard)
+        {
+            for (auto&& transition : transitions)
+            {
+                transition->onEnter(blackBoard);
+            }
+        };
+        virtual void onUpdate(GameData& blackBoard, double dt)
+        {
+            for (auto&& transition : transitions)
+            {
+                transition->onUpdate(blackBoard, dt);
+            }
+        };
+        virtual void onExit(GameData& blackBoard)
+        {
+            for (auto&& transition : transitions)
+            {
+                transition->onExit(blackBoard);
+            }
+        };
     };
 
 protected:
@@ -661,14 +725,16 @@ public:
 
         pCurrentNode->onUpdate(blackBoard, dt);
 
-        for (Node::Transition& nodeTransition : pCurrentNode->transitions)
+        for (auto&& pNodeTransition : pCurrentNode->transitions)
         {
-            if (nodeTransition.canTransition(blackBoard))
+            assert(pNodeTransition != nullptr);
+
+            if (pNodeTransition->canTransition(blackBoard))
             {
-                assert(nodeTransition.to != nullptr);
+                assert(pNodeTransition->to != nullptr);
 
                 pCurrentNode->onExit(blackBoard);
-                pCurrentNode = nodeTransition.to;
+                pCurrentNode = pNodeTransition->to;
                 pCurrentNode->onEnter(blackBoard);
                 break;
             }
@@ -690,14 +756,90 @@ public:
     {
     }
 
+    void onEnter(GameData& blackBoard) override
+    {
+        StateMachine::Node::onEnter(blackBoard);
+        spriteAnimator.play(spriteSheets, loop, frameRate);
+    }
+
+    void onUpdate(GameData& blackBoard, double dt) override
+    {
+        StateMachine::Node::onUpdate(blackBoard, dt);
+        spriteAnimator.update(dt);
+    }
+
+    void onExit(GameData& blackBoard) override
+    {
+        StateMachine::Node::onExit(blackBoard);
+    }
+};
+
+class PetWalkNode : public AnimationNode
+{
+    vec2  baseDir = {0.f, 0.f};
+    float thrust  = 0.f;
+
+public:
+    PetWalkNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate,
+                                 vec2 inDir, float inThrust, bool inLoop = true)
+        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, inLoop), baseDir{inDir}, thrust{inThrust}
+    {
+    }
+
+    void onEnter(GameData& blackBoard) override
+    {
+        StateMachine::Node::onEnter(blackBoard);
+        blackBoard.side = randNum(0, 1);
+        spriteAnimator.play(spriteSheets, loop, frameRate);
+        blackBoard.continusVelocity += baseDir * (blackBoard.side * 2 - 1) * thrust;
+    }
+
+    void onUpdate(GameData& blackBoard, double dt) override
+    {
+        StateMachine::Node::onUpdate(blackBoard, dt);
+        spriteAnimator.update(dt);
+    }
+
+    void onExit(GameData& blackBoard) override
+    {
+        StateMachine::Node::onExit(blackBoard);
+        blackBoard.continusVelocity -= baseDir * (blackBoard.side * 2 - 1) * thrust;
+    }
+};
+
+struct RandomDelayTransition : public StateMachine::Node::Transition
+{
+protected:
+    float delay = 0.f;
+    float timer = 0.f;
+
+    int baseDelay_ms = 0;
+    int randomMin_ms = 0;
+    int randomMax_ms = 0;
+
+public:
+    RandomDelayTransition(int inBaseDelay_ms, int inRandomMin_ms, int inRsandomMax_ms)
+        : baseDelay_ms{inBaseDelay_ms}, randomMin_ms{inRandomMin_ms}, randomMax_ms{inRsandomMax_ms}
+    {
+    }
+
+    bool canTransition(GameData& blackBoard) final
+    {
+        if (timer >= delay)
+            return true;
+        return false;
+    };
+
     void onEnter(GameData& blackBoard) final
     {
-        spriteAnimator.play(spriteSheets, loop, frameRate);
+        timer = 0;
+        delay = baseDelay_ms + randNum(randomMin_ms, randomMax_ms);
+        delay *= 0.001; // to seconde
     }
 
     void onUpdate(GameData& blackBoard, double dt) final
     {
-        spriteAnimator.update(dt);
+        timer += dt;
     }
 };
 
@@ -707,7 +849,6 @@ protected:
     bool leftWasPressed = false;
 
 public:
-
     bool canTransition(GameData& blackBoard) final
     {
         if (blackBoard.leftButtonEvent == GLFW_PRESS)
@@ -804,18 +945,47 @@ public:
         std::shared_ptr<AnimationNode> grabNode =
             std::make_shared<AnimationNode>(spriteAnimator, spriteSheets[3], datas.animationFrameRate, false);
 
+        std::shared_ptr<PetWalkNode> walkNode = std::make_shared<PetWalkNode>(
+            spriteAnimator, spriteSheets[2], datas.animationFrameRate, vec2::right(), datas.walkSpeed, true);
+
         // Create all transitions
         // Idle to grab
         {
-            StartLeftClicTransition transition;
-            transition.to = grabNode;
+            std::shared_ptr<StartLeftClicTransition> transition = std::make_shared<StartLeftClicTransition>();
+            transition->to                                      = grabNode;
             idleNode->transitions.emplace_back(transition);
+        }
+
+        // Create all transitions
+        // Idle to walk
+        {
+            std::shared_ptr<RandomDelayTransition> transition = std::make_shared<RandomDelayTransition>(
+                datas.idleDuration, -datas.idleDurationInterval, datas.idleDurationInterval);
+            transition->to = walkNode;
+            idleNode->transitions.emplace_back(transition);
+        }
+
+        // Create all transitions
+        // walk to grab
+        {
+            std::shared_ptr<StartLeftClicTransition> transition = std::make_shared<StartLeftClicTransition>();
+            transition->to                                      = grabNode;
+            walkNode->transitions.emplace_back(transition);
+        }
+
+        // Create all transitions
+        // walk to idle
+        {
+            std::shared_ptr<RandomDelayTransition> transition = std::make_shared<RandomDelayTransition>(
+                datas.walkDuration, -datas.walkDurationInterval, datas.walkDurationInterval);
+            transition->to = idleNode;
+            walkNode->transitions.emplace_back(transition);
         }
 
         // Grab to idle
         {
-            EndLeftClicTransition transition;
-            transition.to = idleNode;
+            std::shared_ptr<EndLeftClicTransition> transition = std::make_shared<EndLeftClicTransition>();
+            transition->to                                    = idleNode;
             grabNode->transitions.emplace_back(transition);
         }
 
@@ -830,7 +1000,7 @@ public:
 
     void draw()
     {
-        spriteAnimator.draw(datas, shader);
+        spriteAnimator.draw(datas, shader, datas.side);
         screenSpaceQuad.draw();
     }
 };
@@ -873,7 +1043,6 @@ protected:
         }
 
         glfwMakeContextCurrent(datas.window);
-        glfwSetFramebufferSizeCallback(datas.window, framebufferSizeCallback);
 
         glfwSetWindowAttrib(datas.window, GLFW_DECORATED, datas.showWindow);
         glfwSetWindowAttrib(datas.window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
@@ -909,6 +1078,10 @@ public:
 
         glfwSetMouseButtonCallback(datas.window, mousButtonCallBack);
         glfwSetCursorPosCallback(datas.window, cursorPositionCallback);
+        glfwSetFramebufferSizeCallback(datas.window, framebufferSizeCallback);
+
+
+        srand(time(NULL));
     }
 
     ~Game()
