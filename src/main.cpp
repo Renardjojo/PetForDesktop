@@ -43,6 +43,10 @@ struct GameData
     vec2  gravity    = {0.f, 0.f};
     float bounciness = 0.f;
     float friction   = 0.f;
+    float jumpVerticalThrust = 0.f;
+    float jumpHorizontalThrust = 0.f;
+
+    bool  isGrounded = false;
 
     // Animation
     int   animationFrameRate   = 10;
@@ -90,6 +94,7 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
             datas.prevCursorPosY  = floor(y);
             datas.deltaCursorPosX = 0.f;
             datas.deltaCursorPosY = 0.f;
+            datas.isGrounded      = false;
             break;
         case GLFW_RELEASE:
             datas.velocity = vec2{datas.deltaCursorPosX / datas.FPS, datas.deltaCursorPosY / datas.FPS};
@@ -465,6 +470,8 @@ public:
         data.gravity    = vec2{(float)reader.GetReal(physicSettingSection, "GravityX", 0.0),
                             (float)reader.GetReal(physicSettingSection, "GravityY", 9.81)};
         data.friction   = std::clamp(reader.GetReal(physicSettingSection, "Friction", 0.5), 0.0, 1.0);
+        data.jumpVerticalThrust   = std::max(reader.GetReal(physicSettingSection, "JumpVerticalThrust", 0.5), 0.0);
+        data.jumpHorizontalThrust = std::max(reader.GetReal(physicSettingSection, "JumpHorizontalThrust", 0.5), 0.0);
 
         std::string animationSection = "Animation";
 
@@ -495,6 +502,10 @@ public:
 
     void computeMonitorCollisions()
     {
+        // TODO: can be extracted
+        float maxWinPosX = data.videoMode->width - data.windowWidth;
+        float maxWinPosY = data.videoMode->height - data.windowHeight;
+
         if (data.windowPos.x < 0.f)
         {
             data.windowPos.x = 0.f;
@@ -507,9 +518,6 @@ public:
             data.velocity    = data.velocity.reflect(vec2::down()) * data.bounciness;
         }
 
-        float maxWinPosX = data.videoMode->width - data.windowWidth;
-        float maxWinPosY = data.videoMode->height - data.windowHeight;
-
         if (data.windowPos.x > maxWinPosX)
         {
             data.windowPos.x = maxWinPosX;
@@ -520,6 +528,10 @@ public:
         {
             data.windowPos.y = maxWinPosY;
             data.velocity    = data.velocity.reflect(vec2::up()) * data.bounciness;
+
+            // check if is grounded
+            data.isGrounded = std::abs(data.gravity.dot(data.velocity)) < 0.5;
+            data.velocity *= !data.isGrounded; // reset velocity if is grounded
         }
     }
 
@@ -530,7 +542,7 @@ public:
         {
             // Acc = Sum of force / Mass
             // G is already an acceleration
-            vec2 acc = data.gravity;
+            vec2 acc = data.gravity * !data.isGrounded;
 
             // V = Acc * Time
             data.velocity += acc * deltaTime;
@@ -665,6 +677,7 @@ public:
     {
         struct Transition
         {
+            Node*                 pOwner;
             std::shared_ptr<Node> to;
 
             virtual void onEnter(GameData& blackBoard){};
@@ -678,6 +691,12 @@ public:
         };
 
         std::vector<std::shared_ptr<Transition>> transitions;
+
+        void AddTransition(std::shared_ptr<Transition> transition)
+        {
+            transition->pOwner = this;
+            transitions.emplace_back(transition);
+        }
 
         virtual void onEnter(GameData& blackBoard)
         {
@@ -772,6 +791,37 @@ public:
     {
         StateMachine::Node::onExit(blackBoard);
     }
+
+    bool IsAnimationDone()
+    {
+        return spriteAnimator.isDone();
+    }
+};
+
+class PetJumpNode : public AnimationNode
+{
+    vec2  baseDir = {0.f, 0.f};
+    float vThrust = 0.f;
+    float hThrust = 0.f;
+
+public:
+    PetJumpNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, vec2 inBaseDir,
+                float inVThrust, float inHThrust)
+        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, false), baseDir{inBaseDir}, vThrust{inVThrust},
+          hThrust{inHThrust}
+    {
+    }
+
+    void onUpdate(GameData& blackBoard, double dt) override
+    {
+        AnimationNode::onUpdate(blackBoard, dt);
+
+        if (spriteAnimator.isDone()) // Enter only for jump begin because don't loop.
+        {
+            blackBoard.velocity += baseDir * (blackBoard.side * 2 - 1) * hThrust - blackBoard.gravity * vThrust;
+            blackBoard.isGrounded = false;
+        }
+    }
 };
 
 class PetWalkNode : public AnimationNode
@@ -780,31 +830,40 @@ class PetWalkNode : public AnimationNode
     float thrust  = 0.f;
 
 public:
-    PetWalkNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate,
-                                 vec2 inDir, float inThrust, bool inLoop = true)
-        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, inLoop), baseDir{inDir}, thrust{inThrust}
+    PetWalkNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, vec2 inRigghtDir,
+                float inThrust, bool inLoop = true)
+        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, inLoop), baseDir{inRigghtDir}, thrust{inThrust}
     {
     }
 
     void onEnter(GameData& blackBoard) override
     {
-        StateMachine::Node::onEnter(blackBoard);
+        AnimationNode::onEnter(blackBoard);
         blackBoard.side = randNum(0, 1);
-        spriteAnimator.play(spriteSheets, loop, frameRate);
         blackBoard.continusVelocity += baseDir * (blackBoard.side * 2 - 1) * thrust;
-    }
-
-    void onUpdate(GameData& blackBoard, double dt) override
-    {
-        StateMachine::Node::onUpdate(blackBoard, dt);
-        spriteAnimator.update(dt);
     }
 
     void onExit(GameData& blackBoard) override
     {
-        StateMachine::Node::onExit(blackBoard);
+        AnimationNode::onExit(blackBoard);
         blackBoard.continusVelocity -= baseDir * (blackBoard.side * 2 - 1) * thrust;
     }
+};
+
+struct AnimationEndTransition : public StateMachine::Node::Transition
+{
+    bool canTransition(GameData& blackBoard) final
+    {
+        return static_cast<AnimationNode*>(pOwner)->IsAnimationDone();
+    };
+};
+
+struct IsGroundedTransition : public StateMachine::Node::Transition
+{
+    bool canTransition(GameData& blackBoard) final
+    {
+        return blackBoard.isGrounded;
+    };
 };
 
 struct RandomDelayTransition : public StateMachine::Node::Transition
@@ -819,7 +878,8 @@ protected:
 
 public:
     RandomDelayTransition(int inBaseDelay_ms, int inRandomMin_ms, int inRsandomMax_ms)
-        : baseDelay_ms{inBaseDelay_ms}, randomMin_ms{inRandomMin_ms}, randomMax_ms{inRsandomMax_ms}
+        : baseDelay_ms{inBaseDelay_ms}, randomMin_ms{inRandomMin_ms},
+          randomMax_ms{inRsandomMax_ms}
     {
     }
 
@@ -889,14 +949,6 @@ public:
 class Pet
 {
 protected:
-    enum class EBehaviour : int
-    {
-        idle  = 0,
-        idle1 = 1,
-        walk  = 2,
-        drag  = 3
-    };
-
     enum class ESide
     {
         left,
@@ -904,7 +956,6 @@ protected:
     };
 
     std::vector<SpriteSheet> spriteSheets;
-    EBehaviour               state{EBehaviour::idle};
     ESide                    side{ESide::left};
 
     ScreenSpaceQuad screenSpaceQuad;
@@ -922,11 +973,14 @@ public:
     Pet(GameData& data)
         : shader("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs"), datas{data}, animator{data}
     {
-        spriteSheets.reserve(4);
+        spriteSheets.reserve(8);
         spriteSheets.emplace_back("./resources/sprites/idle.png");
         spriteSheets.emplace_back("./resources/sprites/idle2.png");
         spriteSheets.emplace_back("./resources/sprites/walk.png");
         spriteSheets.emplace_back("./resources/sprites/drag2.png");
+        spriteSheets.emplace_back("./resources/sprites/startJump.png");
+        spriteSheets.emplace_back("./resources/sprites/jumpAir.png");
+        spriteSheets.emplace_back("./resources/sprites/jumpEnd.png");
 
         // Assuming pet is alone on window
         shader.use();
@@ -948,12 +1002,21 @@ public:
         std::shared_ptr<PetWalkNode> walkNode = std::make_shared<PetWalkNode>(
             spriteAnimator, spriteSheets[2], datas.animationFrameRate, vec2::right(), datas.walkSpeed, true);
 
+        std::shared_ptr<PetJumpNode> jumpNode = std::make_shared<PetJumpNode>(
+            spriteAnimator, spriteSheets[4], datas.animationFrameRate, vec2::right(), datas.jumpHorizontalThrust, datas.jumpVerticalThrust);
+
+        std::shared_ptr<AnimationNode> inAirNode =
+            std::make_shared<AnimationNode>(spriteAnimator, spriteSheets[5], datas.animationFrameRate);
+
+        std::shared_ptr<AnimationNode> landingNode =
+            std::make_shared<AnimationNode>(spriteAnimator, spriteSheets[6], datas.animationFrameRate, false);
+
         // Create all transitions
         // Idle to grab
         {
             std::shared_ptr<StartLeftClicTransition> transition = std::make_shared<StartLeftClicTransition>();
             transition->to                                      = grabNode;
-            idleNode->transitions.emplace_back(transition);
+            idleNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
         // Create all transitions
@@ -962,7 +1025,7 @@ public:
             std::shared_ptr<RandomDelayTransition> transition = std::make_shared<RandomDelayTransition>(
                 datas.idleDuration, -datas.idleDurationInterval, datas.idleDurationInterval);
             transition->to = walkNode;
-            idleNode->transitions.emplace_back(transition);
+            idleNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
         // Create all transitions
@@ -970,7 +1033,7 @@ public:
         {
             std::shared_ptr<StartLeftClicTransition> transition = std::make_shared<StartLeftClicTransition>();
             transition->to                                      = grabNode;
-            walkNode->transitions.emplace_back(transition);
+            walkNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
         // Create all transitions
@@ -979,14 +1042,53 @@ public:
             std::shared_ptr<RandomDelayTransition> transition = std::make_shared<RandomDelayTransition>(
                 datas.walkDuration, -datas.walkDurationInterval, datas.walkDurationInterval);
             transition->to = idleNode;
-            walkNode->transitions.emplace_back(transition);
+            walkNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
-        // Grab to idle
+        // Create all transitions
+        // Idle to jump
+        {
+            std::shared_ptr<RandomDelayTransition> transition = std::make_shared<RandomDelayTransition>(
+                datas.idleDuration, -datas.idleDurationInterval, datas.idleDurationInterval);
+            transition->to = jumpNode;
+            idleNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
+        }
+
+        // Create all transitions
+        // jump to grab
+        {
+            std::shared_ptr<StartLeftClicTransition> transition = std::make_shared<StartLeftClicTransition>();
+            transition->to                                      = grabNode;
+            jumpNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
+        }
+
+        // Create all transitions
+        // jump to air
+        {
+            std::shared_ptr<AnimationEndTransition> transition = std::make_shared<AnimationEndTransition>();
+            transition->to                                     = inAirNode;
+            jumpNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
+        }
+
+        // Grab to air
         {
             std::shared_ptr<EndLeftClicTransition> transition = std::make_shared<EndLeftClicTransition>();
-            transition->to                                    = idleNode;
-            grabNode->transitions.emplace_back(transition);
+            transition->to                                    = inAirNode;
+            grabNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
+        }
+
+        // Air to landing
+        {
+            std::shared_ptr<IsGroundedTransition> transition = std::make_shared<IsGroundedTransition>();
+            transition->to                                   = landingNode;
+            inAirNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
+        }
+
+        // landing to idle
+        {
+            std::shared_ptr<AnimationEndTransition> transition = std::make_shared<AnimationEndTransition>();
+            transition->to                                   = idleNode;
+            landingNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
         // Start state machine
@@ -1079,7 +1181,6 @@ public:
         glfwSetMouseButtonCallback(datas.window, mousButtonCallBack);
         glfwSetCursorPosCallback(datas.window, cursorPositionCallback);
         glfwSetFramebufferSizeCallback(datas.window, framebufferSizeCallback);
-
 
         srand(time(NULL));
     }
