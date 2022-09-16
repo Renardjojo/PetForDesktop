@@ -5,133 +5,24 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <memory>
 #include <queue>
 #include <stdio.h>
 #include <string>
+
+#ifdef __linux__
+// TODO
+#elif _WIN32
+#include "WindowUtility.h"
+#else
+// TODO
+#endif
 
 #include "INIReader.h"
 #include "Vector2.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-
-struct GameData
-{
-    // Window and monitor
-    GLFWwindow*        window       = nullptr;
-    GLFWmonitor**      monitors     = nullptr;
-    const GLFWvidmode* videoMode    = nullptr;
-    int                monitorCount = 0, windowWidth = 0, windowHeight = 0, monitorX = 0, monitorY = 0;
-    vec2               windowPos = {0.f, 0.f};
-
-    // Inputs
-    float prevCursorPosX  = 0;
-    float prevCursorPosY  = 0;
-    float deltaCursorPosX = 0;
-    float deltaCursorPosY = 0;
-    int   leftButtonEvent = 0;
-
-    // Settings
-    int FPS   = 0;
-    int scale = 0;
-
-    // Physic
-    vec2 velocity         = {0.f, 0.f};
-    vec2 continusVelocity = {
-        0.f,
-        0.f}; // This value is not changed by the physic system. Usefull for movement. Friction is applied to this value
-    vec2  gravity    = {0.f, 0.f};
-    float bounciness = 0.f;
-    float friction   = 0.f;
-    float jumpVerticalThrust = 0.f;
-    float jumpHorizontalThrust = 0.f;
-
-    bool  isGrounded = false;
-
-    // Animation
-    int   animationFrameRate   = 10;
-    float walkSpeed            = 0.f;
-    int   walkDuration         = 1000;
-    int   walkDurationInterval = 500;
-    int   idleDuration         = 1000;
-    int   idleDurationInterval = 500;
-    bool  side; // false left / true right
-
-    // Time
-    double timeAcc = 0.f;
-
-    // Debug
-    bool showWindow;
-    bool showFrameBufferBackground;
-};
-
-void cursorPositionCallback(GLFWwindow* window, double x, double y)
-{
-    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
-
-    if (datas.leftButtonEvent == GLFW_PRESS)
-    {
-        datas.deltaCursorPosX = x - datas.prevCursorPosX;
-        datas.deltaCursorPosY = y - datas.prevCursorPosY;
-    }
-}
-
-void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
-{
-    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
-
-    switch (button)
-    {
-    case GLFW_MOUSE_BUTTON_LEFT:
-        datas.leftButtonEvent = action;
-
-        switch (action)
-        {
-        case GLFW_PRESS:
-            double x, y;
-            glfwGetCursorPos(window, &x, &y);
-            datas.prevCursorPosX  = floor(x);
-            datas.prevCursorPosY  = floor(y);
-            datas.deltaCursorPosX = 0.f;
-            datas.deltaCursorPosY = 0.f;
-            datas.isGrounded      = false;
-            break;
-        case GLFW_RELEASE:
-            datas.velocity = vec2{datas.deltaCursorPosX / datas.FPS, datas.deltaCursorPosY / datas.FPS};
-            break;
-        default:
-            break;
-        }
-        break;
-    default:
-        break;
-    }
-}
-
-void processInput(GLFWwindow* window)
-{
-    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
-
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-    if (datas.leftButtonEvent == GLFW_PRESS)
-    {
-        datas.windowPos += vec2{datas.deltaCursorPosX, datas.deltaCursorPosY};
-        datas.deltaCursorPosX = 0;
-        datas.deltaCursorPosY = 0;
-    }
-}
-
-void framebufferSizeCallback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
-
-int randNum(int min, int max)
-{
-    return (rand() % (((max) + 1) - (min))) + (min);
-}
 
 class FileReader
 {
@@ -204,6 +95,7 @@ public:
     // ------------------------------------------------------------------------
     Shader(const char* vertexPath, const char* fragmentPath)
     {
+        printf("Parse files: %s %s\n", vertexPath, fragmentPath);
         FileReader  vertexCodeFile(vertexPath);
         FileReader  fragmentCodeFile(fragmentPath);
         const char* vShaderCode = vertexCodeFile.get();
@@ -233,6 +125,7 @@ public:
         // delete the shaders as they're linked into our program now and no longer necessary
         glDeleteShader(vertex);
         glDeleteShader(fragment);
+        puts("Shader compilationd done");
     }
 
     void use()
@@ -248,6 +141,11 @@ public:
     void setInt(const char* name, int value) const
     {
         glUniform1i(glGetUniformLocation(ID, name), value);
+    }
+
+    void setVec2(const char* name, float v1, float v2) const noexcept
+    {
+        glUniform2f(glGetUniformLocation(ID, name), v1, v2);
     }
 
     void setVec4(const char* name, float v1, float v2, float v3, float v4) const noexcept
@@ -274,7 +172,7 @@ private:
             {
                 glGetShaderInfoLog(shader, 1024, NULL, infoLog);
                 printf("ERROR::SHADER_COMPILATION_ERROR of type: %s\n%s\n "
-                       "-------------------------------------------------------",
+                       "-------------------------------------------------------\n",
                        type, infoLog);
             }
         }
@@ -285,13 +183,106 @@ private:
             {
                 glGetProgramInfoLog(shader, 1024, NULL, infoLog);
                 printf("ERROR::PROGRAM_LINKING_ERROR of type: %s\n%s\n "
-                       "-------------------------------------------------------",
+                       "-------------------------------------------------------\n",
                        type, infoLog);
             }
         }
     }
 };
 
+class Texture
+{
+protected:
+    unsigned int ID;
+    int          width, height;
+
+public:
+    Texture(const char* srcPath, std::function<void()> setupCallback = defaultSetupCallBack)
+    {
+        glGenTextures(1, &ID);
+        glBindTexture(GL_TEXTURE_2D, ID);
+
+        setupCallback();
+
+        // load image, create texture and generate mipmaps
+        stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+        int            nrChannels;
+        unsigned char* data = stbi_load(srcPath, &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            if (nrChannels == 4)
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            else
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        }
+        else
+        {
+            puts("Failed to load texture");
+        }
+        stbi_image_free(data);
+    }
+
+    Texture(void* data, int pxlWidth, int pxlHeight, std::function<void()> setupCallback = defaultSetupCallBack)
+    {
+        glGenTextures(1, &ID);
+        glBindTexture(GL_TEXTURE_2D, ID);
+
+        setupCallback();
+
+        width  = pxlWidth;
+        height = pxlHeight;
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
+    }
+
+    Texture(int pxlWidth, int pxlHeight, std::function<void()> setupCallback = defaultSetupCallBack)
+    {
+        glGenTextures(1, &ID);
+        glBindTexture(GL_TEXTURE_2D, ID);
+
+        setupCallback();
+
+        width  = pxlWidth;
+        height = pxlHeight;
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    }
+
+    static void defaultSetupCallBack()
+    {
+        // set the texture wrapping parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        // set texture filtering parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+
+    ~Texture()
+    {
+        glDeleteTextures(1, &ID);
+    }
+
+    void use() const
+    {
+        glBindTexture(GL_TEXTURE_2D, ID);
+    }
+
+    int getHeight() const
+    {
+        return height;
+    }
+
+    int getWidth() const
+    {
+        return width;
+    }
+
+    int getID() const
+    {
+        return ID;
+    }
+};
+
+// TODO full screen Triangle
 class ScreenSpaceQuad
 {
 protected:
@@ -352,61 +343,161 @@ public:
     }
 };
 
-class Texture
+struct GameData
 {
-protected:
-    unsigned int ID;
-    int          width, height, nrChannels;
+    // Window and monitor
+    GLFWwindow*        window       = nullptr;
+    GLFWmonitor**      monitors     = nullptr;
+    const GLFWvidmode* videoMode    = nullptr;
+    int                monitorCount = 0, windowWidth = 0, windowHeight = 0, monitorX = 0, monitorY = 0;
+    vec2               windowPos = {0.f, 0.f};
+    vec2i              maxWinPos = {0, 0};
 
-public:
-    Texture(const char* srcPath)
-    {
-        glGenTextures(1, &ID);
-        glBindTexture(GL_TEXTURE_2D, ID);
-        // set the texture wrapping parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        // set texture filtering parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // Resources
+    std::unique_ptr<Shader> pImageShader;
+    std::unique_ptr<Shader> pSpriteSheetShader;
+    std::vector<Shader>     edgeDetectionShaders; // Sorted by pass
 
-        // load image, create texture and generate mipmaps
-        stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-        unsigned char* data = stbi_load(srcPath, &width, &height, &nrChannels, 0);
-        if (data)
-        {
-            if (nrChannels == 4)
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-            else
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        }
-        else
-        {
-            puts("Failed to load texture");
-        }
-        stbi_image_free(data);
-    }
+    std::unique_ptr<Texture> pCollisionTexture;
+    std::unique_ptr<Texture> pEdgeDetectionTexture;
 
-    ~Texture()
-    {
-        glDeleteTextures(1, &ID);
-    }
+    std::unique_ptr<ScreenSpaceQuad> pFullScreenQuad;
 
-    void use()
-    {
-        glBindTexture(GL_TEXTURE_2D, ID);
-    }
+    // Inputs
+    float prevCursorPosX  = 0;
+    float prevCursorPosY  = 0;
+    float deltaCursorPosX = 0;
+    float deltaCursorPosY = 0;
+    int   leftButtonEvent = 0;
 
-    int getHeight()
-    {
-        return height;
-    }
+    // Settings
+    int FPS   = 0;
+    int scale = 0;
 
-    int getWidth()
-    {
-        return width;
-    }
+    // Physic
+    vec2 velocity         = {0.f, 0.f};
+    vec2 continusVelocity = {
+        0.f,
+        0.f}; // This value is not changed by the physic system. Usefull for movement. Friction is applied to this value
+    vec2  gravity              = {0.f, 0.f};
+    float bounciness           = 0.f;
+    float friction             = 0.f;
+    float jumpVerticalThrust   = 0.f;
+    float jumpHorizontalThrust = 0.f;
+
+    bool isGrounded = false;
+
+    // Animation
+    int   animationFrameRate   = 10;
+    float walkSpeed            = 0.f;
+    int   walkDuration         = 1000;
+    int   walkDurationInterval = 500;
+    int   idleDuration         = 1000;
+    int   idleDurationInterval = 500;
+    bool  side; // false left / true right
+
+    // Time
+    double timeAcc = 0.f;
+
+    // Debug
+    bool showWindow;
+    bool debugEdgeDetection;
+    bool showFrameBufferBackground;
 };
+
+// Dont forgot to use glDeleteTextures(1, &ID); after usage
+void createTextureFromScreenShoot(unsigned int& ID)
+{
+    glGenTextures(1, &ID);
+    glBindTexture(GL_TEXTURE_2D, ID);
+    // set the texture wrapping parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // set texture filtering parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    ScreenShoot screenshoot(0, 0, 400, 400);
+
+    int                      width  = 400;
+    int                      height = 400;
+    const ScreenShoot::Data& data   = screenshoot.get();
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, data.width, data.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data.bits);
+}
+
+float GammaToLinearByte(char gammaValue)
+{
+    return std::pow(gammaValue / 255.f, 2.2);
+}
+
+void cursorPositionCallback(GLFWwindow* window, double x, double y)
+{
+    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
+
+    if (datas.leftButtonEvent == GLFW_PRESS)
+    {
+        datas.deltaCursorPosX = x - datas.prevCursorPosX;
+        datas.deltaCursorPosY = y - datas.prevCursorPosY;
+    }
+}
+
+void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
+{
+    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
+
+    switch (button)
+    {
+    case GLFW_MOUSE_BUTTON_LEFT:
+        datas.leftButtonEvent = action;
+
+        switch (action)
+        {
+        case GLFW_PRESS:
+            double x, y;
+            glfwGetCursorPos(window, &x, &y);
+            datas.prevCursorPosX  = floor(x);
+            datas.prevCursorPosY  = floor(y);
+            datas.deltaCursorPosX = 0.f;
+            datas.deltaCursorPosY = 0.f;
+            datas.isGrounded      = false;
+            break;
+        case GLFW_RELEASE:
+            datas.velocity = vec2{datas.deltaCursorPosX / datas.FPS, datas.deltaCursorPosY / datas.FPS};
+            break;
+        default:
+            break;
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+void processInput(GLFWwindow* window)
+{
+    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
+
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    if (datas.leftButtonEvent == GLFW_PRESS)
+    {
+        datas.windowPos += vec2{datas.deltaCursorPosX, datas.deltaCursorPosY};
+        datas.deltaCursorPosX = 0;
+        datas.deltaCursorPosY = 0;
+    }
+}
+
+void framebufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+}
+
+int randNum(int min, int max)
+{
+    return (rand() % (((max) + 1) - (min))) + (min);
+}
 
 class SpriteSheet : public Texture
 {
@@ -419,10 +510,11 @@ public:
         tileCount = width / height;
     }
 
-    void useSection(GameData& data, Shader shader, int idSection, bool hFlip = false)
+    void useSection(GameData& data, Shader& shader, int idSection, bool hFlip = false)
     {
         data.windowWidth  = height * data.scale;
         data.windowHeight = height * data.scale;
+        data.maxWinPos    = {data.videoMode->width - data.windowWidth, data.videoMode->height - data.windowHeight};
         glfwSetWindowSize(data.window, data.windowWidth, data.windowHeight);
 
         float hScale  = 1.f / tileCount;
@@ -436,6 +528,7 @@ public:
             hScale *= -1;
         }
 
+        shader.use();
         shader.setVec4("uScaleOffSet", hScale, vScale, hOffSet, vOffset);
         use();
     }
@@ -466,10 +559,10 @@ public:
 
         std::string physicSettingSection = "Physic";
 
-        data.bounciness = std::clamp(reader.GetReal(physicSettingSection, "Bounciness", 0.1), 0.0, 1.0);
-        data.gravity    = vec2{(float)reader.GetReal(physicSettingSection, "GravityX", 0.0),
+        data.bounciness           = std::clamp(reader.GetReal(physicSettingSection, "Bounciness", 0.1), 0.0, 1.0);
+        data.gravity              = vec2{(float)reader.GetReal(physicSettingSection, "GravityX", 0.0),
                             (float)reader.GetReal(physicSettingSection, "GravityY", 9.81)};
-        data.friction   = std::clamp(reader.GetReal(physicSettingSection, "Friction", 0.5), 0.0, 1.0);
+        data.friction             = std::clamp(reader.GetReal(physicSettingSection, "Friction", 0.5), 0.0, 1.0);
         data.jumpVerticalThrust   = std::max(reader.GetReal(physicSettingSection, "JumpVerticalThrust", 0.5), 0.0);
         data.jumpHorizontalThrust = std::max(reader.GetReal(physicSettingSection, "JumpHorizontalThrust", 0.5), 0.0);
 
@@ -485,8 +578,9 @@ public:
 
         std::string debugSection = "Debug";
 
-        data.showWindow                = reader.GetBoolean(debugSection, "ShowWindow", true);
-        data.showFrameBufferBackground = reader.GetBoolean(debugSection, "ShowFrameBufferBackground", true);
+        data.showWindow                = reader.GetBoolean(debugSection, "ShowWindow", false);
+        data.debugEdgeDetection        = reader.GetBoolean(debugSection, "ShowEdgeDetection", false);
+        data.showFrameBufferBackground = reader.GetBoolean(debugSection, "ShowFrameBufferBackground", false);
     }
 };
 
@@ -502,10 +596,6 @@ public:
 
     void computeMonitorCollisions()
     {
-        // TODO: can be extracted
-        float maxWinPosX = data.videoMode->width - data.windowWidth;
-        float maxWinPosY = data.videoMode->height - data.windowHeight;
-
         if (data.windowPos.x < 0.f)
         {
             data.windowPos.x = 0.f;
@@ -518,21 +608,104 @@ public:
             data.velocity    = data.velocity.reflect(vec2::down()) * data.bounciness;
         }
 
-        if (data.windowPos.x > maxWinPosX)
+        if (data.windowPos.x > data.maxWinPos.x)
         {
-            data.windowPos.x = maxWinPosX;
+            data.windowPos.x = data.maxWinPos.x;
             data.velocity    = data.velocity.reflect(vec2::left()) * data.bounciness;
         }
 
-        if (data.windowPos.y > maxWinPosY)
+        if (data.windowPos.y > data.maxWinPos.y)
         {
-            data.windowPos.y = maxWinPosY;
+            data.windowPos.y = data.maxWinPos.y;
             data.velocity    = data.velocity.reflect(vec2::up()) * data.bounciness;
 
             // check if is grounded
             data.isGrounded = std::abs(data.gravity.dot(data.velocity)) < 0.5;
             data.velocity *= !data.isGrounded; // reset velocity if is grounded
         }
+    }
+
+    void ProcessDiscretCollision()
+    {
+        //// Process the average of pixels bellow the window and compare it to next position window bellow pixels
+        // int posX   = data.windowPos.x + (data.maxWinPos.x - data.windowPos.x) / 2;
+        // int posY   = data.maxWinPos.y + 1; // +1 for pixel bellow the window
+        // int pixelW = 3;
+        // int pixelH = 1;
+        //
+        // ScreenShoot              screenshoot(posX, posY, pixelW, pixelH);
+        // const ScreenShoot::Data& data = screenshoot.get();
+        //
+        // unsigned char* pPixel     = static_cast<unsigned char*>(data.bits);
+        // float          rAverage   = 0.f;
+        // float          gAverage   = 0.f;
+        // float          bAverage   = 0.f;
+        // unsigned int   pixelCount = data.height * data.width;
+        //
+        // for (unsigned int i = 0; i < pixelCount; i++)
+        //{
+        //    bAverage += GammaToLinearByte(pPixel[0]); // sB -> B
+        //    gAverage += GammaToLinearByte(pPixel[1]); // sG -> G
+        //    rAverage += GammaToLinearByte(pPixel[2]); // sR -> R
+        //    pPixel += 4; //BGRA
+        //}
+        //
+        //// Process average of pixels
+        // rAverage /= pixelCount;
+        // gAverage /= pixelCount;
+        // bAverage /= pixelCount;
+    }
+
+    void ProcessContinuousCollision()
+    {
+        // Main idear is the we will take a screen shoot of the dimension of the velocity vector (depending on it's
+        // magnitude)
+        // Thanks to this texture, we will iterate on pixel base on velocity vector to check collision
+        // Screen shoot will be post processed with edge detection alogorythm to have only white and bblack values.
+        // White will be the collision
+
+        ScreenShoot              screenshoot(0, 0, data.windowWidth, data.windowHeight);
+        const ScreenShoot::Data& pxlData = screenshoot.get();
+
+        data.pCollisionTexture = std::make_unique<Texture>(pxlData.bits, pxlData.width, pxlData.height);
+        data.pEdgeDetectionTexture = std::make_unique<Texture>(pxlData.width, pxlData.height);
+
+
+        GLuint framebufferID = 0;
+        glGenFramebuffers(1, &framebufferID);
+        glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
+
+        // Set "renderedTexture" as our colour attachement #0
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, data.pEdgeDetectionTexture->getID(), 0);
+
+        // Set the list of draw buffers.
+        GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+        glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+        glClear(GL_COLOR_BUFFER_BIT);
+        
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+        {
+            for (Shader& shader : data.edgeDetectionShaders)
+            {
+                shader.use();
+                shader.setInt("uTexture", 0);
+                shader.setVec2("uUvOffset", 1.f / data.windowWidth, 1.f / data.windowHeight);
+                data.pFullScreenQuad->use();
+                data.pCollisionTexture->use();
+                data.pFullScreenQuad->draw();
+            }
+        }
+        else
+        {
+            puts("Bind framebuffer failed");
+        }
+        // Render to screen
+        glDeleteFramebuffers(1, &framebufferID);
+    }
+
+    void CatpureScreenCollision()
+    {
+        ProcessContinuousCollision();
     }
 
     void update(double deltaTime)
@@ -557,6 +730,8 @@ public:
             // Pos = PrevPos + V * Time
             data.windowPos +=
                 (data.continusVelocity + data.velocity) * (1.f - data.friction) * pixelPerMeter * deltaTime;
+
+            CatpureScreenCollision();
 
             // Apply monitor collision
             computeMonitorCollisions();
@@ -878,8 +1053,7 @@ protected:
 
 public:
     RandomDelayTransition(int inBaseDelay_ms, int inRandomMin_ms, int inRsandomMax_ms)
-        : baseDelay_ms{inBaseDelay_ms}, randomMin_ms{inRandomMin_ms},
-          randomMax_ms{inRsandomMax_ms}
+        : baseDelay_ms{inBaseDelay_ms}, randomMin_ms{inRandomMin_ms}, randomMax_ms{inRsandomMax_ms}
     {
     }
 
@@ -958,9 +1132,7 @@ protected:
     std::vector<SpriteSheet> spriteSheets;
     ESide                    side{ESide::left};
 
-    ScreenSpaceQuad screenSpaceQuad;
-    Shader          shader;
-    GameData&       datas;
+    GameData& datas;
 
     StateMachine   animator;
     SpriteAnimator spriteAnimator;
@@ -970,8 +1142,7 @@ protected:
     bool leftWasPressed = false;
 
 public:
-    Pet(GameData& data)
-        : shader("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs"), datas{data}, animator{data}
+    Pet(GameData& data) : datas{data}, animator{data}
     {
         spriteSheets.reserve(8);
         spriteSheets.emplace_back("./resources/sprites/idle.png");
@@ -983,9 +1154,9 @@ public:
         spriteSheets.emplace_back("./resources/sprites/jumpEnd.png");
 
         // Assuming pet is alone on window
-        shader.use();
-        shader.setInt("uTexture", 0);
-        screenSpaceQuad.use();
+        data.pSpriteSheetShader->use();
+        data.pSpriteSheetShader->setInt("uTexture", 0);
+        data.pFullScreenQuad->use();
 
         createAnimationGraph();
     }
@@ -1002,8 +1173,9 @@ public:
         std::shared_ptr<PetWalkNode> walkNode = std::make_shared<PetWalkNode>(
             spriteAnimator, spriteSheets[2], datas.animationFrameRate, vec2::right(), datas.walkSpeed, true);
 
-        std::shared_ptr<PetJumpNode> jumpNode = std::make_shared<PetJumpNode>(
-            spriteAnimator, spriteSheets[4], datas.animationFrameRate, vec2::right(), datas.jumpHorizontalThrust, datas.jumpVerticalThrust);
+        std::shared_ptr<PetJumpNode> jumpNode =
+            std::make_shared<PetJumpNode>(spriteAnimator, spriteSheets[4], datas.animationFrameRate, vec2::right(),
+                                          datas.jumpVerticalThrust, datas.jumpHorizontalThrust);
 
         std::shared_ptr<AnimationNode> inAirNode =
             std::make_shared<AnimationNode>(spriteAnimator, spriteSheets[5], datas.animationFrameRate);
@@ -1087,7 +1259,7 @@ public:
         // landing to idle
         {
             std::shared_ptr<AnimationEndTransition> transition = std::make_shared<AnimationEndTransition>();
-            transition->to                                   = idleNode;
+            transition->to                                     = idleNode;
             landingNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
@@ -1102,8 +1274,8 @@ public:
 
     void draw()
     {
-        spriteAnimator.draw(datas, shader, datas.side);
-        screenSpaceQuad.draw();
+        spriteAnimator.draw(datas, *datas.pSpriteSheetShader, datas.side);
+        datas.pFullScreenQuad->draw();
     }
 };
 
@@ -1132,10 +1304,11 @@ protected:
 
         glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, !datas.showFrameBufferBackground);
         glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
-        glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
+        glfwWindowHint(GLFW_FLOATING, !datas.debugEdgeDetection);
 
         datas.monitors  = glfwGetMonitors(&datas.monitorCount);
         datas.videoMode = glfwGetVideoMode(datas.monitors[0]);
+        datas.maxWinPos = {datas.videoMode->width, datas.videoMode->height};
 
         datas.window = glfwCreateWindow(1, 1, "PetDesktop", NULL, NULL);
         if (!datas.window)
@@ -1161,11 +1334,26 @@ protected:
         }
     }
 
+    void createResources()
+    {
+        datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs", "./resources/shader/gammaToLinear.fs");
+        datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs",
+                                                "./resources/shader/dFdxEdgeDetection.fs");
+
+        datas.pImageShader = std::make_unique<Shader>("./resources/shader/image.vs", "./resources/shader/image.fs");
+        datas.pSpriteSheetShader =
+            std::make_unique<Shader>("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs");
+
+        datas.pFullScreenQuad = std::make_unique<ScreenSpaceQuad>();
+    }
+
 public:
     Game() : setting("./resources/setting/setting.ini", datas), mainLoop(datas), physicSystem(datas)
     {
         initWindow();
         initOpenGL();
+
+        createResources();
 
         glfwGetMonitorPos(datas.monitors[0], &datas.monitorX, &datas.monitorY);
 
@@ -1203,11 +1391,45 @@ public:
             // poll for and process events
             glfwPollEvents();
         }};
+
+        const std::function<void(double)> unlimitedUpdateDebugCollision{[&](double deltaTime) {
+            processInput(datas.window);
+
+            physicSystem.update(deltaTime);
+
+            // poll for and process events
+            glfwPollEvents();
+        }};
         const std::function<void(double)> limitedUpdate{[&](double deltaTime) {
             // render
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClear(GL_COLOR_BUFFER_BIT);
 
             pet.draw();
+
+            // swap front and back buffers
+            glfwSwapBuffers(datas.window);
+        }};
+
+        const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
+            // fullscreen
+            datas.windowWidth  = datas.videoMode->width / 1.f;
+            datas.windowHeight = datas.videoMode->height / 1.f;
+            datas.maxWinPos    = {datas.videoMode->width - datas.windowWidth,
+                               datas.videoMode->height - datas.windowHeight};
+            glfwSetWindowSize(datas.window, datas.windowWidth, datas.windowHeight);
+
+            // render
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            if (datas.pSpriteSheetShader && datas.pCollisionTexture && datas.pFullScreenQuad)
+            {
+                datas.pImageShader->use();
+                datas.pImageShader->setInt("uTexture", 0);
+                datas.pFullScreenQuad->use();
+                datas.pEdgeDetectionTexture->use();
+                datas.pFullScreenQuad->draw();
+            }
 
             // swap front and back buffers
             glfwSwapBuffers(datas.window);
@@ -1220,7 +1442,8 @@ public:
 
         while (!glfwWindowShouldClose(datas.window))
         {
-            mainLoop.update(unlimitedUpdate, limitedUpdate);
+            mainLoop.update(datas.debugEdgeDetection ? unlimitedUpdateDebugCollision : unlimitedUpdate,
+                            datas.debugEdgeDetection ? limitedUpdateDebugCollision : limitedUpdate);
         }
     }
 };
