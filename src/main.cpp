@@ -308,8 +308,7 @@ public:
             data.emplace_back(0);
         }
 
-        glGetTextureImage(ID, 0, getChanelEnum(), GL_UNSIGNED_BYTE, pixelsCount * sizeof(unsigned char),
-                          &data[0]);
+        glGetTextureImage(ID, 0, getChanelEnum(), GL_UNSIGNED_BYTE, pixelsCount * sizeof(unsigned char), &data[0]);
     }
 };
 
@@ -423,7 +422,7 @@ struct GameData
     std::unique_ptr<Framebuffer> pFramebuffer = nullptr;
 
     std::unique_ptr<Shader> pImageShader       = nullptr;
-    std::unique_ptr<Shader> pImageGreyScale       = nullptr;
+    std::unique_ptr<Shader> pImageGreyScale    = nullptr;
     std::unique_ptr<Shader> pSpriteSheetShader = nullptr;
     std::vector<Shader>     edgeDetectionShaders; // Sorted by pass
 
@@ -697,14 +696,21 @@ public:
         }
     }
 
-    void updateCollisionTexture()
+    void updateCollisionTexture(const vec2 prevToNewWinPos)
     {
-        ScreenShoot              screenshoot(0, 0, data.windowWidth, data.windowHeight);
+        const float xPadding = prevToNewWinPos.x < 0.f ? prevToNewWinPos.x : 0.f;
+        const float screenShootPosX =
+            data.debugEdgeDetection ? 0.f : data.windowPos.x + data.windowWidth / 2.f - xPadding;
+        const float screenShootPosY  = data.debugEdgeDetection ? 0.f : data.windowPos.y + data.windowHeight;
+        const float screenShootSizeX = data.debugEdgeDetection ? data.windowWidth : abs(prevToNewWinPos.x);
+        const float screenShootSizeY = data.debugEdgeDetection ? data.windowHeight : prevToNewWinPos.y;
+
+        ScreenShoot              screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
         const ScreenShoot::Data& pxlData = screenshoot.get();
 
         data.pCollisionTexture     = std::make_unique<Texture>(pxlData.bits, pxlData.width, pxlData.height, 4);
         data.pEdgeDetectionTexture = std::make_unique<Texture>(pxlData.width, pxlData.height, 1);
-        
+
         if (data.edgeDetectionShaders.size() == 1)
         {
             data.pFramebuffer->bindTexture(*data.pEdgeDetectionTexture);
@@ -725,7 +731,6 @@ public:
             data.pFullScreenQuad->use();
             data.pFullScreenQuad->draw();
 
-
             data.pFramebuffer->bindTexture(*data.pEdgeDetectionTexture);
 
             data.edgeDetectionShaders[1].use();
@@ -735,9 +740,8 @@ public:
             data.pFullScreenQuad->draw();
         }
     }
-    
 
-    void ProcessContinuousCollision()
+    void ProcessContinuousCollision(const vec2& prevWinPos, vec2& newWinPos)
     {
         // Main idear is the we will take a screen shoot of the dimension of the velocity vector (depending on it's
         // magnitude)
@@ -745,22 +749,28 @@ public:
         // Screen shoot will be post processed with edge detection alogorythm to have only white and bblack values.
         // White will be the collision
 
-        updateCollisionTexture();
+        vec2 prevToNewPos = newWinPos - prevWinPos;
 
-        //std::vector<unsigned char> pixels;
-        //data.pEdgeDetectionTexture->use();
-        //data.pEdgeDetectionTexture->getPixels(pixels);
-        //int step  = data.pEdgeDetectionTexture->getChannelCount();
-        //int count = 0;
-        //for (size_t i = 0; i < pixels.size(); i++)
-        //{
-        //    count += pixels[i] == 255;
-        //}
+        if (prevToNewPos.y < 0.f || prevToNewPos.sqrLength() == 0.f)
+            return;
+
+        updateCollisionTexture(prevToNewPos);
+
+        std::vector<unsigned char> pixels;
+        data.pEdgeDetectionTexture->use();
+        data.pEdgeDetectionTexture->getPixels(pixels);
+        int step  = data.pEdgeDetectionTexture->getChannelCount();
+        int count = 0;
+        for (size_t i = 0; i < pixels.size(); i++)
+        {
+            count += pixels[i] == 255;
+        }
+        printf("%i\n", count);
     }
 
     void CatpureScreenCollision(const vec2& prevWinPos, vec2& newWinPos)
     {
-        ProcessContinuousCollision();
+        ProcessContinuousCollision(prevWinPos, newWinPos);
     }
 
     void update(double deltaTime)
@@ -784,9 +794,11 @@ public:
 
             vec2 prevWinPos = data.windowPos;
             // Pos = PrevPos + V * Time
-            vec2 newWinPos = data.windowPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) * pixelPerMeter * deltaTime);
+            vec2 newWinPos = data.windowPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) *
+                                               pixelPerMeter * deltaTime);
 
-            if (((newWinPos - prevWinPos).sqrLength() <= data.continusCollisionMaxSqrVelocity && !data.isGrab) || data.debugEdgeDetection)
+            if (((newWinPos - prevWinPos).sqrLength() <= data.continusCollisionMaxSqrVelocity && !data.isGrab) ||
+                data.debugEdgeDetection)
             {
                 CatpureScreenCollision(prevWinPos, newWinPos);
             }
@@ -1421,13 +1433,16 @@ protected:
     {
         datas.pFramebuffer = std::make_unique<Framebuffer>();
 
-        //datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs", "./resources/shader/gammaToLinear.fs");
-        datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs", "./resources/shader/dFdxEdgeDetection.fs");
+        // datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs",
+        // "./resources/shader/gammaToLinear.fs");
+        datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs",
+                                                "./resources/shader/dFdxEdgeDetection.fs");
 
         datas.pImageShader = std::make_unique<Shader>("./resources/shader/image.vs", "./resources/shader/image.fs");
 
         if (datas.debugEdgeDetection)
-            datas.pImageGreyScale = std::make_unique<Shader>("./resources/shader/image.vs", "./resources/shader/imageGreyScale.fs");
+            datas.pImageGreyScale =
+                std::make_unique<Shader>("./resources/shader/image.vs", "./resources/shader/imageGreyScale.fs");
 
         datas.pSpriteSheetShader =
             std::make_unique<Shader>("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs");

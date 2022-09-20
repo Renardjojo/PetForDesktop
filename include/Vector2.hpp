@@ -193,6 +193,12 @@ union Vector2 {
         return *this - n * (2.f * dot(n));
     }
 
+    constexpr Vector2 abs() const noexcept
+    {
+        return {abs(x), abbs(y)};
+    }
+
+
     // Operator overloads
     constexpr Vector2& operator+=(const Vector2& v) noexcept
     {
