@@ -9,6 +9,7 @@
 #include <queue>
 #include <stdio.h>
 #include <string>
+#include <vector>
 
 #ifdef __linux__
 // TODO
@@ -195,6 +196,7 @@ class Texture
 protected:
     unsigned int ID;
     int          width, height;
+    int          nbChannels;
 
 public:
     Texture(const char* srcPath, std::function<void()> setupCallback = defaultSetupCallBack)
@@ -206,11 +208,10 @@ public:
 
         // load image, create texture and generate mipmaps
         stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-        int            nrChannels;
-        unsigned char* data = stbi_load(srcPath, &width, &height, &nrChannels, 0);
+        unsigned char* data = stbi_load(srcPath, &width, &height, &nbChannels, 0);
         if (data)
         {
-            if (nrChannels == 4)
+            if (nbChannels == 4)
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
             else
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -222,28 +223,33 @@ public:
         stbi_image_free(data);
     }
 
-    Texture(void* data, int pxlWidth, int pxlHeight, std::function<void()> setupCallback = defaultSetupCallBack)
+    Texture(void* data, int pxlWidth, int pxlHeight, int channels = 3,
+            std ::function<void()> setupCallback = defaultSetupCallBack)
     {
         glGenTextures(1, &ID);
         glBindTexture(GL_TEXTURE_2D, ID);
 
         setupCallback();
 
-        width  = pxlWidth;
-        height = pxlHeight;
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
+        width           = pxlWidth;
+        height          = pxlHeight;
+        nbChannels      = channels;
+        GLenum chanEnum = getChanelEnum();
+        glTexImage2D(GL_TEXTURE_2D, 0, chanEnum, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
     }
 
-    Texture(int pxlWidth, int pxlHeight, std::function<void()> setupCallback = defaultSetupCallBack)
+    Texture(int pxlWidth, int pxlHeight, int channels = 4, std::function<void()> setupCallback = defaultSetupCallBack)
     {
         glGenTextures(1, &ID);
         glBindTexture(GL_TEXTURE_2D, ID);
 
         setupCallback();
 
-        width  = pxlWidth;
-        height = pxlHeight;
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        width           = pxlWidth;
+        height          = pxlHeight;
+        nbChannels      = channels;
+        GLenum chanEnum = getChanelEnum();
+        glTexImage2D(GL_TEXTURE_2D, 0, chanEnum, width, height, 0, chanEnum, GL_UNSIGNED_BYTE, 0);
     }
 
     static void defaultSetupCallBack()
@@ -276,9 +282,69 @@ public:
         return width;
     }
 
+    int getChannelCount() const
+    {
+        return nbChannels;
+    }
+
     int getID() const
     {
         return ID;
+    }
+
+    GLenum getChanelEnum()
+    {
+        return nbChannels > 3 ? GL_RGBA : nbChannels == 3 ? GL_RGB : nbChannels == 2 ? GL_RG : GL_RED;
+    }
+
+    // Warning, texture need to be binding before
+    void getPixels(std::vector<unsigned char>& data)
+    {
+        int pixelsCount = width * height * nbChannels;
+        data.reserve(pixelsCount);
+
+        for (size_t i = 0; i < pixelsCount; i++)
+        {
+            data.emplace_back(0);
+        }
+
+        glGetTextureImage(ID, 0, getChanelEnum(), GL_UNSIGNED_BYTE, pixelsCount * sizeof(unsigned char),
+                          &data[0]);
+    }
+};
+
+class Framebuffer
+{
+protected:
+    unsigned int ID;
+
+public:
+    Framebuffer()
+    {
+        glGenFramebuffers(1, &ID);
+    }
+
+    ~Framebuffer()
+    {
+        glDeleteFramebuffers(1, &ID);
+    }
+
+    void bindTexture(const Texture& texture)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, ID);
+
+        // Set "renderedTexture" as our colour attachement #0
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture.getID(), 0);
+
+        // if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        //{
+        //    puts("Framebuffer error");
+        //}
+    }
+
+    static void bindScreen()
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 };
 
@@ -354,14 +420,17 @@ struct GameData
     vec2i              maxWinPos = {0, 0};
 
     // Resources
-    std::unique_ptr<Shader> pImageShader;
-    std::unique_ptr<Shader> pSpriteSheetShader;
+    std::unique_ptr<Framebuffer> pFramebuffer = nullptr;
+
+    std::unique_ptr<Shader> pImageShader       = nullptr;
+    std::unique_ptr<Shader> pImageGreyScale       = nullptr;
+    std::unique_ptr<Shader> pSpriteSheetShader = nullptr;
     std::vector<Shader>     edgeDetectionShaders; // Sorted by pass
 
-    std::unique_ptr<Texture> pCollisionTexture;
-    std::unique_ptr<Texture> pEdgeDetectionTexture;
+    std::unique_ptr<Texture> pCollisionTexture     = nullptr;
+    std::unique_ptr<Texture> pEdgeDetectionTexture = nullptr;
 
-    std::unique_ptr<ScreenSpaceQuad> pFullScreenQuad;
+    std::unique_ptr<ScreenSpaceQuad> pFullScreenQuad = nullptr;
 
     // Inputs
     float prevCursorPosX  = 0;
@@ -375,17 +444,16 @@ struct GameData
     int scale = 0;
 
     // Physic
-    vec2 velocity         = {0.f, 0.f};
-    vec2 continusVelocity = {
-        0.f,
-        0.f}; // This value is not changed by the physic system. Usefull for movement. Friction is applied to this value
-    vec2  gravity              = {0.f, 0.f};
-    float bounciness           = 0.f;
-    float friction             = 0.f;
-    float jumpVerticalThrust   = 0.f;
-    float jumpHorizontalThrust = 0.f;
-
-    bool isGrounded = false;
+    vec2 velocity = {0.f, 0.f};
+    // This value is not changed by the physic system. Usefull for movement. Friction is applied to this value
+    vec2  continusVelocity                = {0.f, 0.f};
+    vec2  gravity                         = {0.f, 0.f};
+    float bounciness                      = 0.f;
+    float friction                        = 0.f;
+    float jumpVerticalThrust              = 0.f;
+    float jumpHorizontalThrust            = 0.f;
+    float continusCollisionMaxSqrVelocity = 0.f;
+    bool  isGrounded                      = false;
 
     // Animation
     int   animationFrameRate   = 10;
@@ -394,15 +462,16 @@ struct GameData
     int   walkDurationInterval = 500;
     int   idleDuration         = 1000;
     int   idleDurationInterval = 500;
-    bool  side; // false left / true right
+    bool  side                 = true; // false left / true right
+    bool  isGrab               = false;
 
     // Time
     double timeAcc = 0.f;
 
     // Debug
-    bool showWindow;
-    bool debugEdgeDetection;
-    bool showFrameBufferBackground;
+    bool showWindow                = false;
+    bool debugEdgeDetection        = false;
+    bool showFrameBufferBackground = false;
 };
 
 // Dont forgot to use glDeleteTextures(1, &ID); after usage
@@ -565,6 +634,9 @@ public:
         data.friction             = std::clamp(reader.GetReal(physicSettingSection, "Friction", 0.5), 0.0, 1.0);
         data.jumpVerticalThrust   = std::max(reader.GetReal(physicSettingSection, "JumpVerticalThrust", 0.5), 0.0);
         data.jumpHorizontalThrust = std::max(reader.GetReal(physicSettingSection, "JumpHorizontalThrust", 0.5), 0.0);
+        data.continusCollisionMaxSqrVelocity =
+            std::max(reader.GetReal(physicSettingSection, "ContinusCollisionMaxVelocity", 100.0), 0.0);
+        data.continusCollisionMaxSqrVelocity *= data.continusCollisionMaxSqrVelocity;
 
         std::string animationSection = "Animation";
 
@@ -625,36 +697,45 @@ public:
         }
     }
 
-    void ProcessDiscretCollision()
+    void updateCollisionTexture()
     {
-        //// Process the average of pixels bellow the window and compare it to next position window bellow pixels
-        // int posX   = data.windowPos.x + (data.maxWinPos.x - data.windowPos.x) / 2;
-        // int posY   = data.maxWinPos.y + 1; // +1 for pixel bellow the window
-        // int pixelW = 3;
-        // int pixelH = 1;
-        //
-        // ScreenShoot              screenshoot(posX, posY, pixelW, pixelH);
-        // const ScreenShoot::Data& data = screenshoot.get();
-        //
-        // unsigned char* pPixel     = static_cast<unsigned char*>(data.bits);
-        // float          rAverage   = 0.f;
-        // float          gAverage   = 0.f;
-        // float          bAverage   = 0.f;
-        // unsigned int   pixelCount = data.height * data.width;
-        //
-        // for (unsigned int i = 0; i < pixelCount; i++)
-        //{
-        //    bAverage += GammaToLinearByte(pPixel[0]); // sB -> B
-        //    gAverage += GammaToLinearByte(pPixel[1]); // sG -> G
-        //    rAverage += GammaToLinearByte(pPixel[2]); // sR -> R
-        //    pPixel += 4; //BGRA
-        //}
-        //
-        //// Process average of pixels
-        // rAverage /= pixelCount;
-        // gAverage /= pixelCount;
-        // bAverage /= pixelCount;
+        ScreenShoot              screenshoot(0, 0, data.windowWidth, data.windowHeight);
+        const ScreenShoot::Data& pxlData = screenshoot.get();
+
+        data.pCollisionTexture     = std::make_unique<Texture>(pxlData.bits, pxlData.width, pxlData.height, 4);
+        data.pEdgeDetectionTexture = std::make_unique<Texture>(pxlData.width, pxlData.height, 1);
+        
+        if (data.edgeDetectionShaders.size() == 1)
+        {
+            data.pFramebuffer->bindTexture(*data.pEdgeDetectionTexture);
+
+            data.edgeDetectionShaders[0].use();
+            data.edgeDetectionShaders[0].setInt("uTexture", 0);
+            data.pCollisionTexture->use();
+            data.pFullScreenQuad->use();
+            data.pFullScreenQuad->draw();
+        }
+        else
+        {
+            data.pFramebuffer->bindTexture(*data.pCollisionTexture);
+
+            data.edgeDetectionShaders[0].use();
+            data.edgeDetectionShaders[0].setInt("uTexture", 0);
+            data.pCollisionTexture->use();
+            data.pFullScreenQuad->use();
+            data.pFullScreenQuad->draw();
+
+
+            data.pFramebuffer->bindTexture(*data.pEdgeDetectionTexture);
+
+            data.edgeDetectionShaders[1].use();
+            data.edgeDetectionShaders[1].setInt("uTexture", 0);
+            data.pCollisionTexture->use();
+            data.pFullScreenQuad->use();
+            data.pFullScreenQuad->draw();
+        }
     }
+    
 
     void ProcessContinuousCollision()
     {
@@ -664,46 +745,20 @@ public:
         // Screen shoot will be post processed with edge detection alogorythm to have only white and bblack values.
         // White will be the collision
 
-        ScreenShoot              screenshoot(0, 0, data.windowWidth, data.windowHeight);
-        const ScreenShoot::Data& pxlData = screenshoot.get();
+        updateCollisionTexture();
 
-        data.pCollisionTexture = std::make_unique<Texture>(pxlData.bits, pxlData.width, pxlData.height);
-        data.pEdgeDetectionTexture = std::make_unique<Texture>(pxlData.width, pxlData.height);
-
-
-        GLuint framebufferID = 0;
-        glGenFramebuffers(1, &framebufferID);
-        glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
-
-        // Set "renderedTexture" as our colour attachement #0
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, data.pEdgeDetectionTexture->getID(), 0);
-
-        // Set the list of draw buffers.
-        GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-        glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
-        glClear(GL_COLOR_BUFFER_BIT);
-        
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
-        {
-            for (Shader& shader : data.edgeDetectionShaders)
-            {
-                shader.use();
-                shader.setInt("uTexture", 0);
-                shader.setVec2("uUvOffset", 1.f / data.windowWidth, 1.f / data.windowHeight);
-                data.pFullScreenQuad->use();
-                data.pCollisionTexture->use();
-                data.pFullScreenQuad->draw();
-            }
-        }
-        else
-        {
-            puts("Bind framebuffer failed");
-        }
-        // Render to screen
-        glDeleteFramebuffers(1, &framebufferID);
+        //std::vector<unsigned char> pixels;
+        //data.pEdgeDetectionTexture->use();
+        //data.pEdgeDetectionTexture->getPixels(pixels);
+        //int step  = data.pEdgeDetectionTexture->getChannelCount();
+        //int count = 0;
+        //for (size_t i = 0; i < pixels.size(); i++)
+        //{
+        //    count += pixels[i] == 255;
+        //}
     }
 
-    void CatpureScreenCollision()
+    void CatpureScreenCollision(const vec2& prevWinPos, vec2& newWinPos)
     {
         ProcessContinuousCollision();
     }
@@ -727,11 +782,16 @@ public:
             vec2 pixelPerMeter{(float)data.videoMode->width / (width_mm * 0.001f),
                                (float)data.videoMode->height / (height_mm * 0.001f)};
 
+            vec2 prevWinPos = data.windowPos;
             // Pos = PrevPos + V * Time
-            data.windowPos +=
-                (data.continusVelocity + data.velocity) * (1.f - data.friction) * pixelPerMeter * deltaTime;
+            vec2 newWinPos = data.windowPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) * pixelPerMeter * deltaTime);
 
-            CatpureScreenCollision();
+            if (((newWinPos - prevWinPos).sqrLength() <= data.continusCollisionMaxSqrVelocity && !data.isGrab) || data.debugEdgeDetection)
+            {
+                CatpureScreenCollision(prevWinPos, newWinPos);
+            }
+
+            data.windowPos = newWinPos;
 
             // Apply monitor collision
             computeMonitorCollisions();
@@ -999,6 +1059,27 @@ public:
     }
 };
 
+class GrabNode : public AnimationNode
+{
+public:
+    GrabNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate)
+        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, false)
+    {
+    }
+
+    void onEnter(GameData& blackBoard) override
+    {
+        AnimationNode::onEnter(blackBoard);
+        blackBoard.isGrab = true;
+    }
+
+    void onExit(GameData& blackBoard) override
+    {
+        AnimationNode::onExit(blackBoard);
+        blackBoard.isGrab = false;
+    }
+};
+
 class PetWalkNode : public AnimationNode
 {
     vec2  baseDir = {0.f, 0.f};
@@ -1167,8 +1248,8 @@ public:
         std::shared_ptr<AnimationNode> idleNode =
             std::make_shared<AnimationNode>(spriteAnimator, spriteSheets[0], datas.animationFrameRate, true);
 
-        std::shared_ptr<AnimationNode> grabNode =
-            std::make_shared<AnimationNode>(spriteAnimator, spriteSheets[3], datas.animationFrameRate, false);
+        std::shared_ptr<GrabNode> grabNode =
+            std::make_shared<GrabNode>(spriteAnimator, spriteSheets[3], datas.animationFrameRate);
 
         std::shared_ptr<PetWalkNode> walkNode = std::make_shared<PetWalkNode>(
             spriteAnimator, spriteSheets[2], datas.animationFrameRate, vec2::right(), datas.walkSpeed, true);
@@ -1306,11 +1387,13 @@ protected:
         glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
         glfwWindowHint(GLFW_FLOATING, !datas.debugEdgeDetection);
 
-        datas.monitors  = glfwGetMonitors(&datas.monitorCount);
-        datas.videoMode = glfwGetVideoMode(datas.monitors[0]);
-        datas.maxWinPos = {datas.videoMode->width, datas.videoMode->height};
+        datas.monitors     = glfwGetMonitors(&datas.monitorCount);
+        datas.videoMode    = glfwGetVideoMode(datas.monitors[0]);
+        datas.maxWinPos    = {datas.videoMode->width, datas.videoMode->height};
+        datas.windowWidth  = 1;
+        datas.windowHeight = 1;
 
-        datas.window = glfwCreateWindow(1, 1, "PetDesktop", NULL, NULL);
+        datas.window = glfwCreateWindow(datas.windowWidth, datas.windowHeight, "PetDesktop", NULL, NULL);
         if (!datas.window)
         {
             glfwTerminate();
@@ -1336,11 +1419,16 @@ protected:
 
     void createResources()
     {
-        datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs", "./resources/shader/gammaToLinear.fs");
-        datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs",
-                                                "./resources/shader/dFdxEdgeDetection.fs");
+        datas.pFramebuffer = std::make_unique<Framebuffer>();
+
+        //datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs", "./resources/shader/gammaToLinear.fs");
+        datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs", "./resources/shader/dFdxEdgeDetection.fs");
 
         datas.pImageShader = std::make_unique<Shader>("./resources/shader/image.vs", "./resources/shader/image.fs");
+
+        if (datas.debugEdgeDetection)
+            datas.pImageGreyScale = std::make_unique<Shader>("./resources/shader/image.vs", "./resources/shader/imageGreyScale.fs");
+
         datas.pSpriteSheetShader =
             std::make_unique<Shader>("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs");
 
@@ -1402,7 +1490,7 @@ public:
         }};
         const std::function<void(double)> limitedUpdate{[&](double deltaTime) {
             // render
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            datas.pFramebuffer->bindScreen();
             glClear(GL_COLOR_BUFFER_BIT);
 
             pet.draw();
@@ -1420,12 +1508,13 @@ public:
             glfwSetWindowSize(datas.window, datas.windowWidth, datas.windowHeight);
 
             // render
+            Framebuffer::bindScreen();
             glClear(GL_COLOR_BUFFER_BIT);
 
-            if (datas.pSpriteSheetShader && datas.pCollisionTexture && datas.pFullScreenQuad)
+            if (datas.pImageGreyScale && datas.pEdgeDetectionTexture && datas.pFullScreenQuad)
             {
-                datas.pImageShader->use();
-                datas.pImageShader->setInt("uTexture", 0);
+                datas.pImageGreyScale->use();
+                datas.pImageGreyScale->setInt("uTexture", 0);
                 datas.pFullScreenQuad->use();
                 datas.pEdgeDetectionTexture->use();
                 datas.pFullScreenQuad->draw();
