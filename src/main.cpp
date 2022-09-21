@@ -447,11 +447,14 @@ struct GameData
     // This value is not changed by the physic system. Usefull for movement. Friction is applied to this value
     vec2  continusVelocity                = {0.f, 0.f};
     vec2  gravity                         = {0.f, 0.f};
+    vec2  gravityDir                      = {0.f, 0.f};
     float bounciness                      = 0.f;
     float friction                        = 0.f;
     float jumpVerticalThrust              = 0.f;
     float jumpHorizontalThrust            = 0.f;
     float continusCollisionMaxSqrVelocity = 0.f;
+    int   footBasasementWidth             = 1;
+    int   footBasasementHeight            = 1;
     bool  isGrounded                      = false;
 
     // Animation
@@ -548,13 +551,6 @@ void processInput(GLFWwindow* window)
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-
-    if (datas.leftButtonEvent == GLFW_PRESS)
-    {
-        datas.windowPos += vec2{datas.deltaCursorPosX, datas.deltaCursorPosY};
-        datas.deltaCursorPosX = 0;
-        datas.deltaCursorPosY = 0;
-    }
 }
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height)
@@ -620,38 +616,50 @@ public:
             exit(-1);
         }
 
-        std::string gameSettingSection = "Game setting";
+        std::string section;
+        {
+            section = "Game setting";
 
-        data.FPS   = std::max(reader.GetInteger(gameSettingSection, "FPS", 60), 1l);
-        data.scale = std::max(reader.GetInteger(gameSettingSection, "Scale", 1), 1l);
+            data.FPS   = std::max(reader.GetInteger(section, "FPS", 60), 1l);
+            data.scale = std::max(reader.GetInteger(section, "Scale", 1), 1l);
+        }
 
-        std::string physicSettingSection = "Physic";
+        {
+            section = "Physic";
 
-        data.bounciness           = std::clamp(reader.GetReal(physicSettingSection, "Bounciness", 0.1), 0.0, 1.0);
-        data.gravity              = vec2{(float)reader.GetReal(physicSettingSection, "GravityX", 0.0),
-                            (float)reader.GetReal(physicSettingSection, "GravityY", 9.81)};
-        data.friction             = std::clamp(reader.GetReal(physicSettingSection, "Friction", 0.5), 0.0, 1.0);
-        data.jumpVerticalThrust   = std::max(reader.GetReal(physicSettingSection, "JumpVerticalThrust", 0.5), 0.0);
-        data.jumpHorizontalThrust = std::max(reader.GetReal(physicSettingSection, "JumpHorizontalThrust", 0.5), 0.0);
-        data.continusCollisionMaxSqrVelocity =
-            std::max(reader.GetReal(physicSettingSection, "ContinusCollisionMaxVelocity", 100.0), 0.0);
-        data.continusCollisionMaxSqrVelocity *= data.continusCollisionMaxSqrVelocity;
+            data.bounciness = std::clamp(reader.GetReal(section, "Bounciness", 0.1), 0.0, 1.0);
+            data.gravity =
+                vec2{(float)reader.GetReal(section, "GravityX", 0.0), (float)reader.GetReal(section, "GravityY", 9.81)};
+            data.gravityDir           = data.gravity.normalized();
+            data.friction             = std::clamp(reader.GetReal(section, "Friction", 0.5), 0.0, 1.0);
+            data.jumpVerticalThrust   = std::max(reader.GetReal(section, "JumpVerticalThrust", 0.5), 0.0);
+            data.jumpHorizontalThrust = std::max(reader.GetReal(section, "JumpHorizontalThrust", 0.5), 0.0);
+            data.continusCollisionMaxSqrVelocity =
+                std::max(reader.GetReal(section, "ContinusCollisionMaxVelocity", 100.0), 0.0);
+            data.continusCollisionMaxSqrVelocity *= data.continusCollisionMaxSqrVelocity;
+            data.footBasasementWidth  = std::max(reader.GetInteger(section, "FootBasasementWidth", 1), 1l);
+            data.footBasasementHeight = std::max(reader.GetInteger(section, "FootBasasementHeight", 1), 1l);
+        }
 
-        std::string animationSection = "Animation";
+        {
+            section = "Animation";
 
-        data.animationFrameRate = std::max(reader.GetInteger(animationSection, "AnimationFrameRate", 1), 1l);
-        data.walkSpeed          = std::max(reader.GetReal(animationSection, "WalkSpeed", 1.0), 0.0);
+            data.animationFrameRate = std::max(reader.GetInteger(section, "AnimationFrameRate", 1), 1l);
+            data.walkSpeed          = std::max(reader.GetReal(section, "WalkSpeed", 1.0), 0.0);
 
-        data.walkDuration         = std::max(reader.GetInteger(animationSection, "WalkDuration", 1000), 0l);
-        data.walkDurationInterval = reader.GetInteger(animationSection, "WalkDurationInterval", 500);
-        data.idleDuration         = std::max(reader.GetInteger(animationSection, "IdleDuration", 1000), 0l);
-        data.idleDurationInterval = reader.GetInteger(animationSection, "IdleDurationInterval", 500);
+            data.walkDuration         = std::max(reader.GetInteger(section, "WalkDuration", 1000), 0l);
+            data.walkDurationInterval = reader.GetInteger(section, "WalkDurationInterval", 500);
+            data.idleDuration         = std::max(reader.GetInteger(section, "IdleDuration", 1000), 0l);
+            data.idleDurationInterval = reader.GetInteger(section, "IdleDurationInterval", 500);
+        }
 
-        std::string debugSection = "Debug";
+        {
+            section = "Debug";
 
-        data.showWindow                = reader.GetBoolean(debugSection, "ShowWindow", false);
-        data.debugEdgeDetection        = reader.GetBoolean(debugSection, "ShowEdgeDetection", false);
-        data.showFrameBufferBackground = reader.GetBoolean(debugSection, "ShowFrameBufferBackground", false);
+            data.showWindow                = reader.GetBoolean(section, "ShowWindow", false);
+            data.debugEdgeDetection        = reader.GetBoolean(section, "ShowEdgeDetection", false);
+            data.showFrameBufferBackground = reader.GetBoolean(section, "ShowFrameBufferBackground", false);
+        }
     }
 };
 
@@ -691,19 +699,32 @@ public:
             data.velocity    = data.velocity.reflect(vec2::up()) * data.bounciness;
 
             // check if is grounded
-            data.isGrounded = std::abs(data.gravity.dot(data.velocity)) < 0.5;
+            data.isGrounded = std::abs(data.gravityDir.dot(data.velocity)) < 0.5;
             data.velocity *= !data.isGrounded; // reset velocity if is grounded
         }
     }
 
     void updateCollisionTexture(const vec2 prevToNewWinPos)
     {
-        const float xPadding = prevToNewWinPos.x < 0.f ? prevToNewWinPos.x : 0.f;
-        const float screenShootPosX =
-            data.debugEdgeDetection ? 0.f : data.windowPos.x + data.windowWidth / 2.f - xPadding;
-        const float screenShootPosY  = data.debugEdgeDetection ? 0.f : data.windowPos.y + data.windowHeight;
-        const float screenShootSizeX = data.debugEdgeDetection ? data.windowWidth : abs(prevToNewWinPos.x);
-        const float screenShootSizeY = data.debugEdgeDetection ? data.windowHeight : prevToNewWinPos.y;
+        int screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY;
+
+        if (data.debugEdgeDetection)
+        {
+            screenShootPosX  = 0.f;
+            screenShootPosY  = 0.f;
+            screenShootSizeX = data.windowWidth;
+            screenShootSizeY = data.debugEdgeDetection;
+        }
+        else
+        {
+            const float xPadding = prevToNewWinPos.x < 0.f ? prevToNewWinPos.x : 0.f;
+            const float yPadding = prevToNewWinPos.y < 0.f ? prevToNewWinPos.y : 0.f;
+
+            screenShootPosX  = data.windowPos.x + data.windowWidth / 2.f - xPadding - data.footBasasementWidth / 2.f;
+            screenShootPosY  = data.windowPos.y + data.windowHeight - yPadding;
+            screenShootSizeX = abs(prevToNewWinPos.x) + data.footBasasementWidth / 2.f;
+            screenShootSizeY = abs(prevToNewWinPos.y) + data.footBasasementHeight;
+        }
 
         ScreenShoot              screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
         const ScreenShoot::Data& pxlData = screenshoot.get();
@@ -741,7 +762,7 @@ public:
         }
     }
 
-    void ProcessContinuousCollision(const vec2& prevWinPos, vec2& newWinPos)
+    void ProcessContinuousCollision(const vec2 prevToNewWinPos)
     {
         // Main idear is the we will take a screen shoot of the dimension of the velocity vector (depending on it's
         // magnitude)
@@ -749,12 +770,10 @@ public:
         // Screen shoot will be post processed with edge detection alogorythm to have only white and bblack values.
         // White will be the collision
 
-        vec2 prevToNewPos = newWinPos - prevWinPos;
-
-        if (prevToNewPos.y < 0.f || prevToNewPos.sqrLength() == 0.f)
+        if (prevToNewWinPos.sqrLength() == 0.f)
             return;
 
-        updateCollisionTexture(prevToNewPos);
+        updateCollisionTexture(prevToNewWinPos);
 
         std::vector<unsigned char> pixels;
         data.pEdgeDetectionTexture->use();
@@ -765,12 +784,11 @@ public:
         {
             count += pixels[i] == 255;
         }
-        printf("%i\n", count);
     }
 
-    void CatpureScreenCollision(const vec2& prevWinPos, vec2& newWinPos)
+    void CatpureScreenCollision(const vec2 prevToNewWinPos)
     {
-        ProcessContinuousCollision(prevWinPos, newWinPos);
+        ProcessContinuousCollision(prevToNewWinPos);
     }
 
     void update(double deltaTime)
@@ -780,7 +798,7 @@ public:
         {
             // Acc = Sum of force / Mass
             // G is already an acceleration
-            vec2 acc = data.gravity * !data.isGrounded;
+            const vec2 acc = data.gravity * !data.isGrounded;
 
             // V = Acc * Time
             data.velocity += acc * deltaTime;
@@ -789,18 +807,18 @@ public:
             int width_mm, height_mm;
             glfwGetMonitorPhysicalSize(data.monitors[0], &width_mm, &height_mm);
 
-            vec2 pixelPerMeter{(float)data.videoMode->width / (width_mm * 0.001f),
-                               (float)data.videoMode->height / (height_mm * 0.001f)};
+            const vec2 pixelPerMeter{(float)data.videoMode->width / (width_mm * 0.001f),
+                                     (float)data.videoMode->height / (height_mm * 0.001f)};
 
-            vec2 prevWinPos = data.windowPos;
+            const vec2 prevWinPos = data.windowPos;
             // Pos = PrevPos + V * Time
-            vec2 newWinPos = data.windowPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) *
-                                               pixelPerMeter * deltaTime);
-
-            if (((newWinPos - prevWinPos).sqrLength() <= data.continusCollisionMaxSqrVelocity && !data.isGrab) ||
+            const vec2 newWinPos = data.windowPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) *
+                                                     pixelPerMeter * deltaTime);
+            const vec2 prevToNewWinPos = newWinPos - prevWinPos;
+            if ((prevToNewWinPos.sqrLength() <= data.continusCollisionMaxSqrVelocity && !data.isGrab) ||
                 data.debugEdgeDetection)
             {
-                CatpureScreenCollision(prevWinPos, newWinPos);
+                CatpureScreenCollision(prevToNewWinPos);
             }
 
             data.windowPos = newWinPos;
@@ -808,8 +826,33 @@ public:
             // Apply monitor collision
             computeMonitorCollisions();
         }
+        else
+        {
+            data.windowPos += vec2{data.deltaCursorPosX, data.deltaCursorPosY};
+            data.deltaCursorPosX = 0;
+            data.deltaCursorPosY = 0;
+        }
 
         glfwSetWindowPos(data.window, data.windowPos.x, data.windowPos.y);
+    }
+};
+
+struct TimerTask
+{
+    std::function<void()> task        = nullptr;
+    double                localTimer  = 0.; // if current time egal 1s and local timer egal 0.5 global time egal 1.5
+    double                globalTimer = 0.;
+    bool                  isLooping   = false;
+
+    TimerTask(const std::function<void()>& task = nullptr, double localTimer = .0, double globalTimer = .0,
+              bool isLooping = false)
+        : task{task}, localTimer{localTimer}, globalTimer{globalTimer}, isLooping{isLooping}
+    {
+    }
+
+    bool operator>(const TimerTask& other) const noexcept
+    {
+        return globalTimer > other.globalTimer;
     }
 };
 
@@ -824,9 +867,23 @@ protected:
     double    m_fixedDeltaTime = 1. / 60.;
     GameData& datas;
 
+    std::priority_queue<TimerTask, std::vector<TimerTask>, std::greater<TimerTask>> m_timerQueue;
+
 public:
     TimeManager(GameData& data) : m_fixedDeltaTime{1. / data.FPS}, datas{data}
     {
+    }
+
+    // improve first frame accurancy
+    void start()
+    {
+        m_time     = glfwGetTime();
+        m_tempTime = m_time;
+    }
+
+    inline void emplaceTimer(std::function<void()> functionToExecute, double delay, bool isLooping = false) noexcept
+    {
+        m_timerQueue.emplace(functionToExecute, delay, delay + datas.timeAcc, isLooping);
     }
 
     void update(std::function<void(double deltaTime)> unlimitedUpdateFunction,
@@ -855,6 +912,18 @@ public:
         {
             limitedUpdateFunction(m_fixedDeltaTime);
             m_timeAccLoop -= m_fixedDeltaTime;
+        }
+
+        while (!m_timerQueue.empty() && m_timerQueue.top().globalTimer <= datas.timeAcc)
+        {
+            const TimerTask& timerTask = m_timerQueue.top();
+            timerTask.task();
+
+            if (timerTask.isLooping)
+            {
+                emplaceTimer(timerTask.task, timerTask.localTimer, timerTask.isLooping);
+            }
+            m_timerQueue.pop();
         }
     }
 };
@@ -1488,9 +1557,6 @@ public:
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
             processInput(datas.window);
 
-            physicSystem.update(deltaTime);
-            pet.update(deltaTime);
-
             // poll for and process events
             glfwPollEvents();
         }};
@@ -1512,7 +1578,16 @@ public:
 
             // swap front and back buffers
             glfwSwapBuffers(datas.window);
+            mainLoop.start(); // Do not include rendering latency in physic
         }};
+
+        mainLoop.emplaceTimer(
+            [&]() {
+                physicSystem.update(1 / 60.f);
+
+                pet.update(1 / 60.f);
+            },
+            1 / 60.f, true);
 
         const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
             // fullscreen
@@ -1537,6 +1612,7 @@ public:
 
             // swap front and back buffers
             glfwSwapBuffers(datas.window);
+            mainLoop.start(); // Do not include rendering latency in physic
         }};
 
         glEnable(GL_BLEND);
@@ -1544,6 +1620,7 @@ public:
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glActiveTexture(GL_TEXTURE0);
 
+        mainLoop.start();
         while (!glfwWindowShouldClose(datas.window))
         {
             mainLoop.update(datas.debugEdgeDetection ? unlimitedUpdateDebugCollision : unlimitedUpdate,
