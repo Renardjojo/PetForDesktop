@@ -443,6 +443,7 @@ struct GameData
     int scale = 0;
 
     // Physic
+    int  physicFrameRate = 60;
     vec2 velocity = {0.f, 0.f};
     // This value is not changed by the physic system. Usefull for movement. Friction is applied to this value
     vec2  continusVelocity                = {0.f, 0.f};
@@ -627,6 +628,7 @@ public:
         {
             section = "Physic";
 
+            data.physicFrameRate        = std::max(reader.GetInteger(section, "PhysicFrameRate", 60), 0l);
             data.bounciness = std::clamp(reader.GetReal(section, "Bounciness", 0.1), 0.0, 1.0);
             data.gravity =
                 vec2{(float)reader.GetReal(section, "GravityX", 0.0), (float)reader.GetReal(section, "GravityY", 9.81)};
@@ -1578,16 +1580,7 @@ public:
 
             // swap front and back buffers
             glfwSwapBuffers(datas.window);
-            mainLoop.start(); // Do not include rendering latency in physic
         }};
-
-        mainLoop.emplaceTimer(
-            [&]() {
-                physicSystem.update(1 / 60.f);
-
-                pet.update(1 / 60.f);
-            },
-            1 / 60.f, true);
 
         const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
             // fullscreen
@@ -1612,8 +1605,15 @@ public:
 
             // swap front and back buffers
             glfwSwapBuffers(datas.window);
-            mainLoop.start(); // Do not include rendering latency in physic
         }};
+
+        mainLoop.emplaceTimer(
+            [&]() {
+                physicSystem.update(1.f / datas.physicFrameRate);
+
+                pet.update(1.f / datas.physicFrameRate);
+            },
+            1 / 60.f, true);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
