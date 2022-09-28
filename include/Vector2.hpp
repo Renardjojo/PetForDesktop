@@ -198,6 +198,10 @@ union Vector2 {
         return {abs(x), abbs(y)};
     }
 
+    static constexpr Vector2 remap(const Vector2 value, const Vector2& from1, const Vector2& to1, const Vector2& from2, const Vector2& to2)
+    {
+        return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
+    }
 
     // Operator overloads
     constexpr Vector2& operator+=(const Vector2& v) noexcept

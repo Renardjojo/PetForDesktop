@@ -13,16 +13,16 @@ public:
     };
 
 protected:
-    HDC     hScreen;
-    HDC     hDC;
-    HBITMAP hBitmap;
-    HGDIOBJ old_obj;
-    HANDLE  hDIB;
+    HDC     hScreen = nullptr;
+    HDC     hDC     = nullptr;
+    HBITMAP hBitmap = nullptr;
+    HGDIOBJ old_obj = nullptr;
+    HANDLE  hDIB    = nullptr;
 
     Data data;
 
 public:
-    ScreenShoot(int x, int y, int w, int h)
+    ScreenShoot(int x, int y, int w, int h, bool saveIntoClipboard = false)
     {
         if (w * h == 0)
             return;
@@ -34,9 +34,19 @@ public:
         hDC     = CreateCompatibleDC(hScreen);
         hBitmap = CreateCompatibleBitmap(hScreen, w, h);
         old_obj = SelectObject(hDC, hBitmap);
+
         if (!BitBlt(hDC, 0, 0, w, h, hScreen, x, y, SRCCOPY))
         {
             puts("BitBlt has failed");
+        }
+
+        if (saveIntoClipboard)
+        {
+            // save bitmap to clipboard
+            OpenClipboard(NULL);
+            EmptyClipboard();
+            SetClipboardData(CF_BITMAP, hBitmap);
+            CloseClipboard();
         }
 
         BITMAP bitmap;
