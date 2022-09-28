@@ -186,6 +186,7 @@ private:
                 printf("ERROR::PROGRAM_LINKING_ERROR of type: %s\n%s\n "
                        "-------------------------------------------------------\n",
                        type, infoLog);
+                exit(-1);
             }
         }
     }
@@ -249,6 +250,7 @@ public:
         height          = pxlHeight;
         nbChannels      = channels;
         GLenum chanEnum = getChanelEnum();
+
         glTexImage2D(GL_TEXTURE_2D, 0, chanEnum, width, height, 0, chanEnum, GL_UNSIGNED_BYTE, 0);
     }
 
@@ -328,17 +330,20 @@ public:
         glDeleteFramebuffers(1, &ID);
     }
 
-    void bindTexture(const Texture& texture)
+    void bind()
     {
         glBindFramebuffer(GL_FRAMEBUFFER, ID);
+    }
 
+    void attachTexture(const Texture& texture)
+    {
         // Set "renderedTexture" as our colour attachement #0
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture.getID(), 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture.getID(), 0);
 
-        // if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        //{
-        //    puts("Framebuffer error");
-        //}
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        {
+            puts("Framebuffer error");
+        }
     }
 
     static void bindScreen()
@@ -415,15 +420,16 @@ struct GameData
     GLFWmonitor**      monitors     = nullptr;
     const GLFWvidmode* videoMode    = nullptr;
     int                monitorCount = 0, windowWidth = 0, windowHeight = 0, monitorX = 0, monitorY = 0;
-    vec2               windowPos = {0.f, 0.f};
-    vec2i              maxWinPos = {0, 0};
+    Vec2               windowPos = {0.f, 0.f};
+    Vec2i              maxWinPos = {0, 0};
 
     // Resources
     std::unique_ptr<Framebuffer> pFramebuffer = nullptr;
 
-    std::unique_ptr<Shader> pImageShader       = nullptr;
-    std::unique_ptr<Shader> pImageGreyScale    = nullptr;
-    std::unique_ptr<Shader> pSpriteSheetShader = nullptr;
+    std::unique_ptr<Shader> pImageShader         = nullptr;
+    std::unique_ptr<Shader> pGammaToLinearShader = nullptr;
+    std::unique_ptr<Shader> pImageGreyScale      = nullptr;
+    std::unique_ptr<Shader> pSpriteSheetShader   = nullptr;
     std::vector<Shader>     edgeDetectionShaders; // Sorted by pass
 
     std::unique_ptr<Texture> pCollisionTexture     = nullptr;
@@ -439,21 +445,24 @@ struct GameData
     int   leftButtonEvent = 0;
 
     // Settings
-    int FPS   = 0;
-    int scale = 0;
+    int FPS        = 0;
+    int scale      = 0;
+    int randomSeed = 0;
 
     // Physic
     int  physicFrameRate = 60;
-    vec2 velocity = {0.f, 0.f};
+    Vec2 velocity        = {0.f, 0.f};
     // This value is not changed by the physic system. Usefull for movement. Friction is applied to this value
-    vec2  continusVelocity                = {0.f, 0.f};
-    vec2  gravity                         = {0.f, 0.f};
-    vec2  gravityDir                      = {0.f, 0.f};
+    Vec2  continusVelocity                = {0.f, 0.f};
+    Vec2  gravity                         = {0.f, 0.f};
+    Vec2  gravityDir                      = {0.f, 0.f};
     float bounciness                      = 0.f;
     float friction                        = 0.f;
     float jumpVerticalThrust              = 0.f;
     float jumpHorizontalThrust            = 0.f;
     float continusCollisionMaxSqrVelocity = 0.f;
+    float collisionPixelRatioStopMovement = 0.f;
+    float isGroundedDetection             = 0.f;
     int   footBasasementWidth             = 1;
     int   footBasasementHeight            = 1;
     bool  isGrounded                      = false;
@@ -498,7 +507,7 @@ void createTextureFromScreenShoot(unsigned int& ID)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, data.width, data.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data.bits);
 }
 
-float GammaToLinearByte(char gammaValue)
+float gammaToLinearByte(char gammaValue)
 {
     return std::pow(gammaValue / 255.f, 2.2);
 }
@@ -535,7 +544,7 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
             datas.isGrounded      = false;
             break;
         case GLFW_RELEASE:
-            datas.velocity = vec2{datas.deltaCursorPosX / datas.FPS, datas.deltaCursorPosY / datas.FPS};
+            datas.velocity = Vec2{datas.deltaCursorPosX / datas.FPS, datas.deltaCursorPosY / datas.FPS};
             break;
         default:
             break;
@@ -554,14 +563,108 @@ void processInput(GLFWwindow* window)
         glfwSetWindowShouldClose(window, true);
 }
 
-void framebufferSizeCallback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
-
 int randNum(int min, int max)
 {
     return (rand() % (((max) + 1) - (min))) + (min);
+}
+
+void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                                     const GLchar* msg, const void* data)
+{
+    const char* _source;
+    const char* _type;
+    const char* _severity;
+
+    switch (source)
+    {
+    case GL_DEBUG_SOURCE_API:
+        _source = "API";
+        break;
+
+    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+        _source = "WINDOW SYSTEM";
+        break;
+
+    case GL_DEBUG_SOURCE_SHADER_COMPILER:
+        _source = "SHADER COMPILER";
+        break;
+
+    case GL_DEBUG_SOURCE_THIRD_PARTY:
+        _source = "THIRD PARTY";
+        break;
+
+    case GL_DEBUG_SOURCE_APPLICATION:
+        _source = "APPLICATION";
+        break;
+
+    case GL_DEBUG_SOURCE_OTHER:
+        _source = "UNKNOWN";
+        break;
+
+    default:
+        _source = "UNKNOWN";
+        break;
+    }
+
+    switch (type)
+    {
+    case GL_DEBUG_TYPE_ERROR:
+        _type = "ERROR";
+        break;
+
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        _type = "DEPRECATED BEHAVIOR";
+        break;
+
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        _type = "UDEFINED BEHAVIOR";
+        break;
+
+    case GL_DEBUG_TYPE_PORTABILITY:
+        _type = "PORTABILITY";
+        break;
+
+    case GL_DEBUG_TYPE_PERFORMANCE:
+        _type = "PERFORMANCE";
+        break;
+
+    case GL_DEBUG_TYPE_OTHER:
+        _type = "OTHER";
+        break;
+
+    case GL_DEBUG_TYPE_MARKER:
+        _type = "MARKER";
+        break;
+
+    default:
+        _type = "UNKNOWN";
+        break;
+    }
+
+    switch (severity)
+    {
+    case GL_DEBUG_SEVERITY_HIGH:
+        _severity = "HIGH";
+        break;
+
+    case GL_DEBUG_SEVERITY_MEDIUM:
+        _severity = "MEDIUM";
+        break;
+
+    case GL_DEBUG_SEVERITY_LOW:
+        _severity = "LOW";
+        break;
+
+    case GL_DEBUG_SEVERITY_NOTIFICATION:
+        _severity = "NOTIFICATION";
+        break;
+
+    default:
+        _severity = "UNKNOWN";
+        break;
+    }
+
+    printf("%d: %s of %s severity, raised from %s: %s\n", id, _type, _severity, _source, msg);
 }
 
 class SpriteSheet : public Texture
@@ -621,17 +724,18 @@ public:
         {
             section = "Game setting";
 
-            data.FPS   = std::max(reader.GetInteger(section, "FPS", 60), 1l);
-            data.scale = std::max(reader.GetInteger(section, "Scale", 1), 1l);
+            data.FPS        = std::max(reader.GetInteger(section, "FPS", 60), 1l);
+            data.scale      = std::max(reader.GetInteger(section, "Scale", 1), 1l);
+            data.randomSeed = reader.GetInteger(section, "RandomSeed", -1l);
         }
 
         {
             section = "Physic";
 
-            data.physicFrameRate        = std::max(reader.GetInteger(section, "PhysicFrameRate", 60), 0l);
-            data.bounciness = std::clamp(reader.GetReal(section, "Bounciness", 0.1), 0.0, 1.0);
+            data.physicFrameRate = std::max(reader.GetInteger(section, "PhysicFrameRate", 60), 0l);
+            data.bounciness      = std::clamp(reader.GetReal(section, "Bounciness", 0.1), 0.0, 1.0);
             data.gravity =
-                vec2{(float)reader.GetReal(section, "GravityX", 0.0), (float)reader.GetReal(section, "GravityY", 9.81)};
+                Vec2{(float)reader.GetReal(section, "GravityX", 0.0), (float)reader.GetReal(section, "GravityY", 9.81)};
             data.gravityDir           = data.gravity.normalized();
             data.friction             = std::clamp(reader.GetReal(section, "Friction", 0.5), 0.0, 1.0);
             data.jumpVerticalThrust   = std::max(reader.GetReal(section, "JumpVerticalThrust", 0.5), 0.0);
@@ -639,8 +743,11 @@ public:
             data.continusCollisionMaxSqrVelocity =
                 std::max(reader.GetReal(section, "ContinusCollisionMaxVelocity", 100.0), 0.0);
             data.continusCollisionMaxSqrVelocity *= data.continusCollisionMaxSqrVelocity;
-            data.footBasasementWidth  = std::max(reader.GetInteger(section, "FootBasasementWidth", 1), 1l);
-            data.footBasasementHeight = std::max(reader.GetInteger(section, "FootBasasementHeight", 1), 1l);
+            data.footBasasementWidth  = std::max(reader.GetInteger(section, "FootBasasementWidth", 2), 2l);
+            data.footBasasementHeight = std::max(reader.GetInteger(section, "FootBasasementHeight", 2), 2l);
+            data.collisionPixelRatioStopMovement =
+                std::clamp(reader.GetInteger(section, "CollisionPixelRatioStopMovement", 0.5), 0l, 1l);
+            data.isGroundedDetection = std::max(reader.GetReal(section, "IsGroundedDetection", 1.0), 0.0);
         }
 
         {
@@ -680,51 +787,50 @@ public:
         if (data.windowPos.x < 0.f)
         {
             data.windowPos.x = 0.f;
-            data.velocity    = data.velocity.reflect(vec2::right()) * data.bounciness;
+            data.velocity    = data.velocity.reflect(Vec2::right()) * data.bounciness;
         }
 
         if (data.windowPos.y < 0.f)
         {
             data.windowPos.y = 0.f;
-            data.velocity    = data.velocity.reflect(vec2::down()) * data.bounciness;
+            data.velocity    = data.velocity.reflect(Vec2::down()) * data.bounciness;
         }
 
         if (data.windowPos.x > data.maxWinPos.x)
         {
             data.windowPos.x = data.maxWinPos.x;
-            data.velocity    = data.velocity.reflect(vec2::left()) * data.bounciness;
+            data.velocity    = data.velocity.reflect(Vec2::left()) * data.bounciness;
         }
 
         if (data.windowPos.y > data.maxWinPos.y)
         {
             data.windowPos.y = data.maxWinPos.y;
-            data.velocity    = data.velocity.reflect(vec2::up()) * data.bounciness;
+            data.velocity    = data.velocity.reflect(Vec2::up()) * data.bounciness;
 
             // check if is grounded
-            data.isGrounded = std::abs(data.gravityDir.dot(data.velocity)) < 0.5;
+            data.isGrounded = std::abs(data.gravityDir.dot(data.velocity)) < data.isGroundedDetection;
             data.velocity *= !data.isGrounded; // reset velocity if is grounded
         }
     }
 
-    void updateCollisionTexture(const vec2 prevToNewWinPos)
+    void updateCollisionTexture(const Vec2 prevToNewWinPos)
     {
         int screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY;
-
         if (data.debugEdgeDetection)
         {
             screenShootPosX  = 0.f;
             screenShootPosY  = 0.f;
             screenShootSizeX = data.windowWidth;
-            screenShootSizeY = data.debugEdgeDetection;
+            screenShootSizeY = data.windowHeight;
         }
         else
         {
             const float xPadding = prevToNewWinPos.x < 0.f ? prevToNewWinPos.x : 0.f;
             const float yPadding = prevToNewWinPos.y < 0.f ? prevToNewWinPos.y : 0.f;
 
-            screenShootPosX  = data.windowPos.x + data.windowWidth / 2.f - xPadding - data.footBasasementWidth / 2.f;
-            screenShootPosY  = data.windowPos.y + data.windowHeight - yPadding;
-            screenShootSizeX = abs(prevToNewWinPos.x) + data.footBasasementWidth / 2.f;
+            screenShootPosX  = data.windowPos.x + data.windowWidth / 2.f + xPadding - data.footBasasementWidth / 2.f;
+            screenShootPosY  = data.windowPos.y + data.windowHeight + 1 + yPadding - data.footBasasementHeight / 2.f;
+            screenShootSizeX = abs(prevToNewWinPos.x) + data.footBasasementWidth;
             screenShootSizeY = abs(prevToNewWinPos.y) + data.footBasasementHeight;
         }
 
@@ -732,21 +838,27 @@ public:
         const ScreenShoot::Data& pxlData = screenshoot.get();
 
         data.pCollisionTexture     = std::make_unique<Texture>(pxlData.bits, pxlData.width, pxlData.height, 4);
-        data.pEdgeDetectionTexture = std::make_unique<Texture>(pxlData.width, pxlData.height, 1);
+        data.pEdgeDetectionTexture = std::make_unique<Texture>(pxlData.width, pxlData.height, 4);
+
+        glDisable(GL_BLEND);
+        glViewport(0, 0, pxlData.width, pxlData.height);
 
         if (data.edgeDetectionShaders.size() == 1)
         {
-            data.pFramebuffer->bindTexture(*data.pEdgeDetectionTexture);
+            data.pFramebuffer->bind();
+            data.pFramebuffer->attachTexture(*data.pEdgeDetectionTexture);
 
             data.edgeDetectionShaders[0].use();
             data.edgeDetectionShaders[0].setInt("uTexture", 0);
+            data.edgeDetectionShaders[0].setVec2("resolution", pxlData.width, pxlData.height);
             data.pCollisionTexture->use();
             data.pFullScreenQuad->use();
             data.pFullScreenQuad->draw();
         }
         else
         {
-            data.pFramebuffer->bindTexture(*data.pCollisionTexture);
+            data.pFramebuffer->bind();
+            data.pFramebuffer->attachTexture(*data.pCollisionTexture);
 
             data.edgeDetectionShaders[0].use();
             data.edgeDetectionShaders[0].setInt("uTexture", 0);
@@ -754,17 +866,19 @@ public:
             data.pFullScreenQuad->use();
             data.pFullScreenQuad->draw();
 
-            data.pFramebuffer->bindTexture(*data.pEdgeDetectionTexture);
+            data.pFramebuffer->bind();
+            data.pFramebuffer->attachTexture(*data.pEdgeDetectionTexture);
 
             data.edgeDetectionShaders[1].use();
             data.edgeDetectionShaders[1].setInt("uTexture", 0);
+            data.edgeDetectionShaders[1].setVec2("resolution", pxlData.width, pxlData.height);
             data.pCollisionTexture->use();
             data.pFullScreenQuad->use();
             data.pFullScreenQuad->draw();
         }
     }
 
-    void ProcessContinuousCollision(const vec2 prevToNewWinPos)
+    bool ProcessContinuousCollision(const Vec2 prevToNewWinPos, Vec2& newPos)
     {
         // Main idear is the we will take a screen shoot of the dimension of the velocity vector (depending on it's
         // magnitude)
@@ -773,24 +887,65 @@ public:
         // White will be the collision
 
         if (prevToNewWinPos.sqrLength() == 0.f)
-            return;
+            return false;
 
         updateCollisionTexture(prevToNewWinPos);
 
         std::vector<unsigned char> pixels;
         data.pEdgeDetectionTexture->use();
         data.pEdgeDetectionTexture->getPixels(pixels);
-        int step  = data.pEdgeDetectionTexture->getChannelCount();
-        int count = 0;
-        for (size_t i = 0; i < pixels.size(); i++)
+
+        int dataPerPixel = data.pEdgeDetectionTexture->getChannelCount();
+
+        bool iterationOnX = abs(prevToNewWinPos.x) > abs(prevToNewWinPos.y);
+        Vec2 prevToNewWinPosDir;
+
+        if (iterationOnX)
         {
-            count += pixels[i] == 255;
+            prevToNewWinPosDir = prevToNewWinPos / sqrtf(prevToNewWinPos.x * prevToNewWinPos.x);
         }
+        else
+        {
+            prevToNewWinPosDir = prevToNewWinPos / sqrtf(prevToNewWinPos.y * prevToNewWinPos.y);
+        }
+
+        int width  = data.pEdgeDetectionTexture->getWidth();
+        int height = data.pEdgeDetectionTexture->getHeight();
+
+        float row    = prevToNewWinPosDir.y < 0.f ? height - data.footBasasementHeight : 0.f;
+        float column = prevToNewWinPosDir.x < 0.f ? width - data.footBasasementWidth : 0.f;
+
+        int iterationCount = iterationOnX ? width - data.footBasasementWidth : height - data.footBasasementHeight;
+        for (int i = 0; i < iterationCount + 1; i++)
+        {
+            float count = 0;
+
+            for (int y = 0; y < data.footBasasementHeight; y++)
+            {
+                for (int x = 0; x < data.footBasasementWidth; x++)
+                {
+                    // flip Y and find index
+                    int rowFlipped = height - 1 - (int)row - y;
+                    int index      = (rowFlipped * width + (int)column + x) * dataPerPixel;
+                    count += pixels[index] == 255;
+                }
+            }
+            count /= data.footBasasementWidth * data.footBasasementHeight;
+
+            if (count > data.collisionPixelRatioStopMovement)
+            {
+                newPos = data.windowPos + Vec2(column, row);
+                return true;
+            }
+            row += prevToNewWinPosDir.y;
+            column += prevToNewWinPosDir.x;
+        }
+        return false;
     }
 
-    void CatpureScreenCollision(const vec2 prevToNewWinPos)
+    bool CatpureScreenCollision(const Vec2 prevToNewWinPos, Vec2& newPos)
     {
-        ProcessContinuousCollision(prevToNewWinPos);
+        return ProcessContinuousCollision(prevToNewWinPos, newPos);
     }
 
     void update(double deltaTime)
@@ -800,7 +955,7 @@ public:
         {
             // Acc = Sum of force / Mass
             // G is already an acceleration
-            const vec2 acc = data.gravity * !data.isGrounded;
+            const Vec2 acc = data.gravity * !data.isGrounded;
 
             // V = Acc * Time
             data.velocity += acc * deltaTime;
@@ -812,25 +967,42 @@ public:
             const vec2 pixelPerMeter{(float)data.videoMode->width / (width_mm * 0.001f),
                                      (float)data.videoMode->height / (height_mm * 0.001f)};
 
-            const vec2 prevWinPos = data.windowPos;
+            const Vec2 prevWinPos = data.windowPos;
             // Pos = PrevPos + V * Time
-            const vec2 newWinPos = data.windowPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) *
+            const Vec2 newWinPos = data.windowPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) *
                                                      pixelPerMeter * deltaTime);
-            const vec2 prevToNewWinPos = newWinPos - prevWinPos;
-            if ((prevToNewWinPos.sqrLength() <= data.continusCollisionMaxSqrVelocity && !data.isGrab) ||
+            const Vec2 prevToNewWinPos = newWinPos - prevWinPos;
+            if ((prevToNewWinPos.sqrLength() <= data.continusCollisionMaxSqrVelocity && !data.isGrab &&
+                 prevToNewWinPos.y > 0.f) ||
                 data.debugEdgeDetection)
             {
-                CatpureScreenCollision(prevToNewWinPos);
-            }
+                Vec2 newPos;
+                if (CatpureScreenCollision(prevToNewWinPos, newPos))
+                {
+                    Vec2 collisionPos = newPos;
+                    data.windowPos    = collisionPos;
+                    data.velocity     = data.velocity.reflect(Vec2::up()) * data.bounciness;
 
-            data.windowPos = newWinPos;
+                    // check if is grounded
+                    data.isGrounded = std::abs(data.gravityDir.dot(data.velocity)) < data.isGroundedDetection;
+                    data.velocity *= !data.isGrounded; // reset velocity if is grounded
+                }
+                else
+                {
+                    data.windowPos = newWinPos;
+                }
+            }
+            else
+            {
+                data.windowPos = newWinPos;
+            }
 
             // Apply monitor collision
             computeMonitorCollisions();
         }
         else
         {
-            data.windowPos += vec2{data.deltaCursorPosX, data.deltaCursorPosY};
+            data.windowPos += Vec2{data.deltaCursorPosX, data.deltaCursorPosY};
             data.deltaCursorPosX = 0;
             data.deltaCursorPosY = 0;
         }
@@ -1118,12 +1290,12 @@ public:
 
 class PetJumpNode : public AnimationNode
 {
-    vec2  baseDir = {0.f, 0.f};
+    Vec2  baseDir = {0.f, 0.f};
     float vThrust = 0.f;
     float hThrust = 0.f;
 
 public:
-    PetJumpNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, vec2 inBaseDir,
+    PetJumpNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, Vec2 inBaseDir,
                 float inVThrust, float inHThrust)
         : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, false), baseDir{inBaseDir}, vThrust{inVThrust},
           hThrust{inHThrust}
@@ -1165,11 +1337,11 @@ public:
 
 class PetWalkNode : public AnimationNode
 {
-    vec2  baseDir = {0.f, 0.f};
+    Vec2  baseDir = {0.f, 0.f};
     float thrust  = 0.f;
 
 public:
-    PetWalkNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, vec2 inRigghtDir,
+    PetWalkNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, Vec2 inRigghtDir,
                 float inThrust, bool inLoop = true)
         : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, inLoop), baseDir{inRigghtDir}, thrust{inThrust}
     {
@@ -1335,10 +1507,10 @@ public:
             std::make_shared<GrabNode>(spriteAnimator, spriteSheets[3], datas.animationFrameRate);
 
         std::shared_ptr<PetWalkNode> walkNode = std::make_shared<PetWalkNode>(
-            spriteAnimator, spriteSheets[2], datas.animationFrameRate, vec2::right(), datas.walkSpeed, true);
+            spriteAnimator, spriteSheets[2], datas.animationFrameRate, Vec2::right(), datas.walkSpeed, true);
 
         std::shared_ptr<PetJumpNode> jumpNode =
-            std::make_shared<PetJumpNode>(spriteAnimator, spriteSheets[4], datas.animationFrameRate, vec2::right(),
+            std::make_shared<PetJumpNode>(spriteAnimator, spriteSheets[4], datas.animationFrameRate, Vec2::right(),
                                           datas.jumpVerticalThrust, datas.jumpHorizontalThrust);
 
         std::shared_ptr<AnimationNode> inAirNode =
@@ -1460,7 +1632,9 @@ protected:
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef _DEBUG
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+#endif
 
 #ifdef __APPLE__
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -1504,6 +1678,8 @@ protected:
     {
         datas.pFramebuffer = std::make_unique<Framebuffer>();
 
+        datas.pGammaToLinearShader =
+            std::make_unique<Shader>("./resources/shader/image.vs", "./resources/shader/gammaToLinear.fs");
         // datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs",
         // "./resources/shader/gammaToLinear.fs");
         datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs",
@@ -1519,6 +1695,11 @@ protected:
             std::make_unique<Shader>("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs");
 
         datas.pFullScreenQuad = std::make_unique<ScreenSpaceQuad>();
+
+#ifdef _DEBUG
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        glDebugMessageCallback(GLDebugMessageCallback, NULL);
+#endif
     }
 
 public:
@@ -1532,7 +1713,7 @@ public:
         glfwGetMonitorPos(datas.monitors[0], &datas.monitorX, &datas.monitorY);
 
         datas.windowPos =
-            vec2{datas.monitorX + (datas.videoMode->width) / 2.f, datas.monitorY + (datas.videoMode->height) / 2.f};
+            Vec2{datas.monitorX + (datas.videoMode->width) / 2.f, datas.monitorY + (datas.videoMode->height) / 2.f};
 
         glfwSetWindowPos(datas.window, datas.windowPos.x, datas.windowPos.y);
 
@@ -1542,9 +1723,21 @@ public:
 
         glfwSetMouseButtonCallback(datas.window, mousButtonCallBack);
         glfwSetCursorPosCallback(datas.window, cursorPositionCallback);
-        glfwSetFramebufferSizeCallback(datas.window, framebufferSizeCallback);
 
-        srand(time(NULL));
+        srand(datas.randomSeed == -1 ? (unsigned)time(nullptr) : datas.randomSeed);
+    }
+
+    void initDrawContext()
+    {
+        Framebuffer::bindScreen();
+        glViewport(0, 0, datas.windowWidth, datas.windowHeight);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glActiveTexture(GL_TEXTURE0);
+
+        glClear(GL_COLOR_BUFFER_BIT);
     }
 
     ~Game()
@@ -1573,8 +1766,7 @@ public:
         }};
         const std::function<void(double)> limitedUpdate{[&](double deltaTime) {
             // render
-            datas.pFramebuffer->bindScreen();
-            glClear(GL_COLOR_BUFFER_BIT);
+            initDrawContext();
 
             pet.draw();
 
@@ -1591,8 +1783,7 @@ public:
             glfwSetWindowSize(datas.window, datas.windowWidth, datas.windowHeight);
 
             // render
-            Framebuffer::bindScreen();
-            glClear(GL_COLOR_BUFFER_BIT);
+            initDrawContext();
 
             if (datas.pImageGreyScale && datas.pEdgeDetectionTexture && datas.pFullScreenQuad)
             {
@@ -1614,11 +1805,6 @@ public:
                 pet.update(1.f / datas.physicFrameRate);
             },
             1 / 60.f, true);
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        glActiveTexture(GL_TEXTURE0);
 
         mainLoop.start();
         while (!glfwWindowShouldClose(datas.window))
