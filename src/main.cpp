@@ -782,6 +782,11 @@ public:
     {
     }
 
+    bool checkIsGrounded()
+    {
+        return std::abs(data.gravityDir.dot(data.velocity)) < data.isGroundedDetection;
+    }
+
     void computeMonitorCollisions()
     {
         if (data.windowPos.x < 0.f)
@@ -808,7 +813,7 @@ public:
             data.velocity    = data.velocity.reflect(Vec2::up()) * data.bounciness;
 
             // check if is grounded
-            data.isGrounded = std::abs(data.gravityDir.dot(data.velocity)) < data.isGroundedDetection;
+            data.isGrounded = checkIsGrounded();
             data.velocity *= !data.isGrounded; // reset velocity if is grounded
         }
     }
@@ -972,8 +977,7 @@ public:
             const Vec2 newWinPos = data.windowPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) *
                                                      pixelPerMeter * deltaTime);
             const Vec2 prevToNewWinPos = newWinPos - prevWinPos;
-            if ((prevToNewWinPos.sqrLength() <= data.continusCollisionMaxSqrVelocity && !data.isGrab &&
-                 prevToNewWinPos.y > 0.f) ||
+            if ((prevToNewWinPos.sqrLength() <= data.continusCollisionMaxSqrVelocity && prevToNewWinPos.y > 0.f) ||
                 data.debugEdgeDetection)
             {
                 Vec2 newPos;
@@ -984,7 +988,7 @@ public:
                     data.velocity     = data.velocity.reflect(Vec2::up()) * data.bounciness;
 
                     // check if is grounded
-                    data.isGrounded = std::abs(data.gravityDir.dot(data.velocity)) < data.isGroundedDetection;
+                    data.isGrounded = checkIsGrounded();
                     data.velocity *= !data.isGrounded; // reset velocity if is grounded
                 }
                 else
@@ -994,6 +998,14 @@ public:
             }
             else
             {
+                // Update is grounded
+                if (data.isGrounded)
+                {
+                    Vec2 newPos;
+                    Vec2 footBasement((float)data.footBasasementWidth, (float)data.footBasasementHeight);
+                    data.isGrounded   = CatpureScreenCollision(footBasement, newPos);
+                }
+
                 data.windowPos = newWinPos;
             }
 
@@ -1804,7 +1816,7 @@ public:
 
                 pet.update(1.f / datas.physicFrameRate);
             },
-            1 / 60.f, true);
+            1.f / datas.physicFrameRate, true);
 
         mainLoop.start();
         while (!glfwWindowShouldClose(datas.window))
