@@ -484,6 +484,7 @@ struct GameData
     bool showWindow                = false;
     bool debugEdgeDetection        = false;
     bool showFrameBufferBackground = false;
+    bool useFowardWindow           = true;
 };
 
 // Dont forgot to use glDeleteTextures(1, &ID); after usage
@@ -768,6 +769,7 @@ public:
             data.showWindow                = reader.GetBoolean(section, "ShowWindow", false);
             data.debugEdgeDetection        = reader.GetBoolean(section, "ShowEdgeDetection", false);
             data.showFrameBufferBackground = reader.GetBoolean(section, "ShowFrameBufferBackground", false);
+            data.useFowardWindow           = reader.GetBoolean(section, "UseFowardWindow", true);
         }
     }
 };
@@ -1003,7 +1005,7 @@ public:
                 {
                     Vec2 newPos;
                     Vec2 footBasement((float)data.footBasasementWidth, (float)data.footBasasementHeight);
-                    data.isGrounded   = CatpureScreenCollision(footBasement, newPos);
+                    data.isGrounded = CatpureScreenCollision(footBasement, newPos);
                 }
 
                 data.windowPos = newWinPos;
@@ -1252,9 +1254,9 @@ public:
 
             if (pNodeTransition->canTransition(blackBoard))
             {
-                assert(pNodeTransition->to != nullptr);
-
                 pCurrentNode->onExit(blackBoard);
+
+                assert(pNodeTransition->to != nullptr);
                 pCurrentNode = pNodeTransition->to;
                 pCurrentNode->onEnter(blackBoard);
                 break;
@@ -1425,6 +1427,49 @@ public:
     }
 };
 
+struct RandomDelayTransitionMultipleExit : public RandomDelayTransition
+{
+public:
+    struct NodeChanceToEnter
+    {
+        std::shared_ptr<StateMachine::Node> node;
+        unsigned int                        chanceToEnter;
+    };
+
+protected:
+    std::vector<NodeChanceToEnter> m_nodeChanceToEnterBuffer;
+    unsigned int                   m_total = 0;
+
+public:
+    RandomDelayTransitionMultipleExit(int inBaseDelay_ms, int inRandomMin_ms, int inRsandomMax_ms,
+                                      const std::vector<NodeChanceToEnter>& nodeChanceToEnterBuffer)
+        : RandomDelayTransition(inBaseDelay_ms, inRandomMin_ms, inRsandomMax_ms), m_nodeChanceToEnterBuffer{
+                                                                                      nodeChanceToEnterBuffer}
+    {
+        for (const NodeChanceToEnter& nodeChanceToEnter : m_nodeChanceToEnterBuffer)
+        {
+            m_total += nodeChanceToEnter.chanceToEnter;
+        }
+    }
+
+    void onExit(GameData& blackBoard) final
+    {
+        int score = randNum(1, m_total);
+
+        unsigned int accScore = 0;
+        for (const NodeChanceToEnter& nodeChanceToEnter : m_nodeChanceToEnterBuffer)
+        {
+            accScore += nodeChanceToEnter.chanceToEnter;
+
+            if (accScore >= score)
+            {
+                to = nodeChanceToEnter.node;
+                break;
+            }
+        }
+    }
+};
+
 struct StartLeftClicTransition : public StateMachine::Node::Transition
 {
 protected:
@@ -1531,7 +1576,6 @@ public:
         std::shared_ptr<AnimationNode> landingNode =
             std::make_shared<AnimationNode>(spriteAnimator, spriteSheets[6], datas.animationFrameRate, false);
 
-        // Create all transitions
         // Idle to grab
         {
             std::shared_ptr<StartLeftClicTransition> transition = std::make_shared<StartLeftClicTransition>();
@@ -1539,16 +1583,18 @@ public:
             idleNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
-        // Create all transitions
-        // Idle to walk
+        // Idle to [walk or jump]
         {
-            std::shared_ptr<RandomDelayTransition> transition = std::make_shared<RandomDelayTransition>(
-                datas.idleDuration, -datas.idleDurationInterval, datas.idleDurationInterval);
-            transition->to = walkNode;
+            std::vector<RandomDelayTransitionMultipleExit::NodeChanceToEnter> entries;
+            entries.emplace_back(RandomDelayTransitionMultipleExit::NodeChanceToEnter{walkNode, 1});
+            entries.emplace_back(RandomDelayTransitionMultipleExit::NodeChanceToEnter{jumpNode, 1});
+
+            std::shared_ptr<RandomDelayTransitionMultipleExit> transition =
+                std::make_shared<RandomDelayTransitionMultipleExit>(datas.idleDuration, -datas.idleDurationInterval,
+                                                                    datas.idleDurationInterval, entries);
             idleNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
-        // Create all transitions
         // walk to grab
         {
             std::shared_ptr<StartLeftClicTransition> transition = std::make_shared<StartLeftClicTransition>();
@@ -1556,7 +1602,6 @@ public:
             walkNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
-        // Create all transitions
         // walk to idle
         {
             std::shared_ptr<RandomDelayTransition> transition = std::make_shared<RandomDelayTransition>(
@@ -1565,16 +1610,6 @@ public:
             walkNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
-        // Create all transitions
-        // Idle to jump
-        {
-            std::shared_ptr<RandomDelayTransition> transition = std::make_shared<RandomDelayTransition>(
-                datas.idleDuration, -datas.idleDurationInterval, datas.idleDurationInterval);
-            transition->to = jumpNode;
-            idleNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
-        }
-
-        // Create all transitions
         // jump to grab
         {
             std::shared_ptr<StartLeftClicTransition> transition = std::make_shared<StartLeftClicTransition>();
@@ -1582,7 +1617,6 @@ public:
             jumpNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
-        // Create all transitions
         // jump to air
         {
             std::shared_ptr<AnimationEndTransition> transition = std::make_shared<AnimationEndTransition>();
@@ -1654,7 +1688,7 @@ protected:
 
         glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, !datas.showFrameBufferBackground);
         glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
-        glfwWindowHint(GLFW_FLOATING, !datas.debugEdgeDetection);
+        glfwWindowHint(GLFW_FLOATING, datas.useFowardWindow);
 
         datas.monitors     = glfwGetMonitors(&datas.monitorCount);
         datas.videoMode    = glfwGetVideoMode(datas.monitors[0]);
@@ -1826,6 +1860,23 @@ public:
         }
     }
 };
+
+// Enable usage of external GPU
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+    __declspec(dllexport) DWORD NvOptimusEnablement                = 1;
+    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+
+#ifdef __cplusplus
+}
+#endif
+
+// Disable console
+#ifndef _DEBUG
+#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+#endif
 
 int main(int argc, char** argv)
 {
