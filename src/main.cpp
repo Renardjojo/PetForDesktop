@@ -1391,6 +1391,14 @@ struct IsGroundedTransition : public StateMachine::Node::Transition
     };
 };
 
+struct IsNotGroundedTransition : public StateMachine::Node::Transition
+{
+    bool canTransition(GameData& blackBoard) final
+    {
+        return !blackBoard.isGrounded;
+    };
+};
+
 struct RandomDelayTransition : public StateMachine::Node::Transition
 {
 protected:
@@ -1595,6 +1603,13 @@ public:
             idleNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
+        // Idle to air
+        {
+            std::shared_ptr<IsNotGroundedTransition> transition = std::make_shared<IsNotGroundedTransition>();
+            transition->to                                      = inAirNode;
+            idleNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
+        }
+
         // walk to grab
         {
             std::shared_ptr<StartLeftClicTransition> transition = std::make_shared<StartLeftClicTransition>();
@@ -1607,6 +1622,13 @@ public:
             std::shared_ptr<RandomDelayTransition> transition = std::make_shared<RandomDelayTransition>(
                 datas.walkDuration, -datas.walkDurationInterval, datas.walkDurationInterval);
             transition->to = idleNode;
+            walkNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
+        }
+
+        // walk to air
+        {
+            std::shared_ptr<IsNotGroundedTransition> transition = std::make_shared<IsNotGroundedTransition>();
+            transition->to                                     = inAirNode;
             walkNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
