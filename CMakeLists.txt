@@ -11,6 +11,7 @@ set(DEPS_DIR "${CMAKE_SOURCE_DIR}/deps")
 set(INC_DIR "${CMAKE_SOURCE_DIR}/include")
 set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 set(MAIN_FILE "${SRC_DIR}/main.cpp")
+set(RESOURCE_LINK "${CMAKE_CURRENT_BINARY_DIR}/resources") 
 
 # GLFW
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -50,4 +51,12 @@ find_package(OpenGL REQUIRED)
 target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} glfw )
 
 ########### Install build deps ############
-file(COPY ${RESOURCE_DIR} DESTINATION ${CMAKE_BINARY_DIR})
+# Set a symbolic link so exe can find the /Data folder
+add_custom_command( 
+    TARGET ${PROJECT_NAME} 
+    POST_BUILD COMMAND ${CMAKE_COMMAND} 
+        -E create_symlink ${RESOURCE_DIR} ${RESOURCE_LINK} 
+    DEPENDS ${RESOURCE_LINK} 
+    COMMENT "symbolic link ${RESOURCE_DIR} => ${RESOURCE_LINK}" 
+)
+#file(COPY ${RESOURCE_DIR} DESTINATION ${CMAKE_BINARY_DIR})
