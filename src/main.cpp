@@ -361,15 +361,17 @@ protected:
     unsigned int EBO;
 
 public:
-    ScreenSpaceQuad()
+    ScreenSpaceQuad(float minPos = -1.f, float maxPos = 1.f)
     {
+        // TODO: Pos vec2 ?
         float vertices[] = {
             // positions        // texture coords
-            1.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top right
-            1.0f,  -1.0f, 0.0f, 1.0f, 0.0f, // bottom right
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom left
-            -1.0f, 1.0f,  0.0f, 0.0f, 1.0f  // top left
+            maxPos, maxPos, 0.0f, 1.0f, 1.0f, // top right
+            maxPos, minPos, 0.0f, 1.0f, 0.0f, // bottom right
+            minPos, minPos, 0.0f, 0.0f, 0.0f, // bottom left
+            minPos, maxPos, 0.0f, 0.0f, 1.0f  // top left
         };
+
         unsigned int indices[] = {
             0, 1, 3, // first triangle
             1, 2, 3  // second triangle
@@ -419,15 +421,21 @@ struct GameData
     GLFWwindow*        window       = nullptr;
     GLFWmonitor**      monitors     = nullptr;
     const GLFWvidmode* videoMode    = nullptr;
-    int                monitorCount = 0, windowWidth = 0, windowHeight = 0, monitorX = 0, monitorY = 0;
-    Vec2               windowPos = {0.f, 0.f};
-    Vec2i              maxWinPos = {0, 0};
+    int                monitorCount = 0, monitorX = 0, monitorY = 0;
+    Vec2               petPos  = {0.f, 0.f};
+    Vec2i              petSize = {0.f, 0.f};
+
+    Vec2i windowExt    = {0.f, 0.f};
+    Vec2i windowMinExt = {0.f, 0.f};
+
+    Vec2i windowSize  = {0.f, 0.f};
+    Vec2i windowPos   = {0.f, 0.f};
+    Vec2i petPosLimit = {0, 0};
 
     // Resources
     std::unique_ptr<Framebuffer> pFramebuffer = nullptr;
 
     std::unique_ptr<Shader> pImageShader         = nullptr;
-    std::unique_ptr<Shader> pGammaToLinearShader = nullptr;
     std::unique_ptr<Shader> pImageGreyScale      = nullptr;
     std::unique_ptr<Shader> pSpriteSheetShader   = nullptr;
     std::vector<Shader>     edgeDetectionShaders; // Sorted by pass
@@ -435,6 +443,7 @@ struct GameData
     std::unique_ptr<Texture> pCollisionTexture     = nullptr;
     std::unique_ptr<Texture> pEdgeDetectionTexture = nullptr;
 
+    std::unique_ptr<ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
     std::unique_ptr<ScreenSpaceQuad> pFullScreenQuad = nullptr;
 
     // Inputs
@@ -681,15 +690,23 @@ public:
 
     void useSection(GameData& data, Shader& shader, int idSection, bool hFlip = false)
     {
-        data.windowWidth  = height * data.scale;
-        data.windowHeight = height * data.scale;
-        data.maxWinPos    = {data.videoMode->width - data.windowWidth, data.videoMode->height - data.windowHeight};
-        glfwSetWindowSize(data.window, data.windowWidth, data.windowHeight);
+        data.petSize.x    = height * data.scale; // use height because texture is horizontal sprite sheet only 
+        data.petSize.y    = height * data.scale;
+        data.windowSize.x = data.petSize.x + data.windowExt.x + data.windowMinExt.x;
+        data.windowSize.y = data.petSize.y + data.windowExt.y + data.windowMinExt.y;
+        data.petPosLimit  = {data.videoMode->width - data.petSize.x, data.videoMode->height - data.petSize.y};
+        glfwSetWindowSize(data.window, data.windowSize.x, data.windowSize.y);
 
-        float hScale  = 1.f / tileCount;
-        float vScale  = 1.f; // This field can be used
-        float hOffSet = idSection / (float)tileCount;
-        float vOffset = 0.f; // This field can be used
+        float       hScale  = 1.f / tileCount;
+        const float vScale  = 1.f; // This field can be used
+        float       hOffSet = idSection / (float)tileCount;
+        const float vOffset = 0.f; // This field can be used
+
+        Vec2 clipSpacePos = Vec2::remap(static_cast<Vec2i>(data.petPos), data.windowPos, data.windowPos + data.windowSize, Vec2{0, 1}, Vec2{1, 0}); // [-1, 1]
+        Vec2 clipSpaceSize = Vec2::remap(data.petSize, Vec2{0, 0}, data.windowSize, Vec2{0, 0}, Vec2{1, 1}); // [0, 1]
+        
+        // In shader, based on bottom left instead of upper left
+        clipSpacePos.y -= clipSpaceSize.y;
 
         if (hFlip)
         {
@@ -699,6 +716,7 @@ public:
 
         shader.use();
         shader.setVec4("uScaleOffSet", hScale, vScale, hOffSet, vOffset);
+        shader.setVec4("uClipSpacePosSize", clipSpacePos.x, clipSpacePos.y, clipSpaceSize.x, clipSpaceSize.y);
         use();
     }
 
@@ -791,28 +809,28 @@ public:
 
     void computeMonitorCollisions()
     {
-        if (data.windowPos.x < 0.f)
+        if (data.petPos.x < 0.f)
         {
-            data.windowPos.x = 0.f;
-            data.velocity    = data.velocity.reflect(Vec2::right()) * data.bounciness;
+            data.petPos.x = 0.f;
+            data.velocity = data.velocity.reflect(Vec2::right()) * data.bounciness;
         }
 
-        if (data.windowPos.y < 0.f)
+        if (data.petPos.y < 0.f)
         {
-            data.windowPos.y = 0.f;
-            data.velocity    = data.velocity.reflect(Vec2::down()) * data.bounciness;
+            data.petPos.y = 0.f;
+            data.velocity = data.velocity.reflect(Vec2::down()) * data.bounciness;
         }
 
-        if (data.windowPos.x > data.maxWinPos.x)
+        if (data.petPos.x > data.petPosLimit.x)
         {
-            data.windowPos.x = data.maxWinPos.x;
-            data.velocity    = data.velocity.reflect(Vec2::left()) * data.bounciness;
+            data.petPos.x = data.petPosLimit.x;
+            data.velocity = data.velocity.reflect(Vec2::left()) * data.bounciness;
         }
 
-        if (data.windowPos.y > data.maxWinPos.y)
+        if (data.petPos.y > data.petPosLimit.y)
         {
-            data.windowPos.y = data.maxWinPos.y;
-            data.velocity    = data.velocity.reflect(Vec2::up()) * data.bounciness;
+            data.petPos.y = data.petPosLimit.y;
+            data.velocity = data.velocity.reflect(Vec2::up()) * data.bounciness;
 
             // check if is grounded
             data.isGrounded = checkIsGrounded();
@@ -827,21 +845,21 @@ public:
         {
             screenShootPosX  = 0.f;
             screenShootPosY  = 0.f;
-            screenShootSizeX = data.windowWidth;
-            screenShootSizeY = data.windowHeight;
+            screenShootSizeX = data.windowSize.x;
+            screenShootSizeY = data.windowSize.y;
         }
         else
         {
             const float xPadding = prevToNewWinPos.x < 0.f ? prevToNewWinPos.x : 0.f;
             const float yPadding = prevToNewWinPos.y < 0.f ? prevToNewWinPos.y : 0.f;
 
-            screenShootPosX  = data.windowPos.x + data.windowWidth / 2.f + xPadding - data.footBasasementWidth / 2.f;
-            screenShootPosY  = data.windowPos.y + data.windowHeight + 1 + yPadding - data.footBasasementHeight / 2.f;
+            screenShootPosX  = data.petPos.x + data.petSize.x / 2.f + xPadding - data.footBasasementWidth / 2.f;
+            screenShootPosY  = data.petPos.y + data.petSize.y + 1 + yPadding - data.footBasasementHeight / 2.f;
             screenShootSizeX = abs(prevToNewWinPos.x) + data.footBasasementWidth;
             screenShootSizeY = abs(prevToNewWinPos.y) + data.footBasasementHeight;
         }
 
-        ScreenShoot              screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
+        ScreenShoot              screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY, true);
         const ScreenShoot::Data& pxlData = screenshoot.get();
 
         data.pCollisionTexture     = std::make_unique<Texture>(pxlData.bits, pxlData.width, pxlData.height, 4);
@@ -885,7 +903,7 @@ public:
         }
     }
 
-    bool ProcessContinuousCollision(const Vec2 prevToNewWinPos, Vec2& newPos)
+    bool processContinuousCollision(const Vec2 prevToNewWinPos, Vec2& newPos)
     {
         // Main idear is the we will take a screen shoot of the dimension of the velocity vector (depending on it's
         // magnitude)
@@ -941,7 +959,7 @@ public:
 
             if (count > data.collisionPixelRatioStopMovement)
             {
-                newPos = data.windowPos + Vec2(column, row);
+                newPos = data.petPos + Vec2(column, row);
                 return true;
             }
             row += prevToNewWinPosDir.y;
@@ -952,7 +970,7 @@ public:
 
     bool CatpureScreenCollision(const Vec2 prevToNewWinPos, Vec2& newPos)
     {
-        return ProcessContinuousCollision(prevToNewWinPos, newPos);
+        return processContinuousCollision(prevToNewWinPos, newPos);
     }
 
     void update(double deltaTime)
@@ -968,16 +986,17 @@ public:
             data.velocity += acc * deltaTime;
 
             // Evaluate pixel distance based on dpi and monitor size
+            // TODO: bake it
             int width_mm, height_mm;
             glfwGetMonitorPhysicalSize(data.monitors[0], &width_mm, &height_mm);
 
             const vec2 pixelPerMeter{(float)data.videoMode->width / (width_mm * 0.001f),
                                      (float)data.videoMode->height / (height_mm * 0.001f)};
 
-            const Vec2 prevWinPos = data.windowPos;
+            const Vec2 prevWinPos = data.petPos;
             // Pos = PrevPos + V * Time
-            const Vec2 newWinPos = data.windowPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) *
-                                                     pixelPerMeter * deltaTime);
+            const Vec2 newWinPos = data.petPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) *
+                                                  pixelPerMeter * deltaTime);
             const Vec2 prevToNewWinPos = newWinPos - prevWinPos;
             if ((prevToNewWinPos.sqrLength() <= data.continusCollisionMaxSqrVelocity && prevToNewWinPos.y > 0.f) ||
                 data.debugEdgeDetection)
@@ -986,7 +1005,7 @@ public:
                 if (CatpureScreenCollision(prevToNewWinPos, newPos))
                 {
                     Vec2 collisionPos = newPos;
-                    data.windowPos    = collisionPos;
+                    data.petPos       = collisionPos;
                     data.velocity     = data.velocity.reflect(Vec2::up()) * data.bounciness;
 
                     // check if is grounded
@@ -995,7 +1014,7 @@ public:
                 }
                 else
                 {
-                    data.windowPos = newWinPos;
+                    data.petPos = newWinPos;
                 }
             }
             else
@@ -1008,7 +1027,7 @@ public:
                     data.isGrounded = CatpureScreenCollision(footBasement, newPos);
                 }
 
-                data.windowPos = newWinPos;
+                data.petPos = newWinPos;
             }
 
             // Apply monitor collision
@@ -1016,11 +1035,13 @@ public:
         }
         else
         {
-            data.windowPos += Vec2{data.deltaCursorPosX, data.deltaCursorPosY};
+            data.petPos += Vec2{data.deltaCursorPosX, data.deltaCursorPosY};
             data.deltaCursorPosX = 0;
             data.deltaCursorPosY = 0;
         }
 
+        data.windowPos.x = data.petPos.x - data.windowMinExt.x;
+        data.windowPos.y = data.petPos.y - data.windowMinExt.y;
         glfwSetWindowPos(data.window, data.windowPos.x, data.windowPos.y);
     }
 };
@@ -1554,11 +1575,6 @@ public:
         spriteSheets.emplace_back("./resources/sprites/jumpAir.png");
         spriteSheets.emplace_back("./resources/sprites/jumpEnd.png");
 
-        // Assuming pet is alone on window
-        data.pSpriteSheetShader->use();
-        data.pSpriteSheetShader->setInt("uTexture", 0);
-        data.pFullScreenQuad->use();
-
         createAnimationGraph();
     }
 
@@ -1628,7 +1644,7 @@ public:
         // walk to air
         {
             std::shared_ptr<IsNotGroundedTransition> transition = std::make_shared<IsNotGroundedTransition>();
-            transition->to                                     = inAirNode;
+            transition->to                                      = inAirNode;
             walkNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         }
 
@@ -1679,7 +1695,8 @@ public:
     void draw()
     {
         spriteAnimator.draw(datas, *datas.pSpriteSheetShader, datas.side);
-        datas.pFullScreenQuad->draw();
+        datas.pUnitFullScreenQuad->use();
+        datas.pUnitFullScreenQuad->draw();
     }
 };
 
@@ -1712,13 +1729,12 @@ protected:
         glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
         glfwWindowHint(GLFW_FLOATING, datas.useFowardWindow);
 
-        datas.monitors     = glfwGetMonitors(&datas.monitorCount);
-        datas.videoMode    = glfwGetVideoMode(datas.monitors[0]);
-        datas.maxWinPos    = {datas.videoMode->width, datas.videoMode->height};
-        datas.windowWidth  = 1;
-        datas.windowHeight = 1;
+        datas.monitors    = glfwGetMonitors(&datas.monitorCount);
+        datas.videoMode   = glfwGetVideoMode(datas.monitors[0]);
+        datas.petPosLimit = {datas.videoMode->width, datas.videoMode->height};
+        datas.windowSize  = {1, 1};
 
-        datas.window = glfwCreateWindow(datas.windowWidth, datas.windowHeight, "PetDesktop", NULL, NULL);
+        datas.window = glfwCreateWindow(datas.windowSize.x, datas.windowSize.y, "PetDesktop", NULL, NULL);
         if (!datas.window)
         {
             glfwTerminate();
@@ -1745,11 +1761,6 @@ protected:
     void createResources()
     {
         datas.pFramebuffer = std::make_unique<Framebuffer>();
-
-        datas.pGammaToLinearShader =
-            std::make_unique<Shader>("./resources/shader/image.vs", "./resources/shader/gammaToLinear.fs");
-        // datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs",
-        // "./resources/shader/gammaToLinear.fs");
         datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs",
                                                 "./resources/shader/dFdxEdgeDetection.fs");
 
@@ -1762,7 +1773,8 @@ protected:
         datas.pSpriteSheetShader =
             std::make_unique<Shader>("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs");
 
-        datas.pFullScreenQuad = std::make_unique<ScreenSpaceQuad>();
+        datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
+        datas.pFullScreenQuad = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
 
 #ifdef _DEBUG
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -1782,7 +1794,7 @@ public:
 
         datas.windowPos =
             Vec2{datas.monitorX + (datas.videoMode->width) / 2.f, datas.monitorY + (datas.videoMode->height) / 2.f};
-
+        datas.petPos = datas.windowPos;
         glfwSetWindowPos(datas.window, datas.windowPos.x, datas.windowPos.y);
 
         glfwShowWindow(datas.window);
@@ -1798,7 +1810,7 @@ public:
     void initDrawContext()
     {
         Framebuffer::bindScreen();
-        glViewport(0, 0, datas.windowWidth, datas.windowHeight);
+        glViewport(0, 0, datas.windowSize.x, datas.windowSize.y);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1844,11 +1856,11 @@ public:
 
         const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
             // fullscreen
-            datas.windowWidth  = datas.videoMode->width / 1.f;
-            datas.windowHeight = datas.videoMode->height / 1.f;
-            datas.maxWinPos    = {datas.videoMode->width - datas.windowWidth,
-                               datas.videoMode->height - datas.windowHeight};
-            glfwSetWindowSize(datas.window, datas.windowWidth, datas.windowHeight);
+            datas.windowSize.x = datas.videoMode->width / 1.f;
+            datas.windowSize.y = datas.videoMode->height / 1.f;
+            datas.petPosLimit  = {datas.videoMode->width - datas.windowSize.x,
+                                 datas.videoMode->height - datas.windowSize.y};
+            glfwSetWindowSize(datas.window, datas.windowSize.x, datas.windowSize.y);
 
             // render
             initDrawContext();

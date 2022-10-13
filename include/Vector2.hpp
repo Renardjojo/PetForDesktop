@@ -338,6 +338,11 @@ union Vector2 {
         return {-x, -y};
     }
 
+    constexpr Vector2 operator-(const T k) const noexcept
+    {
+        return {x - k, y - k};
+    }
+
     constexpr Vector2 operator*(const T k) const noexcept
     {
         return {x * k, y * k};
@@ -348,6 +353,12 @@ union Vector2 {
         const float reciprocal{static_cast<T>(1) / k};
 
         return {x * reciprocal, y * reciprocal};
+    }
+
+    template <typename U>
+    constexpr operator Vector2<U>() noexcept
+    {
+        return Vector2<U>{static_cast<U>(x), static_cast<U>(y)};
     }
 };
 
