@@ -1,0 +1,225 @@
+name: Deploy Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  windows_msvc:
+    name: Windows | MSVC
+    runs-on: windows-2019
+
+    strategy:
+      fail-fast: false
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Generate Project
+        run: cmake -B Build/Release -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -A x64
+
+      - name: Build Project
+        run: cmake --build Build/Release --config Release --verbose
+
+      - name: Run Tests
+        run: cd Build/Release && ctest -C Release -V
+
+      - name: Setup Binaries Artifact
+        run: |
+          mkdir ProjectBinaries
+          mkdir ProjectBinaries/Windows/
+          mkdir ProjectBinaries/Windows/Res
+
+          mv Build/Release/Bin/Release/PetDesktop.exe ProjectBinaries/Windows/
+          mv ../resources ProjectBinaries/Windows/Res
+
+      - name: Upload Binaries Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ProjectBinaries
+          path: ./ProjectBinaries
+          retention-days: 7
+
+  linux_gcc_clang:
+    name: Linux | Clang
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [clang++-11]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Install suitable compiler
+        run: sudo apt-get install ${{ matrix.compiler }}
+
+      - name: Install ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v1.8
+        with:
+          cmake-version: '3.15.0'
+
+      - name: Substitute Compiler Name
+        uses: bluwy/substitute-string-action@v1
+        id: replace_compiler
+        with:
+          _input-text: ${{ matrix.compiler }}
+          clang++: 'clang'
+          g++: 'gcc'
+
+      - name: Setup Compiler
+        run: |
+          echo "CC=${{ steps.replace_compiler.outputs.result }}" >> $GITHUB_ENV
+          echo "CXX=${{ matrix.compiler }}" >> $GITHUB_ENV
+
+      - name: Generate Project
+        run: cmake -B Build/Release -DCMAKE_BUILD_TYPE=Release -G "Ninja"
+
+      - name: Build Project
+        run: cmake --build Build/Release --config Release --verbose
+
+      - name: Run Tests
+        run: |
+          cd Build/Release && ctest -C Release -V
+
+      - name: Install patchelf
+        run: sudo apt-get install patchelf
+
+      - name: Patch ELF RUNPATH
+        run: patchelf --set-rpath "\$ORIGIN" Build/Release/Bin/ProjectGenerator
+  
+      - name: Setup Binaries Artifact
+        run: |
+          mkdir ProjectBinaries
+          mkdir ProjectBinaries/Linux/
+          mkdir ProjectBinaries/Linux/Res
+
+          mv Build/Release/Bin/Release/PetDesktop.exe ProjectBinaries/Linux/
+          mv ../resources ProjectBinaries/Linux/Res
+
+          mv README.md ProjectBinaries/
+          mv LICENSE ProjectBinaries/
+
+      - name: Upload Binaries Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ProjectBinaries
+          path: ./ProjectBinaries
+          retention-days: 7
+
+  macos:
+    name: MacOS | Clang
+    runs-on: macos-latest
+
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Install ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v1.8
+        with:
+          cmake-version: '3.15.0'
+
+      - name: Generate Project
+        run: cmake -B Build/Release -DCMAKE_BUILD_TYPE=Release -G "Ninja"
+
+      - name: Build Project
+        run: cmake --build Build/Release --config Release --verbose
+
+      - name: Run Tests
+        run: cd Build/Release && ctest -C Release -V
+
+        # The 2nd command (install_name_tool -change) is probably wrong since the first argument (libclang.dylib) is not a valid path in the exe
+      - name: Patch RPATH
+        run: |
+          install_name_tool -add_rpath @executable_path Build/Release/Bin/ProjectGenerator
+          install_name_tool -change libclang.dylib @rpath/libclang.dylib Build/Release/Bin/ProjectGenerator
+
+      - name: Setup Binaries Artifact
+        run: |
+          mkdir ProjectBinaries
+          mkdir ProjectBinaries/Mac/
+          mkdir ProjectBinaries/Mac/Res
+
+          mv Build/Release/Bin/Release/PetDesktop.exe ProjectBinaries/Mac/
+          mv ../resources ProjectBinaries/Mac/Res
+
+      - name: Upload Binaries Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ProjectBinaries
+          path: ./ProjectBinaries
+          retention-days: 7
+
+  deploy_release_binaries:
+    name: Deploy Binaries
+    runs-on: ubuntu-latest
+    needs: [windows_msvc, linux_gcc_clang, macos]
+
+    steps:
+      - name: Install zip
+        run: sudo apt-get install zip
+
+      - name: Compute version
+        id: version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        
+      - name: Setup Env
+        id: env_vars
+        run: |
+          echo ::set-output name=LINUX_ARCHIVE_PATH::PetDesktop_${{steps.version.outputs.VERSION}}_linux.tar.gz
+          echo ::set-output name=WIN_ARCHIVE_PATH::PetDesktop_${{steps.version.outputs.VERSION}}_windows_x64.zip
+          echo ::set-output name=MAC_ARCHIVE_PATH::PetDesktop_${{steps.version.outputs.VERSION}}_macos.tar.gz
+
+      - name: Fetch Binaries Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ProjectBinaries
+          path: ./ProjectBinaries
+
+      - name: Build Linux Binaries Archive
+        run: |
+          cp -R ProjectBinaries/Include ProjectBinaries/Licenses ProjectBinaries/Linux
+          cp ProjectBinaries/* ProjectBinaries/Linux 2>/dev/null || :
+          tar -czvf ${{steps.env_vars.outputs.LINUX_ARCHIVE_PATH}} --directory ProjectBinaries/Linux .
+
+      - name: Build Windows Binaries Archive
+        run: |
+          cp -R ProjectBinaries/Include ProjectBinaries/Licenses ProjectBinaries/Windows
+          cp ProjectBinaries/* ProjectBinaries/Windows 2>/dev/null || :
+          (cd ProjectBinaries/Windows && zip -r - .) > ${{steps.env_vars.outputs.WIN_ARCHIVE_PATH}}
+
+      - name: Build MacOS Binaries Archive
+        run: |
+          cp -R ProjectBinaries/Include ProjectBinaries/Licenses ProjectBinaries/Mac
+          cp ProjectBinaries/* ProjectBinaries/Mac 2>/dev/null || :
+          tar -czvf ${{steps.env_vars.outputs.MAC_ARCHIVE_PATH}} --directory ProjectBinaries/Mac .
+
+      - name: Publish Release Draft
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          files: |
+            ${{steps.env_vars.outputs.LINUX_ARCHIVE_PATH}}
+            ${{steps.env_vars.outputs.WIN_ARCHIVE_PATH}}
+            ${{steps.env_vars.outputs.MAC_ARCHIVE_PATH}}
