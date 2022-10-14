@@ -425,8 +425,8 @@ struct GameData
     Vec2               petPos  = {0.f, 0.f};
     Vec2i              petSize = {0.f, 0.f};
 
-    Vec2i windowExt    = {0.f, 0.f};
-    Vec2i windowMinExt = {0.f, 0.f};
+    Vec2i windowExt    = {300.f, 300.f};
+    Vec2i windowMinExt = {300.f, 300.f};
 
     Vec2i windowSize  = {0.f, 0.f};
     Vec2i windowPos   = {0.f, 0.f};
@@ -435,16 +435,16 @@ struct GameData
     // Resources
     std::unique_ptr<Framebuffer> pFramebuffer = nullptr;
 
-    std::unique_ptr<Shader> pImageShader         = nullptr;
-    std::unique_ptr<Shader> pImageGreyScale      = nullptr;
-    std::unique_ptr<Shader> pSpriteSheetShader   = nullptr;
+    std::unique_ptr<Shader> pImageShader       = nullptr;
+    std::unique_ptr<Shader> pImageGreyScale    = nullptr;
+    std::unique_ptr<Shader> pSpriteSheetShader = nullptr;
     std::vector<Shader>     edgeDetectionShaders; // Sorted by pass
 
     std::unique_ptr<Texture> pCollisionTexture     = nullptr;
     std::unique_ptr<Texture> pEdgeDetectionTexture = nullptr;
 
     std::unique_ptr<ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
-    std::unique_ptr<ScreenSpaceQuad> pFullScreenQuad = nullptr;
+    std::unique_ptr<ScreenSpaceQuad> pFullScreenQuad     = nullptr;
 
     // Inputs
     float prevCursorPosX  = 0;
@@ -489,11 +489,14 @@ struct GameData
     // Time
     double timeAcc = 0.f;
 
-    // Debug
-    bool showWindow                = false;
-    bool debugEdgeDetection        = false;
+    // Window
+    bool showWindow = false;
     bool showFrameBufferBackground = false;
     bool useFowardWindow           = true;
+    bool useMousePassThoughWindow = true;
+
+    // Debug
+    bool debugEdgeDetection        = false;
 };
 
 // Dont forgot to use glDeleteTextures(1, &ID); after usage
@@ -565,12 +568,27 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
+void processMousePassTHoughWindow(GLFWwindow* window, GameData& datas)
+{
+    double xPos, yPos;
+    glfwGetCursorPos(window, &xPos, &yPos);
+    const Vec2       localWinPos             = datas.petPos - datas.windowPos;
+    const bool isCursorInsidePetWindow = xPos > localWinPos.x && yPos > localWinPos.y &&
+                                         xPos < localWinPos.x + (float)datas.petSize.x &&
+                                         yPos < localWinPos.y + (float)datas.petSize.y;
+
+    glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, !isCursorInsidePetWindow);
+}
+
 void processInput(GLFWwindow* window)
 {
     GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    if (datas.useMousePassThoughWindow)
+        processMousePassTHoughWindow(window, datas);
 }
 
 int randNum(int min, int max)
@@ -690,7 +708,7 @@ public:
 
     void useSection(GameData& data, Shader& shader, int idSection, bool hFlip = false)
     {
-        data.petSize.x    = height * data.scale; // use height because texture is horizontal sprite sheet only 
+        data.petSize.x    = height * data.scale; // use height because texture is horizontal sprite sheet only
         data.petSize.y    = height * data.scale;
         data.windowSize.x = data.petSize.x + data.windowExt.x + data.windowMinExt.x;
         data.windowSize.y = data.petSize.y + data.windowExt.y + data.windowMinExt.y;
@@ -702,9 +720,10 @@ public:
         float       hOffSet = idSection / (float)tileCount;
         const float vOffset = 0.f; // This field can be used
 
-        Vec2 clipSpacePos = Vec2::remap(static_cast<Vec2i>(data.petPos), data.windowPos, data.windowPos + data.windowSize, Vec2{0, 1}, Vec2{1, 0}); // [-1, 1]
+        Vec2 clipSpacePos  = Vec2::remap(static_cast<Vec2i>(data.petPos), data.windowPos,
+                                        data.windowPos + data.windowSize, Vec2{0, 1}, Vec2{1, 0});          // [-1, 1]
         Vec2 clipSpaceSize = Vec2::remap(data.petSize, Vec2{0, 0}, data.windowSize, Vec2{0, 0}, Vec2{1, 1}); // [0, 1]
-        
+
         // In shader, based on bottom left instead of upper left
         clipSpacePos.y -= clipSpaceSize.y;
 
@@ -782,12 +801,17 @@ public:
         }
 
         {
-            section = "Debug";
+            section = "Window";
 
             data.showWindow                = reader.GetBoolean(section, "ShowWindow", false);
-            data.debugEdgeDetection        = reader.GetBoolean(section, "ShowEdgeDetection", false);
             data.showFrameBufferBackground = reader.GetBoolean(section, "ShowFrameBufferBackground", false);
             data.useFowardWindow           = reader.GetBoolean(section, "UseFowardWindow", true);
+            data.useMousePassThoughWindow  = reader.GetBoolean(section, "UseMousePassThoughWindow", true);
+        }
+
+        {
+            section = "Debug";
+            data.debugEdgeDetection        = reader.GetBoolean(section, "ShowEdgeDetection", false);
         }
     }
 };
@@ -859,7 +883,7 @@ public:
             screenShootSizeY = abs(prevToNewWinPos.y) + data.footBasasementHeight;
         }
 
-        ScreenShoot              screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY, true);
+        ScreenShoot screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
         const ScreenShoot::Data& pxlData = screenshoot.get();
 
         data.pCollisionTexture     = std::make_unique<Texture>(pxlData.bits, pxlData.width, pxlData.height, 4);
@@ -1728,6 +1752,7 @@ protected:
         glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, !datas.showFrameBufferBackground);
         glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
         glfwWindowHint(GLFW_FLOATING, datas.useFowardWindow);
+        glfwWindowHint(GLFW_MOUSE_PASSTHROUGH, datas.useMousePassThoughWindow);
 
         datas.monitors    = glfwGetMonitors(&datas.monitorCount);
         datas.videoMode   = glfwGetVideoMode(datas.monitors[0]);
@@ -1774,7 +1799,7 @@ protected:
             std::make_unique<Shader>("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs");
 
         datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
-        datas.pFullScreenQuad = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
+        datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
 
 #ifdef _DEBUG
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
