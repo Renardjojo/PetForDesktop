@@ -2,7 +2,7 @@
 <h3 align="center">A fox companion like you've never dreamed</h3>
 <p align="center">
   <a href="package.json">
-    <img alt="Version" src="https://img.shields.io/github/package-json/v/Renardjojo/PetForDesktop">
+    <img alt="Version" src="https://img.shields.io/github/release/Renardjojo/PetForDesktop">
   </a>
   <a href="#LastActivity">
     <img alt="LastActivity" src="https://img.shields.io/github/last-commit/Renardjojo/PetForDesktop">
