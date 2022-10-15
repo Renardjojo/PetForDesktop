@@ -1759,7 +1759,7 @@ protected:
         datas.petPosLimit = {datas.videoMode->width, datas.videoMode->height};
         datas.windowSize  = {1, 1};
 
-        datas.window = glfwCreateWindow(datas.windowSize.x, datas.windowSize.y, "PetDesktop", NULL, NULL);
+        datas.window = glfwCreateWindow(datas.windowSize.x, datas.windowSize.y, "PetForDesktop", NULL, NULL);
         if (!datas.window)
         {
             glfwTerminate();
