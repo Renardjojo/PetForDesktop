@@ -1,7 +1,26 @@
-# PetForDesktop
+<h1 align="center" style="border-bottom: none;">Pet for desktop 🦊</h1>
+<h3 align="center">A fox companion like you've never dreamed</h3>
+<p align="center">
+  <a href="https://github.com/semantic-release/semantic-release/actions?query=workflow%3ATest+branch%3Amaster">
+    <img alt="Build states" src="https://github.com/semantic-release/semantic-release/workflows/Test/badge.svg">
+  </a>
+  <a href="LICENSE">
+    <img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg">
+  </a>
+  <a href="#LastActivity">
+    <img alt="LastActivity" src="https://img.shields.io/github/last-commit/OpenSourceUnityPackage/PackageTemplate">
+  </a>
+</p>
+<p align="center">
+  <a href="package.json">
+    <img alt="Version" src="https://img.shields.io/github/package-json/v/OpenSourceUnityPackage/PackageTemplate">
+  </a>
+</p>
+
+![image](https://user-images.githubusercontent.com/55276408/195999573-1e5f854b-230b-4e17-9920-6493975ed145.png)
+ 
 Welcome to PetForDesktop land!  
 PetForDesktop allows you to integrate and interact with your pet and customize it whenever you want!  
-![image](https://user-images.githubusercontent.com/55276408/195999573-1e5f854b-230b-4e17-9920-6493975ed145.png)
 
 ## How to install?
 Just download the [lastest version](https://github.com/Renardjojo/PetDesktop//releases/latest) of this application and extract it.
