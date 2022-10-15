@@ -1,7 +1,7 @@
 <h1 align="center" style="border-bottom: none;">Pet for desktop 🦊</h1>
 <h3 align="center">A fox companion like you've never dreamed</h3>
 <p align="center">
-  <a href="package.json">
+  <a href="https://github.com/Renardjojo/PetDesktop//releases/latest">
     <img alt="Version" src="https://img.shields.io/github/release/Renardjojo/PetForDesktop">
   </a>
   <a href="#LastActivity">
