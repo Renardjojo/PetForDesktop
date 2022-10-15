@@ -1,19 +1,16 @@
 <h1 align="center" style="border-bottom: none;">Pet for desktop 🦊</h1>
 <h3 align="center">A fox companion like you've never dreamed</h3>
 <p align="center">
-  <a href="https://github.com/semantic-release/semantic-release/actions?query=workflow%3ATest+branch%3Amaster">
-    <img alt="Build states" src="https://github.com/semantic-release/semantic-release/workflows/Test/badge.svg">
-  </a>
-  <a href="LICENSE">
-    <img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg">
+  <a href="package.json">
+    <img alt="Version" src="https://img.shields.io/github/package-json/v/Renardjojo/PetForDesktop">
   </a>
   <a href="#LastActivity">
     <img alt="LastActivity" src="https://img.shields.io/github/last-commit/Renardjojo/PetForDesktop">
   </a>
 </p>
 <p align="center">
-  <a href="package.json">
-    <img alt="Version" src="https://img.shields.io/github/package-json/v/Renardjojo/PetForDesktop">
+  <a href="LICENSE">
+    <img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg">
   </a>
 </p>
 
