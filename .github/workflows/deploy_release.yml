@@ -6,6 +6,14 @@ on:
       - 'v*.*.*'
   workflow_dispatch:
 
+env:
+  PROJECT_NAME: ${{github.event.repository.name}}
+  BINARY_FOLDER: ProjectBinaries
+  WIN64_FOLDER: Windows
+  LINUX_FOLDER: Linux
+  MACOS_FOLDER: MaxOs
+  VERSION: ${GITHUB_REF/refs\/tags\//}
+
 jobs:
   windows_msvc:
     name: Windows | MSVC
@@ -31,18 +39,20 @@ jobs:
 
       - name: Setup Binaries Artifact
         run: |
-          mkdir ProjectBinaries
-          mkdir ProjectBinaries/Windows/
-          mkdir ProjectBinaries/Windows/Res
+          mkdir ${{env.BINARY_FOLDER}}
+          mkdir ${{env.BINARY_FOLDER}}/${{env.WIN64_FOLDER}}
+          mkdir ${{env.BINARY_FOLDER}}/${{env.WIN64_FOLDER}}/${{env.PROJECT_NAME}}
 
-          mv Build/Release/Bin/Release/PetDesktop.exe ProjectBinaries/Windows/
-          mv ../resources ProjectBinaries/Windows/Res
+          mv Build/Release/Release/${{env.PROJECT_NAME}}.exe ${{env.BINARY_FOLDER}}/${{env.WIN64_FOLDER}}/${{env.PROJECT_NAME}}
+          mv resources ${{env.BINARY_FOLDER}}/${{env.WIN64_FOLDER}}/${{env.PROJECT_NAME}}
+
+          mv README.md ${{env.BINARY_FOLDER}}/${{env.WIN64_FOLDER}}/${{env.PROJECT_NAME}}/
 
       - name: Upload Binaries Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ProjectBinaries
-          path: ./ProjectBinaries
+          name: ${{env.BINARY_FOLDER}}
+          path: ./${{env.BINARY_FOLDER}}
           retention-days: 7
 
   linux_gcc_clang:
@@ -93,30 +103,23 @@ jobs:
       - name: Run Tests
         run: |
           cd Build/Release && ctest -C Release -V
-
-      - name: Install patchelf
-        run: sudo apt-get install patchelf
-
-      - name: Patch ELF RUNPATH
-        run: patchelf --set-rpath "\$ORIGIN" Build/Release/Bin/ProjectGenerator
   
       - name: Setup Binaries Artifact
         run: |
-          mkdir ProjectBinaries
-          mkdir ProjectBinaries/Linux/
-          mkdir ProjectBinaries/Linux/Res
+          mkdir ${{env.BINARY_FOLDER}}
+          mkdir ${{env.BINARY_FOLDER}}/${{env.LINUX_FOLDER}}
+          mkdir ${{env.BINARY_FOLDER}}/${{env.LINUX_FOLDER}}/${{env.PROJECT_NAME}}
 
-          mv Build/Release/Bin/Release/PetDesktop.exe ProjectBinaries/Linux/
-          mv ../resources ProjectBinaries/Linux/Res
+          mv Build/Release/Release/$PROJECT_NAME ${{env.BINARY_FOLDER}}/${{env.LINUX_FOLDER}}/${{env.PROJECT_NAME}}
+          mv resources ${{env.BINARY_FOLDER}}/${{env.LINUX_FOLDER}}/${{env.PROJECT_NAME}}
 
-          mv README.md ProjectBinaries/
-          mv LICENSE ProjectBinaries/
+          mv README.md ${{env.BINARY_FOLDER}}/${{env.LINUX_FOLDER}}/${{env.PROJECT_NAME}}/
 
       - name: Upload Binaries Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ProjectBinaries
-          path: ./ProjectBinaries
+          name: ${{env.BINARY_FOLDER}}
+          path: ./${{env.BINARY_FOLDER}}
           retention-days: 7
 
   macos:
@@ -146,80 +149,70 @@ jobs:
       - name: Build Project
         run: cmake --build Build/Release --config Release --verbose
 
-      - name: Run Tests
-        run: cd Build/Release && ctest -C Release -V
-
-        # The 2nd command (install_name_tool -change) is probably wrong since the first argument (libclang.dylib) is not a valid path in the exe
-      - name: Patch RPATH
-        run: |
-          install_name_tool -add_rpath @executable_path Build/Release/Bin/ProjectGenerator
-          install_name_tool -change libclang.dylib @rpath/libclang.dylib Build/Release/Bin/ProjectGenerator
-
       - name: Setup Binaries Artifact
         run: |
-          mkdir ProjectBinaries
-          mkdir ProjectBinaries/Mac/
-          mkdir ProjectBinaries/Mac/Res
+          mkdir ${{env.BINARY_FOLDER}}
+          mkdir ${{env.BINARY_FOLDER}}/${{env.MACOS_FOLDER}}
+          mkdir ${{env.BINARY_FOLDER}}/${{env.MACOS_FOLDER}}/${{env.PROJECT_NAME}}
 
-          mv Build/Release/Bin/Release/PetDesktop.exe ProjectBinaries/Mac/
-          mv ../resources ProjectBinaries/Mac/Res
+          mv Build/Release/Release/$PROJECT_NAME ${{env.BINARY_FOLDER}}/${{env.MACOS_FOLDER}}/${{env.PROJECT_NAME}}
+          mv resources ${{env.BINARY_FOLDER}}/${{env.MACOS_FOLDER}}/${{env.PROJECT_NAME}}
+
+          mv README.md ${{env.BINARY_FOLDER}}/${{env.MACOS_FOLDER}}/${{env.PROJECT_NAME}}/
 
       - name: Upload Binaries Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ProjectBinaries
-          path: ./ProjectBinaries
+          name: ${{env.BINARY_FOLDER}}
+          path: ./${{env.BINARY_FOLDER}}
           retention-days: 7
 
   deploy_release_binaries:
     name: Deploy Binaries
     runs-on: ubuntu-latest
     needs: [windows_msvc, linux_gcc_clang, macos]
-
+    if: ${{ always() && contains(needs.*.result, 'success') }}
     steps:
       - name: Install zip
         run: sudo apt-get install zip
-
-      - name: Compute version
-        id: version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
         
-      - name: Setup Env
-        id: env_vars
-        run: |
-          echo ::set-output name=LINUX_ARCHIVE_PATH::PetDesktop_${{steps.version.outputs.VERSION}}_linux.tar.gz
-          echo ::set-output name=WIN_ARCHIVE_PATH::PetDesktop_${{steps.version.outputs.VERSION}}_windows_x64.zip
-          echo ::set-output name=MAC_ARCHIVE_PATH::PetDesktop_${{steps.version.outputs.VERSION}}_macos.tar.gz
-
       - name: Fetch Binaries Artifacts
         uses: actions/download-artifact@v2
         with:
-          name: ProjectBinaries
-          path: ./ProjectBinaries
+          name: ${{env.BINARY_FOLDER}}
+          path: ./${{env.BINARY_FOLDER}}
+
+      - name: Linux environment variable
+        if: needs.linux_gcc_clang.result == 'success'
+        run: echo "LINUX_ARCHIVE_PATH=$PROJECT_NAME_$VERSION_linux.tar.gz" >> $GITHUB_ENV
 
       - name: Build Linux Binaries Archive
+        if: needs.linux_gcc_clang.result == 'success'
         run: |
-          cp -R ProjectBinaries/Include ProjectBinaries/Licenses ProjectBinaries/Linux
-          cp ProjectBinaries/* ProjectBinaries/Linux 2>/dev/null || :
-          tar -czvf ${{steps.env_vars.outputs.LINUX_ARCHIVE_PATH}} --directory ProjectBinaries/Linux .
+          tar -czvf ${{env.LINUX_ARCHIVE_PATH}} --directory ${{env.BINARY_FOLDER}}/${{env.LINUX_FOLDER}}/${{env.PROJECT_NAME}} .
+
+      - name: Windows environment variable
+        if: needs.windows_msvc.result == 'success'
+        run: echo "WIN_ARCHIVE_PATH=${{env.PROJECT_NAME}}_${{env.VERSION}}_windows_x64.zip" >> $GITHUB_ENV
 
       - name: Build Windows Binaries Archive
+        if: needs.windows_msvc.result == 'success'
         run: |
-          cp -R ProjectBinaries/Include ProjectBinaries/Licenses ProjectBinaries/Windows
-          cp ProjectBinaries/* ProjectBinaries/Windows 2>/dev/null || :
-          (cd ProjectBinaries/Windows && zip -r - .) > ${{steps.env_vars.outputs.WIN_ARCHIVE_PATH}}
+          (cd ${{env.BINARY_FOLDER}}/${{env.WIN64_FOLDER}}/${{env.PROJECT_NAME}} && zip -r - .) > ${{env.WIN_ARCHIVE_PATH}}
+
+      - name: MacOS environment variable
+        if: needs.macos.result == 'success'
+        run: echo "MAC_ARCHIVE_PATH=$PROJECT_NAME_$VERSION_macos.tar.gz" >> $GITHUB_ENV
 
       - name: Build MacOS Binaries Archive
+        if: needs.macos.result == 'success'
         run: |
-          cp -R ProjectBinaries/Include ProjectBinaries/Licenses ProjectBinaries/Mac
-          cp ProjectBinaries/* ProjectBinaries/Mac 2>/dev/null || :
-          tar -czvf ${{steps.env_vars.outputs.MAC_ARCHIVE_PATH}} --directory ProjectBinaries/Mac .
+          tar -czvf ${{env.MAC_ARCHIVE_PATH}} --directory ${{env.BINARY_FOLDER}}/${{env.MACOS_FOLDER}}/${{env.PROJECT_NAME}} .
 
-      - name: Publish Release Draft
+      - name: Publish Release
         uses: softprops/action-gh-release@v1
         with:
-          draft: true
           files: |
-            ${{steps.env_vars.outputs.LINUX_ARCHIVE_PATH}}
-            ${{steps.env_vars.outputs.WIN_ARCHIVE_PATH}}
-            ${{steps.env_vars.outputs.MAC_ARCHIVE_PATH}}
+            ${{env.LINUX_ARCHIVE_PATH}}
+            ${{env.WIN_ARCHIVE_PATH}}
+            ${{env.MAC_ARCHIVE_PATH}}
