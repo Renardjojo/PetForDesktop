@@ -1,7 +1,7 @@
 # PetForDesktop
 Welcome to PetForDesktop land!  
 PetForDesktop allows you to integrate and interact with your pet and customize it whenever you want!  
-![image](https://user-images.githubusercontent.com/55276408/195993856-3f956343-284f-4c69-beff-712669168d77.png)
+![image](https://user-images.githubusercontent.com/55276408/195999573-1e5f854b-230b-4e17-9920-6493975ed145.png)
 
 ## How to install?
 Just download the [lastest version](https://github.com/Renardjojo/PetDesktop//releases/latest) of this application and extract it.
@@ -28,4 +28,5 @@ That means you can fork it and modify or contribute to it for anyone! The MTI li
 
 ## Disclamer:
 The concept of this application is inspired by another application called [Babafriend](https://hempuli.itch.io/baba-friend). This application is close source and does not allow me to customize the code base and features ... Now you can.  
+Fox's sprite sheet was shared by [elthen](https://elthen.itch.io/2d-pixel-art-fox-sprites) and modified to suit my needs.  
 PetForDesktop also takes small screenshots of your screen to process collision and edge detection. This application will **NEVER** save or send them! 
