@@ -8,12 +8,12 @@
     <img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg">
   </a>
   <a href="#LastActivity">
-    <img alt="LastActivity" src="https://img.shields.io/github/last-commit/OpenSourceUnityPackage/PackageTemplate">
+    <img alt="LastActivity" src="https://img.shields.io/github/last-commit/Renardjojo/PetForDesktop">
   </a>
 </p>
 <p align="center">
   <a href="package.json">
-    <img alt="Version" src="https://img.shields.io/github/package-json/v/OpenSourceUnityPackage/PackageTemplate">
+    <img alt="Version" src="https://img.shields.io/github/package-json/v/Renardjojo/PetForDesktop">
   </a>
 </p>
 
