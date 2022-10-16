@@ -1,5 +1,5 @@
 ---
-name: Gameplayt feature request
+name: Gameplay feature request
 about: Suggest a gameplay idea for this project
 title: ''
 labels: enhancement, gameplay
