@@ -12,11 +12,9 @@
 #include <vector>
 
 #ifdef __linux__
-// TODO
 #elif _WIN32
 #include "WindowUtility.h"
 #else
-// TODO
 #endif
 
 #include "INIReader.h"
@@ -24,6 +22,49 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+class Log
+{
+protected:
+    FILE* m_file;
+
+public:
+    Log(const char* output)
+    {
+        m_file = freopen(output, "w", stdout);
+        if (!m_file)
+        {
+            // failed to open the file stream
+            // Open error popup     
+        }
+    }
+
+    ~Log()
+    {
+        fclose(m_file);
+    }
+
+    static void log(const char* buffer)
+    {
+#if _DEBUG
+        // log into console
+        fputs(buffer, stderr);
+#endif
+        puts(buffer);
+    }
+
+    static void logf(char const* const format, ...)
+    {
+        va_list arglist;
+        va_start(arglist, format);
+#if _DEBUG
+        // log into console
+        vfprintf(stderr, format, arglist);
+#endif
+        vprintf(format, arglist);
+        va_end(arglist);
+    }
+};
 
 class FileReader
 {
@@ -40,7 +81,7 @@ public:
         err = fopen_s(&handler, filename, "rb");
         if (err != 0)
         {
-            printf("The file '%s' was not opened\n", filename);
+            Log::logf("The file '%s' was not opened\n", filename);
         }
 
         if (handler)
@@ -96,7 +137,7 @@ public:
     // ------------------------------------------------------------------------
     Shader(const char* vertexPath, const char* fragmentPath)
     {
-        printf("Parse files: %s %s\n", vertexPath, fragmentPath);
+        Log::logf("Parse files: %s %s\n", vertexPath, fragmentPath);
         FileReader  vertexCodeFile(vertexPath);
         FileReader  fragmentCodeFile(fragmentPath);
         const char* vShaderCode = vertexCodeFile.get();
@@ -126,7 +167,7 @@ public:
         // delete the shaders as they're linked into our program now and no longer necessary
         glDeleteShader(vertex);
         glDeleteShader(fragment);
-        puts("Shader compilationd done");
+        Log::log("Shader compilationd done");
     }
 
     void use()
@@ -172,7 +213,7 @@ private:
             if (!success)
             {
                 glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-                printf("ERROR::SHADER_COMPILATION_ERROR of type: %s\n%s\n "
+                Log::logf("ERROR::SHADER_COMPILATION_ERROR of type: %s\n%s\n "
                        "-------------------------------------------------------\n",
                        type, infoLog);
             }
@@ -183,7 +224,7 @@ private:
             if (!success)
             {
                 glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-                printf("ERROR::PROGRAM_LINKING_ERROR of type: %s\n%s\n "
+                Log::logf("ERROR::PROGRAM_LINKING_ERROR of type: %s\n%s\n "
                        "-------------------------------------------------------\n",
                        type, infoLog);
                 exit(-1);
@@ -219,7 +260,7 @@ public:
         }
         else
         {
-            puts("Failed to load texture");
+            Log::log("Failed to load texture");
         }
         stbi_image_free(data);
     }
@@ -342,7 +383,7 @@ public:
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
-            puts("Framebuffer error");
+            Log::log("Framebuffer error");
         }
     }
 
@@ -446,7 +487,7 @@ struct GameData
     std::unique_ptr<ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
     std::unique_ptr<ScreenSpaceQuad> pFullScreenQuad     = nullptr;
 
-    // Inputs
+    // InLog::log
     float prevCursorPosX  = 0;
     float prevCursorPosY  = 0;
     float deltaCursorPosX = 0;
@@ -692,7 +733,7 @@ void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLen
         break;
     }
 
-    printf("%d: %s of %s severity, raised from %s: %s\n", id, _type, _severity, _source, msg);
+    Log::logf("%d: %s of %s severity, raised from %s: %s\n", id, _type, _severity, _source, msg);
 }
 
 class SpriteSheet : public Texture
@@ -754,7 +795,7 @@ public:
 
         if (reader.ParseError() == -1)
         {
-            printf("Could not find setting file here: %s", path);
+            Log::logf("Could not find setting file here: %s", path);
             exit(-1);
         }
 
@@ -1727,6 +1768,7 @@ public:
 class Game
 {
 protected:
+    Log          log;
     GameData     datas;
     Setting      setting;
     TimeManager  mainLoop;
@@ -1778,7 +1820,7 @@ protected:
         // glad: load all OpenGL function pointers
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
-            puts("Failed to initialize GLAD");
+            Log::log("Failed to initialize GLAD");
             exit(-1);
         }
     }
@@ -1808,7 +1850,7 @@ protected:
     }
 
 public:
-    Game() : setting("./resources/setting/setting.ini", datas), mainLoop(datas), physicSystem(datas)
+    Game() : log("log.txt"), setting("./resources/setting/setting.ini", datas), mainLoop(datas), physicSystem(datas)
     {
         initWindow();
         initOpenGL();
