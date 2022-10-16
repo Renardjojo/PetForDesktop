@@ -50,6 +50,10 @@ target_link_libraries(${PROJECT_NAME} glfw)
 find_package(OpenGL REQUIRED)
 target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} glfw )
 
+# Boxer
+add_subdirectory(${DEPS_DIR}/Boxer)
+target_link_libraries(${PROJECT_NAME} Boxer)
+
 ########### Install build deps ############
 # Set a symbolic link so exe can find the /Data folder
 add_custom_command( 
