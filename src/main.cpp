@@ -71,7 +71,7 @@ public:
         if (!m_file)
             warning("Warning: Log file not created");
 
-        logf("PetForDesktop version #s", PROJECT_VERSION);
+        logf("PetForDesktop version %s\n", PROJECT_VERSION);
     }
 
     ~Log()

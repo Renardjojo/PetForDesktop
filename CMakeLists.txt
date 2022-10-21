@@ -58,11 +58,6 @@ target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} glfw )
 add_subdirectory(${DEPS_DIR}/Boxer)
 target_link_libraries(${PROJECT_NAME} Boxer)
 
-# infoware
-set(INFOWARE_USE_OPENGL ON)
-add_subdirectory(${DEPS_DIR}/infoware)
-target_link_libraries(${PROJECT_NAME} infoware)
-
 ########### Define ############
 target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
 
