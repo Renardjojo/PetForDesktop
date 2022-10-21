@@ -19,9 +19,45 @@
 
 #include "INIReader.h"
 #include "Vector2.hpp"
+#include "boxer/boxer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+void log(const char* buffer)
+{
+#if _DEBUG
+    // log into console
+    fputs(buffer, stderr);
+#endif
+    puts(buffer);
+}
+
+void logf(char const* const format, ...)
+{
+    va_list arglist;
+    va_start(arglist, format);
+#if _DEBUG
+    // log into console
+    vfprintf(stderr, format, arglist);
+#endif
+    vprintf(format, arglist);
+    va_end(arglist);
+}
+
+void errorAndExit(const char* msg)
+{
+    logf("Error: %s\n", msg);
+    boxer::Selection selection = boxer::show(msg, "PetForDesktop error", boxer::Style::Error, boxer::Buttons::OK);
+    exit(-1);
+}
+
+void warning(const char* msg)
+{
+    logf("Warning: %s\n", msg);
+    boxer::show(msg, "PetForDesktop warning", boxer::Style::Warning, boxer::Buttons::OK);
+    exit(-1);
+}
 
 class Log
 {
@@ -33,36 +69,14 @@ public:
     {
         m_file = freopen(output, "w", stdout);
         if (!m_file)
-        {
-            // failed to open the file stream
-            // Open error popup     
-        }
+            warning("Warning: Log file not created");
+
+        logf("PetForDesktop version #s", PROJECT_VERSION);
     }
 
     ~Log()
     {
         fclose(m_file);
-    }
-
-    static void log(const char* buffer)
-    {
-#if _DEBUG
-        // log into console
-        fputs(buffer, stderr);
-#endif
-        puts(buffer);
-    }
-
-    static void logf(char const* const format, ...)
-    {
-        va_list arglist;
-        va_start(arglist, format);
-#if _DEBUG
-        // log into console
-        vfprintf(stderr, format, arglist);
-#endif
-        vprintf(format, arglist);
-        va_end(arglist);
     }
 };
 
@@ -81,7 +95,7 @@ public:
         err = fopen_s(&handler, filename, "rb");
         if (err != 0)
         {
-            Log::logf("The file '%s' was not opened\n", filename);
+            logf("The file '%s' was not opened\n", filename);
         }
 
         if (handler)
@@ -137,7 +151,7 @@ public:
     // ------------------------------------------------------------------------
     Shader(const char* vertexPath, const char* fragmentPath)
     {
-        Log::logf("Parse files: %s %s\n", vertexPath, fragmentPath);
+        logf("Parse files: %s %s\n", vertexPath, fragmentPath);
         FileReader  vertexCodeFile(vertexPath);
         FileReader  fragmentCodeFile(fragmentPath);
         const char* vShaderCode = vertexCodeFile.get();
@@ -167,7 +181,7 @@ public:
         // delete the shaders as they're linked into our program now and no longer necessary
         glDeleteShader(vertex);
         glDeleteShader(fragment);
-        Log::log("Shader compilationd done");
+        log("Shader compilationd done");
     }
 
     void use()
@@ -202,7 +216,6 @@ public:
 
 private:
     // utility function for checking shader compilation/linking errors.
-    // ------------------------------------------------------------------------
     void checkCompileErrors(unsigned int shader, const char* type)
     {
         int  success;
@@ -213,9 +226,10 @@ private:
             if (!success)
             {
                 glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-                Log::logf("ERROR::SHADER_COMPILATION_ERROR of type: %s\n%s\n "
-                       "-------------------------------------------------------\n",
-                       type, infoLog);
+                logf("ERROR::SHADER_COMPILATION_ERROR of type: %s\n%s\n "
+                          "-------------------------------------------------------\n",
+                          type, infoLog);
+                errorAndExit("Shader error. Check log for more details");
             }
         }
         else
@@ -224,10 +238,10 @@ private:
             if (!success)
             {
                 glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-                Log::logf("ERROR::PROGRAM_LINKING_ERROR of type: %s\n%s\n "
-                       "-------------------------------------------------------\n",
-                       type, infoLog);
-                exit(-1);
+                logf("ERROR::PROGRAM_LINKING_ERROR of type: %s\n%s\n "
+                          "-------------------------------------------------------\n",
+                          type, infoLog);
+                errorAndExit("Shader link error. Check log for more details");
             }
         }
     }
@@ -260,7 +274,7 @@ public:
         }
         else
         {
-            Log::log("Failed to load texture");
+            log("Failed to load texture");
         }
         stbi_image_free(data);
     }
@@ -383,7 +397,7 @@ public:
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
-            Log::log("Framebuffer error");
+            log("Framebuffer error");
         }
     }
 
@@ -487,7 +501,7 @@ struct GameData
     std::unique_ptr<ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
     std::unique_ptr<ScreenSpaceQuad> pFullScreenQuad     = nullptr;
 
-    // InLog::log
+    // Inlog
     float prevCursorPosX  = 0;
     float prevCursorPosY  = 0;
     float deltaCursorPosX = 0;
@@ -531,13 +545,13 @@ struct GameData
     double timeAcc = 0.f;
 
     // Window
-    bool showWindow = false;
+    bool showWindow                = false;
     bool showFrameBufferBackground = false;
     bool useFowardWindow           = true;
-    bool useMousePassThoughWindow = true;
+    bool useMousePassThoughWindow  = true;
 
     // Debug
-    bool debugEdgeDetection        = false;
+    bool debugEdgeDetection = false;
 };
 
 // Dont forgot to use glDeleteTextures(1, &ID); after usage
@@ -613,7 +627,7 @@ void processMousePassTHoughWindow(GLFWwindow* window, GameData& datas)
 {
     double xPos, yPos;
     glfwGetCursorPos(window, &xPos, &yPos);
-    const Vec2       localWinPos             = datas.petPos - datas.windowPos;
+    const Vec2 localWinPos             = datas.petPos - datas.windowPos;
     const bool isCursorInsidePetWindow = xPos > localWinPos.x && yPos > localWinPos.y &&
                                          xPos < localWinPos.x + (float)datas.petSize.x &&
                                          yPos < localWinPos.y + (float)datas.petSize.y;
@@ -733,7 +747,7 @@ void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLen
         break;
     }
 
-    Log::logf("%d: %s of %s severity, raised from %s: %s\n", id, _type, _severity, _source, msg);
+    logf("%d: %s of %s severity, raised from %s: %s\n", id, _type, _severity, _source, msg);
 }
 
 class SpriteSheet : public Texture
@@ -795,8 +809,8 @@ public:
 
         if (reader.ParseError() == -1)
         {
-            Log::logf("Could not find setting file here: %s", path);
-            exit(-1);
+            logf("Could not find setting file here: %s", path);
+            errorAndExit("Setting file can't be open. Check log for more details");
         }
 
         std::string section;
@@ -851,8 +865,8 @@ public:
         }
 
         {
-            section = "Debug";
-            data.debugEdgeDetection        = reader.GetBoolean(section, "ShowEdgeDetection", false);
+            section                 = "Debug";
+            data.debugEdgeDetection = reader.GetBoolean(section, "ShowEdgeDetection", false);
         }
     }
 };
@@ -924,7 +938,7 @@ public:
             screenShootSizeY = abs(prevToNewWinPos.y) + data.footBasasementHeight;
         }
 
-        ScreenShoot screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
+        ScreenShoot              screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
         const ScreenShoot::Data& pxlData = screenshoot.get();
 
         data.pCollisionTexture     = std::make_unique<Texture>(pxlData.bits, pxlData.width, pxlData.height, 4);
@@ -1779,7 +1793,7 @@ protected:
     {
         // initialize the library
         if (!glfwInit())
-            exit(-1);
+            errorAndExit("glfw initialization error");
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
@@ -1805,7 +1819,7 @@ protected:
         if (!datas.window)
         {
             glfwTerminate();
-            exit(-1);
+            errorAndExit("Create Window error");
         }
 
         glfwMakeContextCurrent(datas.window);
@@ -1817,12 +1831,11 @@ protected:
 
     void initOpenGL()
     {
+        glGetString == nullptr;
+
         // glad: load all OpenGL function pointers
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-        {
-            Log::log("Failed to initialize GLAD");
-            exit(-1);
-        }
+            errorAndExit("Failed to initialize OpenGL (GLAD)");
     }
 
     void createResources()

@@ -3,4 +3,4 @@
 	url = https://github.com/glfw/glfw
 [submodule "deps/Boxer"]
 	path = deps/Boxer
-	url = https://github.com/aaronmjacobs/Boxer
+	url = https://github.com/aaronmjacobs/Boxer.git
