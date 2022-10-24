@@ -58,6 +58,10 @@ target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} glfw )
 add_subdirectory(${DEPS_DIR}/Boxer)
 target_link_libraries(${PROJECT_NAME} Boxer)
 
+# yaml-cpp
+add_subdirectory(${DEPS_DIR}/yaml-cpp)
+target_link_libraries(${PROJECT_NAME} yaml-cpp)
+
 ########### Define ############
 target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
 
