@@ -27,7 +27,7 @@ Just download the [lastest version](https://github.com/Renardjojo/PetDesktop//re
 - Basic physic: you can drag and drop your pet with gravity but also make it bounce on your screen.
 - Customize settings : to play with the debugging function, configure your own gravity, animation etc...
 - Replace the existing animation with your own horizontal sprite sheet.
-- Walk and jump
+- Walk and jump but also edit and create your own animation !
 - Modify the code and contribute! (it's open source and under MIT license!)
 - Support development: Developing an app takes a lot of time for free and love is not enough to live on.
 
