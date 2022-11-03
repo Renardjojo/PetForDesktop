@@ -1558,22 +1558,9 @@ public:
 
 struct StartLeftClicTransition : public StateMachine::Node::Transition
 {
-protected:
-    bool leftWasPressed = false;
-
-public:
     bool canTransition(GameData& blackBoard) final
     {
-        if (blackBoard.leftButtonEvent == GLFW_PRESS)
-        {
-            if (leftWasPressed)
-            {
-                leftWasPressed = false;
-                return true;
-            }
-            leftWasPressed = true;
-        }
-        return false;
+        return blackBoard.leftButtonEvent == GLFW_PRESS;
     };
 };
 
