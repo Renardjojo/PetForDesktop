@@ -8,6 +8,7 @@
 
 #include <cfloat>
 #include <cmath>
+#include "yaml-cpp/node/convert.h"
 
 template <typename T>
 union Vector2 {
@@ -198,7 +199,8 @@ union Vector2 {
         return {abs(x), abbs(y)};
     }
 
-    static constexpr Vector2 remap(const Vector2 value, const Vector2& from1, const Vector2& to1, const Vector2& from2, const Vector2& to2)
+    static constexpr Vector2 remap(const Vector2 value, const Vector2& from1, const Vector2& to1, const Vector2& from2,
+                                   const Vector2& to2)
     {
         return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
     }
@@ -361,6 +363,33 @@ union Vector2 {
         return Vector2<U>{static_cast<U>(x), static_cast<U>(y)};
     }
 };
+
+namespace YAML
+{
+template <typename T>
+struct convert<Vector2<T>>
+{
+    static Node encode(const Vector2<T>& rhs)
+    {
+        Node node;
+        node.push_back(rhs.x);
+        node.push_back(rhs.y);
+        return node;
+    }
+
+    static bool decode(const Node& node, Vector2<T>& rhs)
+    {
+        if (!node.IsSequence() || node.size() != 2)
+        {
+            return false;
+        }
+
+        rhs.x = node[0].as<double>();
+        rhs.y = node[1].as<double>();
+        return true;
+    }
+};
+} // namespace YAML
 
 using Vec2  = Vector2<float>;
 using vec2  = Vector2<float>;

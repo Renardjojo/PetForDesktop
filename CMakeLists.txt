@@ -19,7 +19,8 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 ########### Create project ############
-project(${PROJECT_NAME})    
+set(PROJECT_VERSION "1.0.0")
+project(${PROJECT_NAME} VERSION "${PROJECT_VERSION}")
 
 ########### Setup ############
 # Set env variable
@@ -35,20 +36,34 @@ ELSE()
 ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
 
 ########### Link ############
+file(GLOB_RECURSE project_source_files    LIST_DIRECTORIES false CONFIGURE_DEPENDS src/*.cpp src/*.c)
+file(GLOB_RECURSE project_headers  LIST_DIRECTORIES false CONFIGURE_DEPENDS include/*.hpp include/*.h)
+message(STATUS "${project_source_files}")
+message(STATUS "${project_headers}")
+
 # Set include directory
 include_directories("${INC_DIR}/")
 
 # add the executable
-add_executable(${PROJECT_NAME} ${SUB_SYS} ${MAIN_FILE})
-
-# Add sub projects.
-add_subdirectory(${SRC_DIR})
+add_executable(${PROJECT_NAME} ${SUB_SYS} ${project_headers} ${project_source_files})
+target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
 
 # GLFW
 add_subdirectory(${DEPS_DIR}/glfw)
 target_link_libraries(${PROJECT_NAME} glfw)
 find_package(OpenGL REQUIRED)
 target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} glfw )
+
+# Boxer
+add_subdirectory(${DEPS_DIR}/Boxer)
+target_link_libraries(${PROJECT_NAME} Boxer)
+
+# yaml-cpp
+add_subdirectory(${DEPS_DIR}/yaml-cpp)
+target_link_libraries(${PROJECT_NAME} yaml-cpp)
+
+########### Define ############
+target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
 
 ########### Install build deps ############
 # Set a symbolic link so exe can find the /Data folder

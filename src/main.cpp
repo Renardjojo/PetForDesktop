@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <map>
 #include <memory>
 #include <queue>
 #include <stdio.h>
@@ -19,9 +20,46 @@
 
 #include "INIReader.h"
 #include "Vector2.hpp"
+#include "boxer/boxer.h"
+#include "yaml-cpp/yaml.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+void log(const char* buffer)
+{
+#if _DEBUG
+    // log into console
+    fputs(buffer, stderr);
+#endif
+    puts(buffer);
+}
+
+void logf(char const* const format, ...)
+{
+    va_list arglist;
+    va_start(arglist, format);
+#if _DEBUG
+    // log into console
+    vfprintf(stderr, format, arglist);
+#endif
+    vprintf(format, arglist);
+    va_end(arglist);
+}
+
+void errorAndExit(const char* msg)
+{
+    logf("Error: %s\n", msg);
+    boxer::Selection selection = boxer::show(msg, "PetForDesktop error", boxer::Style::Error, boxer::Buttons::OK);
+    exit(-1);
+}
+
+void warning(const char* msg)
+{
+    logf("Warning: %s\n", msg);
+    boxer::show(msg, "PetForDesktop warning", boxer::Style::Warning, boxer::Buttons::OK);
+    exit(-1);
+}
 
 class Log
 {
@@ -33,36 +71,14 @@ public:
     {
         m_file = freopen(output, "w", stdout);
         if (!m_file)
-        {
-            // failed to open the file stream
-            // Open error popup     
-        }
+            warning("Warning: Log file not created");
+
+        logf("PetForDesktop version %s\n", PROJECT_VERSION);
     }
 
     ~Log()
     {
         fclose(m_file);
-    }
-
-    static void log(const char* buffer)
-    {
-#if _DEBUG
-        // log into console
-        fputs(buffer, stderr);
-#endif
-        puts(buffer);
-    }
-
-    static void logf(char const* const format, ...)
-    {
-        va_list arglist;
-        va_start(arglist, format);
-#if _DEBUG
-        // log into console
-        vfprintf(stderr, format, arglist);
-#endif
-        vprintf(format, arglist);
-        va_end(arglist);
     }
 };
 
@@ -81,7 +97,7 @@ public:
         err = fopen_s(&handler, filename, "rb");
         if (err != 0)
         {
-            Log::logf("The file '%s' was not opened\n", filename);
+            logf("The file '%s' was not opened\n", filename);
         }
 
         if (handler)
@@ -137,7 +153,7 @@ public:
     // ------------------------------------------------------------------------
     Shader(const char* vertexPath, const char* fragmentPath)
     {
-        Log::logf("Parse files: %s %s\n", vertexPath, fragmentPath);
+        logf("Parse files: %s %s\n", vertexPath, fragmentPath);
         FileReader  vertexCodeFile(vertexPath);
         FileReader  fragmentCodeFile(fragmentPath);
         const char* vShaderCode = vertexCodeFile.get();
@@ -167,7 +183,7 @@ public:
         // delete the shaders as they're linked into our program now and no longer necessary
         glDeleteShader(vertex);
         glDeleteShader(fragment);
-        Log::log("Shader compilationd done");
+        log("Shader compilationd done");
     }
 
     void use()
@@ -202,7 +218,6 @@ public:
 
 private:
     // utility function for checking shader compilation/linking errors.
-    // ------------------------------------------------------------------------
     void checkCompileErrors(unsigned int shader, const char* type)
     {
         int  success;
@@ -213,9 +228,10 @@ private:
             if (!success)
             {
                 glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-                Log::logf("ERROR::SHADER_COMPILATION_ERROR of type: %s\n%s\n "
-                       "-------------------------------------------------------\n",
-                       type, infoLog);
+                logf("ERROR::SHADER_COMPILATION_ERROR of type: %s\n%s\n "
+                     "-------------------------------------------------------\n",
+                     type, infoLog);
+                errorAndExit("Shader error. Check log for more details");
             }
         }
         else
@@ -224,10 +240,10 @@ private:
             if (!success)
             {
                 glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-                Log::logf("ERROR::PROGRAM_LINKING_ERROR of type: %s\n%s\n "
-                       "-------------------------------------------------------\n",
-                       type, infoLog);
-                exit(-1);
+                logf("ERROR::PROGRAM_LINKING_ERROR of type: %s\n%s\n "
+                     "-------------------------------------------------------\n",
+                     type, infoLog);
+                errorAndExit("Shader link error. Check log for more details");
             }
         }
     }
@@ -260,7 +276,7 @@ public:
         }
         else
         {
-            Log::log("Failed to load texture");
+            log("Failed to load texture");
         }
         stbi_image_free(data);
     }
@@ -383,7 +399,7 @@ public:
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
-            Log::log("Framebuffer error");
+            log("Framebuffer error");
         }
     }
 
@@ -487,7 +503,7 @@ struct GameData
     std::unique_ptr<ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
     std::unique_ptr<ScreenSpaceQuad> pFullScreenQuad     = nullptr;
 
-    // InLog::log
+    // Inlog
     float prevCursorPosX  = 0;
     float prevCursorPosY  = 0;
     float deltaCursorPosX = 0;
@@ -508,8 +524,6 @@ struct GameData
     Vec2  gravityDir                      = {0.f, 0.f};
     float bounciness                      = 0.f;
     float friction                        = 0.f;
-    float jumpVerticalThrust              = 0.f;
-    float jumpHorizontalThrust            = 0.f;
     float continusCollisionMaxSqrVelocity = 0.f;
     float collisionPixelRatioStopMovement = 0.f;
     float isGroundedDetection             = 0.f;
@@ -518,12 +532,6 @@ struct GameData
     bool  isGrounded                      = false;
 
     // Animation
-    int   animationFrameRate   = 10;
-    float walkSpeed            = 0.f;
-    int   walkDuration         = 1000;
-    int   walkDurationInterval = 500;
-    int   idleDuration         = 1000;
-    int   idleDurationInterval = 500;
     bool  side                 = true; // false left / true right
     bool  isGrab               = false;
 
@@ -531,13 +539,13 @@ struct GameData
     double timeAcc = 0.f;
 
     // Window
-    bool showWindow = false;
+    bool showWindow                = false;
     bool showFrameBufferBackground = false;
     bool useFowardWindow           = true;
-    bool useMousePassThoughWindow = true;
+    bool useMousePassThoughWindow  = true;
 
     // Debug
-    bool debugEdgeDetection        = false;
+    bool debugEdgeDetection = false;
 };
 
 // Dont forgot to use glDeleteTextures(1, &ID); after usage
@@ -613,7 +621,7 @@ void processMousePassTHoughWindow(GLFWwindow* window, GameData& datas)
 {
     double xPos, yPos;
     glfwGetCursorPos(window, &xPos, &yPos);
-    const Vec2       localWinPos             = datas.petPos - datas.windowPos;
+    const Vec2 localWinPos             = datas.petPos - datas.windowPos;
     const bool isCursorInsidePetWindow = xPos > localWinPos.x && yPos > localWinPos.y &&
                                          xPos < localWinPos.x + (float)datas.petSize.x &&
                                          yPos < localWinPos.y + (float)datas.petSize.y;
@@ -733,7 +741,7 @@ void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLen
         break;
     }
 
-    Log::logf("%d: %s of %s severity, raised from %s: %s\n", id, _type, _severity, _source, msg);
+    logf("%d: %s of %s severity, raised from %s: %s\n", id, _type, _severity, _source, msg);
 }
 
 class SpriteSheet : public Texture
@@ -795,8 +803,8 @@ public:
 
         if (reader.ParseError() == -1)
         {
-            Log::logf("Could not find setting file here: %s", path);
-            exit(-1);
+            logf("Could not find setting file here: %s", path);
+            errorAndExit("Setting file can't be open. Check log for more details");
         }
 
         std::string section;
@@ -817,8 +825,6 @@ public:
                 Vec2{(float)reader.GetReal(section, "GravityX", 0.0), (float)reader.GetReal(section, "GravityY", 9.81)};
             data.gravityDir           = data.gravity.normalized();
             data.friction             = std::clamp(reader.GetReal(section, "Friction", 0.5), 0.0, 1.0);
-            data.jumpVerticalThrust   = std::max(reader.GetReal(section, "JumpVerticalThrust", 0.5), 0.0);
-            data.jumpHorizontalThrust = std::max(reader.GetReal(section, "JumpHorizontalThrust", 0.5), 0.0);
             data.continusCollisionMaxSqrVelocity =
                 std::max(reader.GetReal(section, "ContinusCollisionMaxVelocity", 100.0), 0.0);
             data.continusCollisionMaxSqrVelocity *= data.continusCollisionMaxSqrVelocity;
@@ -827,18 +833,6 @@ public:
             data.collisionPixelRatioStopMovement =
                 std::clamp(reader.GetInteger(section, "CollisionPixelRatioStopMovement", 0.5), 0l, 1l);
             data.isGroundedDetection = std::max(reader.GetReal(section, "IsGroundedDetection", 1.0), 0.0);
-        }
-
-        {
-            section = "Animation";
-
-            data.animationFrameRate = std::max(reader.GetInteger(section, "AnimationFrameRate", 1), 1l);
-            data.walkSpeed          = std::max(reader.GetReal(section, "WalkSpeed", 1.0), 0.0);
-
-            data.walkDuration         = std::max(reader.GetInteger(section, "WalkDuration", 1000), 0l);
-            data.walkDurationInterval = reader.GetInteger(section, "WalkDurationInterval", 500);
-            data.idleDuration         = std::max(reader.GetInteger(section, "IdleDuration", 1000), 0l);
-            data.idleDurationInterval = reader.GetInteger(section, "IdleDurationInterval", 500);
         }
 
         {
@@ -851,8 +845,8 @@ public:
         }
 
         {
-            section = "Debug";
-            data.debugEdgeDetection        = reader.GetBoolean(section, "ShowEdgeDetection", false);
+            section                 = "Debug";
+            data.debugEdgeDetection = reader.GetBoolean(section, "ShowEdgeDetection", false);
         }
     }
 };
@@ -924,7 +918,7 @@ public:
             screenShootSizeY = abs(prevToNewWinPos.y) + data.footBasasementHeight;
         }
 
-        ScreenShoot screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
+        ScreenShoot              screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
         const ScreenShoot::Data& pxlData = screenshoot.get();
 
         data.pCollisionTexture     = std::make_unique<Texture>(pxlData.bits, pxlData.width, pxlData.height, 4);
@@ -1417,8 +1411,8 @@ public:
 class GrabNode : public AnimationNode
 {
 public:
-    GrabNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate)
-        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, true)
+    GrabNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, bool inLoop)
+        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, inLoop)
     {
     }
 
@@ -1492,12 +1486,11 @@ protected:
     float timer = 0.f;
 
     int baseDelay_ms = 0;
-    int randomMin_ms = 0;
-    int randomMax_ms = 0;
+    int interval_ms  = 0;
 
 public:
-    RandomDelayTransition(int inBaseDelay_ms, int inRandomMin_ms, int inRsandomMax_ms)
-        : baseDelay_ms{inBaseDelay_ms}, randomMin_ms{inRandomMin_ms}, randomMax_ms{inRsandomMax_ms}
+    RandomDelayTransition(int inBaseDelay_ms, int inInterval_ms)
+        : baseDelay_ms{inBaseDelay_ms}, interval_ms{inInterval_ms}
     {
     }
 
@@ -1511,7 +1504,7 @@ public:
     void onEnter(GameData& blackBoard) final
     {
         timer = 0;
-        delay = baseDelay_ms + randNum(randomMin_ms, randomMax_ms);
+        delay = baseDelay_ms + randNum(-interval_ms, interval_ms);
         delay *= 0.001; // to seconde
     }
 
@@ -1535,10 +1528,9 @@ protected:
     unsigned int                   m_total = 0;
 
 public:
-    RandomDelayTransitionMultipleExit(int inBaseDelay_ms, int inRandomMin_ms, int inRsandomMax_ms,
+    RandomDelayTransitionMultipleExit(int inBaseDelay_ms, int inInterval_ms,
                                       const std::vector<NodeChanceToEnter>& nodeChanceToEnterBuffer)
-        : RandomDelayTransition(inBaseDelay_ms, inRandomMin_ms, inRsandomMax_ms), m_nodeChanceToEnterBuffer{
-                                                                                      nodeChanceToEnterBuffer}
+        : RandomDelayTransition(inBaseDelay_ms, inInterval_ms), m_nodeChanceToEnterBuffer{nodeChanceToEnterBuffer}
     {
         for (const NodeChanceToEnter& nodeChanceToEnter : m_nodeChanceToEnterBuffer)
         {
@@ -1603,8 +1595,8 @@ protected:
         right
     };
 
-    std::vector<SpriteSheet> spriteSheets;
-    ESide                    side{ESide::left};
+    std::map<std::string, SpriteSheet> spriteSheets;
+    ESide                              side{ESide::left};
 
     GameData& datas;
 
@@ -1613,130 +1605,244 @@ protected:
     int            indexCurrentAnimSprite = 0;
     bool           loopCurrentAnim;
 
-    bool leftWasPressed = false;
+    bool        leftWasPressed = false;
+    std::string spritesPath    = "./resources/sprites/";
 
 public:
     Pet(GameData& data) : datas{data}, animator{data}
     {
-        spriteSheets.reserve(8);
-        spriteSheets.emplace_back("./resources/sprites/idle.png");
-        spriteSheets.emplace_back("./resources/sprites/idle2.png");
-        spriteSheets.emplace_back("./resources/sprites/walk.png");
-        spriteSheets.emplace_back("./resources/sprites/grab.png");
-        spriteSheets.emplace_back("./resources/sprites/startJump.png");
-        spriteSheets.emplace_back("./resources/sprites/jumpAir.png");
-        spriteSheets.emplace_back("./resources/sprites/jumpEnd.png");
-
-        createAnimationGraph();
+        parseAnimationGraph();
     }
 
-    void createAnimationGraph()
+    SpriteSheet& getOrAddSpriteSheet(const char* file)
     {
-        // Init all nodes
-        std::shared_ptr<AnimationNode> idleNode =
-            std::make_shared<AnimationNode>(spriteAnimator, spriteSheets[0], datas.animationFrameRate, true);
-
-        std::shared_ptr<GrabNode> grabNode =
-            std::make_shared<GrabNode>(spriteAnimator, spriteSheets[3], datas.animationFrameRate);
-
-        std::shared_ptr<PetWalkNode> walkNode = std::make_shared<PetWalkNode>(
-            spriteAnimator, spriteSheets[2], datas.animationFrameRate, Vec2::right(), datas.walkSpeed, true);
-
-        std::shared_ptr<PetJumpNode> jumpNode =
-            std::make_shared<PetJumpNode>(spriteAnimator, spriteSheets[4], datas.animationFrameRate, Vec2::right(),
-                                          datas.jumpVerticalThrust, datas.jumpHorizontalThrust);
-
-        std::shared_ptr<AnimationNode> inAirNode =
-            std::make_shared<AnimationNode>(spriteAnimator, spriteSheets[5], datas.animationFrameRate);
-
-        std::shared_ptr<AnimationNode> landingNode =
-            std::make_shared<AnimationNode>(spriteAnimator, spriteSheets[6], datas.animationFrameRate, false);
-
-        // Idle to grab
+        auto it = spriteSheets.find(file);
+        if (it != spriteSheets.end())
         {
-            std::shared_ptr<StartLeftClicTransition> transition = std::make_shared<StartLeftClicTransition>();
-            transition->to                                      = grabNode;
-            idleNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
+            return it->second;
+        }
+        else
+        {
+            return spriteSheets.emplace(file, (spritesPath + file).c_str()).first->second;
+        }
+    }
+
+    void parseAnimationGraph()
+    {
+        YAML::Node animGraph = YAML::LoadFile("./resources/setting/animation.yaml");
+
+        // Init nodes
+        std::map<std::string, std::shared_ptr<StateMachine::Node>> nodes;
+
+        YAML::Node nodesSection = animGraph["Nodes"];
+        if (!nodesSection)
+            errorAndExit("Cannot find \"Nodes\" in animation.yaml");
+
+        for (YAML::const_iterator it = nodesSection.begin(); it != nodesSection.end(); ++it)
+        {
+            std::string title = it->first.Scalar();
+            // TODO hash
+            if (title == "AnimationNode")
+            {
+                if (!AddBasicNode<AnimationNode>(it->second, nodes))
+                    continue;
+            }
+            else if (title == "GrabNode")
+            {
+                if (!AddBasicNode<GrabNode>(it->second, nodes))
+                    continue;
+            }
+            else if (title == "PetWalkNode")
+            {
+                if (!AddWalkNode(it->second, nodes))
+                    continue;
+            }
+            else if (title == "PetJumpNode")
+            {
+                if (!AddJumpNode(it->second, nodes))
+                    continue;
+            }
+            else
+            {
+                warning((std::string("Node with name ") + title + " isn't implemented and is skiped").c_str());
+            }
         }
 
-        // Idle to [walk or jump]
-        {
-            std::vector<RandomDelayTransitionMultipleExit::NodeChanceToEnter> entries;
-            entries.emplace_back(RandomDelayTransitionMultipleExit::NodeChanceToEnter{walkNode, 1});
-            entries.emplace_back(RandomDelayTransitionMultipleExit::NodeChanceToEnter{jumpNode, 1});
+        // Init transitions
+        YAML::Node transitionsSection = animGraph["Transitions"];
+        if (!transitionsSection)
+            errorAndExit("Cannot find \"Transitions\" in animation.yaml");
 
-            std::shared_ptr<RandomDelayTransitionMultipleExit> transition =
-                std::make_shared<RandomDelayTransitionMultipleExit>(datas.idleDuration, -datas.idleDurationInterval,
-                                                                    datas.idleDurationInterval, entries);
-            idleNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
+        for (YAML::const_iterator it = transitionsSection.begin(); it != transitionsSection.end(); ++it)
+        {
+            std::string title = it->first.Scalar();
+            // TODO hash
+            if (title == "StartLeftClicTransition")
+            {
+                if (!AddBasicTransition<StartLeftClicTransition>(it->second, nodes))
+                    continue;
+            }
+            else if (title == "RandomDelayTransitionMultipleExit")
+            {
+                if (!AddRandomDelayTransitionMultipleExit(it->second, nodes))
+                    continue;
+            }
+            else if (title == "IsNotGroundedTransition")
+            {
+                if (!AddBasicTransition<IsNotGroundedTransition>(it->second, nodes))
+                    continue;
+            }
+            else if (title == "RandomDelayTransition")
+            {
+                if (!AddRandomDelayTransition(it->second, nodes))
+                    continue;
+            }
+            else if (title == "AnimationEndTransition")
+            {
+                if (!AddBasicTransition<AnimationEndTransition>(it->second, nodes))
+                    continue;
+            }
+            else if (title == "EndLeftClicTransition")
+            {
+                if (!AddBasicTransition<EndLeftClicTransition>(it->second, nodes))
+                    continue;
+            }
+            else if (title == "IsGroundedTransition")
+            {
+                if (!AddBasicTransition<IsGroundedTransition>(it->second, nodes))
+                    continue;
+            }
+            else
+            {
+                warning((std::string("Transition with name ") + title + " isn't implemented and is skiped").c_str());
+            }
         }
 
-        // Idle to air
-        {
-            std::shared_ptr<IsNotGroundedTransition> transition = std::make_shared<IsNotGroundedTransition>();
-            transition->to                                      = inAirNode;
-            idleNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
-        }
-
-        // walk to grab
-        {
-            std::shared_ptr<StartLeftClicTransition> transition = std::make_shared<StartLeftClicTransition>();
-            transition->to                                      = grabNode;
-            walkNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
-        }
-
-        // walk to idle
-        {
-            std::shared_ptr<RandomDelayTransition> transition = std::make_shared<RandomDelayTransition>(
-                datas.walkDuration, -datas.walkDurationInterval, datas.walkDurationInterval);
-            transition->to = idleNode;
-            walkNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
-        }
-
-        // walk to air
-        {
-            std::shared_ptr<IsNotGroundedTransition> transition = std::make_shared<IsNotGroundedTransition>();
-            transition->to                                      = inAirNode;
-            walkNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
-        }
-
-        // jump to grab
-        {
-            std::shared_ptr<StartLeftClicTransition> transition = std::make_shared<StartLeftClicTransition>();
-            transition->to                                      = grabNode;
-            jumpNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
-        }
-
-        // jump to air
-        {
-            std::shared_ptr<AnimationEndTransition> transition = std::make_shared<AnimationEndTransition>();
-            transition->to                                     = inAirNode;
-            jumpNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
-        }
-
-        // Grab to air
-        {
-            std::shared_ptr<EndLeftClicTransition> transition = std::make_shared<EndLeftClicTransition>();
-            transition->to                                    = inAirNode;
-            grabNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
-        }
-
-        // Air to landing
-        {
-            std::shared_ptr<IsGroundedTransition> transition = std::make_shared<IsGroundedTransition>();
-            transition->to                                   = landingNode;
-            inAirNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
-        }
-
-        // landing to idle
-        {
-            std::shared_ptr<AnimationEndTransition> transition = std::make_shared<AnimationEndTransition>();
-            transition->to                                     = idleNode;
-            landingNode->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
-        }
+        // First node
+        YAML::Node firstNode = animGraph["FirstNode"];
+        if (!firstNode)
+            errorAndExit("Cannot find \"FirstNode\" in animation.yaml");
 
         // Start state machine
-        animator.init(std::static_pointer_cast<StateMachine::Node>(idleNode));
+        std::string firstNodeName = firstNode.as<std::string>();
+        animator.init(std::static_pointer_cast<StateMachine::Node>(nodes[firstNodeName]));
+    }
+
+    template <typename T>
+    bool AddBasicNode(YAML::Node node, std::map<std::string, std::shared_ptr<StateMachine::Node>>& nodes)
+    {
+        if (!node.IsMap() || node.size() != 4)
+        {
+            warning("YAML error: node invalid");
+            return false;
+        }
+        std::string        nodeName    = node["name"].as<std::string>();
+        SpriteSheet&       spriteSheet = getOrAddSpriteSheet(node["sprite"].as<std::string>().c_str());
+        std::shared_ptr<T> p_node =
+            std::make_shared<T>(spriteAnimator, spriteSheet, node["framerate"].as<int>(), node["loop"].as<bool>());
+        nodes.emplace(nodeName, std::static_pointer_cast<StateMachine::Node>(p_node));
+        return true;
+    }
+
+    bool AddWalkNode(YAML::Node node, std::map<std::string, std::shared_ptr<StateMachine::Node>>& nodes)
+    {
+        if (!node.IsMap() || node.size() != 6)
+        {
+            warning("YAML error: PetWalkNode invalid");
+            return false;
+        }
+        std::string                  nodeName    = node["name"].as<std::string>();
+        SpriteSheet&                 spriteSheet = getOrAddSpriteSheet(node["sprite"].as<std::string>().c_str());
+        std::shared_ptr<PetWalkNode> p_node      = std::make_shared<PetWalkNode>(
+            spriteAnimator, spriteSheet, node["framerate"].as<int>(), node["direction"].as<Vec2>(),
+            node["thrust"].as<float>(), node["loop"].as<bool>());
+        nodes.emplace(nodeName, std::static_pointer_cast<StateMachine::Node>(p_node));
+        return true;
+    }
+
+    bool AddJumpNode(YAML::Node node, std::map<std::string, std::shared_ptr<StateMachine::Node>>& nodes)
+    {
+        if (!node.IsMap() || node.size() != 6)
+        {
+            warning("YAML error: PetJumpNode invalid");
+            return false;
+        }
+        std::string                  nodeName    = node["name"].as<std::string>();
+        SpriteSheet&                 spriteSheet = getOrAddSpriteSheet(node["sprite"].as<std::string>().c_str());
+        std::shared_ptr<PetJumpNode> p_node      = std::make_shared<PetJumpNode>(
+            spriteAnimator, spriteSheet, node["framerate"].as<int>(), node["direction"].as<Vec2>(),
+            node["verticalThrust"].as<float>(), node["horizontalThrust"].as<float>());
+        nodes.emplace(nodeName, std::static_pointer_cast<StateMachine::Node>(p_node));
+        return true;
+    }
+
+    template <typename T>
+    bool AddBasicTransition(YAML::Node node, std::map<std::string, std::shared_ptr<StateMachine::Node>>& nodes)
+    {
+        if (!node.IsMap() || node.size() != 2)
+        {
+            warning("YAML error: transition invalid");
+            return false;
+        }
+        std::string nodeFromName = node["from"].as<std::string>();
+        std::string nodeToName   = node["to"].as<std::string>();
+
+        std::shared_ptr<T> transition = std::make_shared<T>();
+        transition->to                = nodes[nodeToName];
+        nodes[nodeFromName]->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
+        return true;
+    }
+
+    bool AddRandomDelayTransition(YAML::Node node, std::map<std::string, std::shared_ptr<StateMachine::Node>>& nodes)
+    {
+        if (!node.IsMap() || node.size() != 4)
+        {
+            warning("YAML error: transition invalid");
+            return false;
+        }
+        std::string nodeFromName = node["from"].as<std::string>();
+        std::string nodeToName   = node["to"].as<std::string>();
+        int         duration     = node["duration"].as<int>();
+        int         interval     = node["interval"].as<int>();
+
+        std::shared_ptr<RandomDelayTransition> transition = std::make_shared<RandomDelayTransition>(duration, interval);
+        transition->to                                    = nodes[nodeToName];
+        nodes[nodeFromName]->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
+        return true;
+    }
+
+    bool AddRandomDelayTransitionMultipleExit(YAML::Node                                                  node,
+                                              std::map<std::string, std::shared_ptr<StateMachine::Node>>& nodes)
+    {
+        if (!node.IsMap() || node.size() != 4)
+        {
+            warning("YAML error: transition invalid");
+            return false;
+        }
+        const std::string nodeFromName = node["from"].as<std::string>();
+        const int         duration     = node["duration"].as<int>();
+        const int         interval     = node["interval"].as<int>();
+
+        std::vector<RandomDelayTransitionMultipleExit::NodeChanceToEnter> entries;
+
+        YAML::Node toNodes = node["chanceToEnterEntries"];
+        if (!toNodes || toNodes.size() == 0)
+        {
+            warning("YAML error: missing entires");
+            return false;
+        }
+
+        for (YAML::const_iterator it = toNodes.begin(); it != toNodes.end(); ++it)
+        {
+            const std::string  nodeToName = it->second["to"].as<std::string>();
+            const unsigned int chance     = it->second["chance"].as<unsigned int>();
+            entries.emplace_back(RandomDelayTransitionMultipleExit::NodeChanceToEnter{nodes[nodeToName], chance});
+        }
+
+        std::shared_ptr<RandomDelayTransitionMultipleExit> transition =
+            std::make_shared<RandomDelayTransitionMultipleExit>(duration, interval, entries);
+        nodes[nodeFromName]->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
+        return true;
     }
 
     void update(double deltaTime)
@@ -1766,7 +1872,7 @@ protected:
     {
         // initialize the library
         if (!glfwInit())
-            exit(-1);
+            errorAndExit("glfw initialization error");
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
@@ -1792,7 +1898,7 @@ protected:
         if (!datas.window)
         {
             glfwTerminate();
-            exit(-1);
+            errorAndExit("Create Window error");
         }
 
         glfwMakeContextCurrent(datas.window);
@@ -1804,12 +1910,11 @@ protected:
 
     void initOpenGL()
     {
+        glGetString == nullptr;
+
         // glad: load all OpenGL function pointers
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-        {
-            Log::log("Failed to initialize GLAD");
-            exit(-1);
-        }
+            errorAndExit("Failed to initialize OpenGL (GLAD)");
     }
 
     void createResources()
@@ -1949,13 +2054,13 @@ public:
     }
 };
 
-// Enable usage of external GPU
+// Disable usage of external GPU
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-    __declspec(dllexport) DWORD NvOptimusEnablement                = 1;
-    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+    __declspec(dllexport) DWORD NvOptimusEnablement                = 0;
+    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 0;
 
 #ifdef __cplusplus
 }
