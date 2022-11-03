@@ -1418,7 +1418,7 @@ class GrabNode : public AnimationNode
 {
 public:
     GrabNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate)
-        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, false)
+        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, true)
     {
     }
 
@@ -1566,22 +1566,9 @@ public:
 
 struct StartLeftClicTransition : public StateMachine::Node::Transition
 {
-protected:
-    bool leftWasPressed = false;
-
-public:
     bool canTransition(GameData& blackBoard) final
     {
-        if (blackBoard.leftButtonEvent == GLFW_PRESS)
-        {
-            if (leftWasPressed)
-            {
-                leftWasPressed = false;
-                return true;
-            }
-            leftWasPressed = true;
-        }
-        return false;
+        return blackBoard.leftButtonEvent == GLFW_PRESS;
     };
 };
 
@@ -1635,7 +1622,7 @@ public:
         spriteSheets.emplace_back("./resources/sprites/idle.png");
         spriteSheets.emplace_back("./resources/sprites/idle2.png");
         spriteSheets.emplace_back("./resources/sprites/walk.png");
-        spriteSheets.emplace_back("./resources/sprites/drag2.png");
+        spriteSheets.emplace_back("./resources/sprites/grab.png");
         spriteSheets.emplace_back("./resources/sprites/startJump.png");
         spriteSheets.emplace_back("./resources/sprites/jumpAir.png");
         spriteSheets.emplace_back("./resources/sprites/jumpEnd.png");
