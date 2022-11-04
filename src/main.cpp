@@ -1619,7 +1619,7 @@ protected:
     bool           loopCurrentAnim;
 
     bool        leftWasPressed = false;
-    std::string spritesPath    = "./resources/sprites/";
+    std::string spritesPath    = RESOURCE_PATH "sprites/";
 
 public:
     Pet(GameData& data) : datas{data}, animator{data}
@@ -1642,7 +1642,7 @@ public:
 
     void parseAnimationGraph()
     {
-        YAML::Node animGraph = YAML::LoadFile("./resources/setting/animation.yaml");
+        YAML::Node animGraph = YAML::LoadFile(RESOURCE_PATH "setting/animation.yaml");
 
         // Init nodes
         std::map<std::string, std::shared_ptr<StateMachine::Node>> nodes;
@@ -1933,17 +1933,17 @@ protected:
     void createResources()
     {
         datas.pFramebuffer = std::make_unique<Framebuffer>();
-        datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs",
-                                                "./resources/shader/dFdxEdgeDetection.fs");
+        datas.edgeDetectionShaders.emplace_back(RESOURCE_PATH "shader/image.vs",
+                                                RESOURCE_PATH "shader/dFdxEdgeDetection.fs");
 
-        datas.pImageShader = std::make_unique<Shader>("./resources/shader/image.vs", "./resources/shader/image.fs");
+        datas.pImageShader = std::make_unique<Shader>(RESOURCE_PATH "shader/image.vs", RESOURCE_PATH "shader/image.fs");
 
         if (datas.debugEdgeDetection)
             datas.pImageGreyScale =
-                std::make_unique<Shader>("./resources/shader/image.vs", "./resources/shader/imageGreyScale.fs");
+                std::make_unique<Shader>(RESOURCE_PATH "shader/image.vs", RESOURCE_PATH "shader/imageGreyScale.fs");
 
         datas.pSpriteSheetShader =
-            std::make_unique<Shader>("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs");
+            std::make_unique<Shader>(RESOURCE_PATH "shader/spriteSheet.vs", RESOURCE_PATH "shader/image.fs");
 
         datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
         datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
@@ -1955,7 +1955,7 @@ protected:
     }
 
 public:
-    Game() : log("log.txt"), setting("./resources/setting/setting.ini", datas), mainLoop(datas), physicSystem(datas)
+    Game() : log("log.txt"), setting(RESOURCE_PATH "setting/setting.ini", datas), mainLoop(datas), physicSystem(datas)
     {
         initWindow();
         initOpenGL();
