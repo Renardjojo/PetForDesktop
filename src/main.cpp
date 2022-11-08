@@ -11,10 +11,12 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #ifdef __linux__
 #elif _WIN32
 #include "WindowUtility.h"
+#include <shlobj.h>
 #else
 #endif
 
@@ -32,7 +34,6 @@ void log(const char* buffer)
     // log into console
     fputs(buffer, stderr);
 #endif
-    puts(buffer);
 }
 
 void logf(char const* const format, ...)
@@ -43,44 +44,54 @@ void logf(char const* const format, ...)
     // log into console
     vfprintf(stderr, format, arglist);
 #endif
-    vprintf(format, arglist);
     va_end(arglist);
 }
 
 void errorAndExit(const char* msg)
 {
-    logf("Error: %s\n", msg);
     boxer::Selection selection = boxer::show(msg, "PetForDesktop error", boxer::Style::Error, boxer::Buttons::OK);
     exit(-1);
 }
 
 void warning(const char* msg)
 {
-    logf("Warning: %s\n", msg);
     boxer::show(msg, "PetForDesktop warning", boxer::Style::Warning, boxer::Buttons::OK);
     exit(-1);
 }
 
-class Log
+std::filesystem::path getResourcePath()
 {
-protected:
-    FILE* m_file;
+#if defined(_WIN32) && defined(INSTALLER)
+    std::filesystem::path path;
+    PWSTR                 path_tmp;
 
-public:
-    Log(const char* output)
+    /* Attempt to get user's AppData folder
+     *
+     * Microsoft Docs:
+     * https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/nf-shlobj_core-shgetknownfolderpath
+     * https://learn.microsoft.com/en-us/windows/win32/shell/knownfolderid
+     */
+    if (SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &path_tmp) != S_OK)
     {
-        m_file = freopen(output, "w", stdout);
-        if (!m_file)
-            warning("Warning: Log file not created");
-
-        logf("PetForDesktop version %s\n", PROJECT_VERSION);
+        CoTaskMemFree(path_tmp);
+        errorAndExit("Cannot access to RoamingAppData");
     }
 
-    ~Log()
-    {
-        fclose(m_file);
-    }
-};
+    /* Convert the Windows path type to a C++ path */
+    path = path_tmp;
+    path /= RESOURCE_PATH;
+
+    CoTaskMemFree(path_tmp);
+    return path;
+#else
+    return RESOURCE_PATH;
+#endif
+}
+
+std::string getResourcePath(const char* relativePath)
+{
+    return (getResourcePath() / relativePath).string();
+}
 
 class FileReader
 {
@@ -1606,7 +1617,7 @@ protected:
     bool           loopCurrentAnim;
 
     bool        leftWasPressed = false;
-    std::string spritesPath    = RESOURCE_PATH "sprites/";
+    std::string spritesPath    = getResourcePath("sprites/");
 
 public:
     Pet(GameData& data) : datas{data}, animator{data}
@@ -1629,7 +1640,7 @@ public:
 
     void parseAnimationGraph()
     {
-        YAML::Node animGraph = YAML::LoadFile(RESOURCE_PATH "setting/animation.yaml");
+        YAML::Node  animGraph = YAML::LoadFile(getResourcePath("setting/animation.yaml"));
 
         // Init nodes
         std::map<std::string, std::shared_ptr<StateMachine::Node>> nodes;
@@ -1861,7 +1872,6 @@ public:
 class Game
 {
 protected:
-    Log          log;
     GameData     datas;
     Setting      setting;
     TimeManager  mainLoop;
@@ -1920,17 +1930,17 @@ protected:
     void createResources()
     {
         datas.pFramebuffer = std::make_unique<Framebuffer>();
-        datas.edgeDetectionShaders.emplace_back(RESOURCE_PATH "shader/image.vs",
-                                                RESOURCE_PATH "shader/dFdxEdgeDetection.fs");
+        datas.edgeDetectionShaders.emplace_back(getResourcePath("shader/image.vs").c_str(),
+                                                getResourcePath("shader/dFdxEdgeDetection.fs").c_str());
 
-        datas.pImageShader = std::make_unique<Shader>(RESOURCE_PATH "shader/image.vs", RESOURCE_PATH "shader/image.fs");
+        datas.pImageShader = std::make_unique<Shader>(getResourcePath("shader/image.vs").c_str(), getResourcePath("shader/image.fs").c_str());
 
         if (datas.debugEdgeDetection)
             datas.pImageGreyScale =
-                std::make_unique<Shader>(RESOURCE_PATH "shader/image.vs", RESOURCE_PATH "shader/imageGreyScale.fs");
+                std::make_unique<Shader>(getResourcePath("shader/image.vs").c_str(), getResourcePath("shader/imageGreyScale.fs").c_str());
 
         datas.pSpriteSheetShader =
-            std::make_unique<Shader>(RESOURCE_PATH "shader/spriteSheet.vs", RESOURCE_PATH "shader/image.fs");
+            std::make_unique<Shader>(getResourcePath("shader/spriteSheet.vs").c_str(), getResourcePath("shader/image.fs").c_str());
 
         datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
         datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
@@ -1942,7 +1952,7 @@ protected:
     }
 
 public:
-    Game() : log("log.txt"), setting(RESOURCE_PATH "setting/setting.ini", datas), mainLoop(datas), physicSystem(datas)
+    Game() : setting(getResourcePath("setting/setting.ini").c_str(), datas), mainLoop(datas), physicSystem(datas)
     {
         initWindow();
         initOpenGL();

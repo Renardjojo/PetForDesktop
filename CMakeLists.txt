@@ -13,11 +13,14 @@ set(ABS_DEPS_DIR "${CMAKE_SOURCE_DIR}/deps")
 set(ABS_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include")
 set(ABS_SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 set(ABS_MAIN_FILE "${ABS_SRC_DIR}/main.cpp")
-set(ABS_RESOURCES_BUILD_LINK "${CMAKE_CURRENT_BINARY_DIR}/${REL_RESOURCES_DIR}") 
-set(ABS_LICENSE_PATH "${CMAKE_SOURCE_DIR}/LICENSE") 
-set(ABS_README_PATH "${CMAKE_SOURCE_DIR}/README.md") 
+set(ABS_RESOURCES_BUILD_LINK "${CMAKE_CURRENT_BINARY_DIR}/${REL_RESOURCES_DIR}")
+set(ABS_LICENSE_PATH "${CMAKE_SOURCE_DIR}/LICENSE")
+set(ABS_README_PATH "${CMAKE_SOURCE_DIR}/README.md")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+########### Option ############
+option(INSTALLER "Enable installer setting for build" OFF)
 
 ########### Create project ############
 set(PROJECT_VERSION "1.0.0")
@@ -47,7 +50,6 @@ include_directories("${ABS_INCLUDE_DIR}/")
 
 # add the executable
 add_executable(${PROJECT_NAME} ${SUB_SYS} ${project_headers} ${project_source_files})
-set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\" /SUBSYSTEM:WINDOWS")
 
 ########### Install setup ############
 # Setup install process
@@ -68,38 +70,23 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "A pet for desktop like you've never dreamed 💚")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_NSIS_IGNORE_LICENSE_PAGE 1)
-#set (CPACK_PACKAGE_EXECUTABLES ${PROJECT_NAME} ${PROJECT_NAME})
-#set (CPACK_NSIS_MENU_LINKS ${PROJECT_NAME} ${PROJECT_NAME})
-#set(CPACK_PACKAGE_INSTALL_DIRECTORY ${PROJECT_NAME})
+set(CPACK_PACKAGE_INSTALL_DIRECTORY ${PROJECT_NAME})
 
-    set_property(
-        INSTALL
-            bin/$<TARGET_FILE_NAME:${PROJECT_NAME}>
-        PROPERTY
-            CPACK_START_MENU_SHORTCUTS
-                ${PROJECT_NAME}
-    )
+set_property(
+    INSTALL
+        bin/$<TARGET_FILE_NAME:${PROJECT_NAME}>
+    PROPERTY
+        CPACK_START_MENU_SHORTCUTS
+            ${PROJECT_NAME}
+)
 
-    set_property(
-        INSTALL
-            bin/$<TARGET_FILE_NAME:${PROJECT_NAME}>
-        PROPERTY
-            CPACK_DESKTOP_SHORTCUTS
-                ${PROJECT_NAME}
-    )
-
-set (CPACK_NSIS_EXTRA_INSTALL_COMMANDS
-  CreateShortCut\ \\\"$SMSTARTUP\\\\${PROJECT_NAME}.lnk\\\"\ \\\"$INSTDIR\\\\bin\\\\${PROJECT_NAME}.exe\\\")
-
-set (CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS
-  Delete\ \\\"$SMSTARTUP\\\\${PROJECT_NAME}.lnk\\\")
-
-#set(CPACK_SOURCE_IGNORE_FILES .git/ .github/ .vscode/ .idea/ .vs/ _CPack_Packages/
-#${CMAKE_BINARY_DIR}/ ${PROJECT_BINARY_DIR}/
-#)
-
-# set(CPACK_PACKAGE_INSTALL_DIRECTORY ${PROJECT_NAME})
-# set(CPACK_NSIS_MODIFY_PATH ON)
+set_property(
+    INSTALL
+        bin/$<TARGET_FILE_NAME:${PROJECT_NAME}>
+    PROPERTY
+        CPACK_DESKTOP_SHORTCUTS
+            ${PROJECT_NAME}
+)
 
 include(CPack)
 set(CPACK_WIX_PROGRAM_MENU_FOLDER ${PROJECT_NAME})
@@ -125,7 +112,18 @@ target_link_libraries(${PROJECT_NAME} yaml-cpp)
 
 ########### Define ############
 target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="../${REL_RESOURCES_DIR}/")
+
+if (INSTALLER)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="${REL_RESOURCES_DIR}/")
+else()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="../${REL_RESOURCES_DIR}/")
+endif()
+
+if (WIN32)
+  install(DIRECTORY ${REL_RESOURCES_DIR} DESTINATION ${CMAKE_INSTALL_DATADIR}/)
+else()
+  install(DIRECTORY ${REL_RESOURCES_DIR} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR})
+endif()
 
 ########### Build link ############
 # Set a symbolic link so exe can find the /Data folder
@@ -136,5 +134,3 @@ add_custom_command(
     DEPENDS ${ABS_RESOURCES_BUILD_LINK} 
     COMMENT "symbolic link ${ABS_RESOURCE_DIR} => ${ABS_RESOURCES_BUILD_LINK}" 
 )
-
-#file(COPY ${ABS_RESOURCE_DIR} DESTINATION ${CMAKE_BINARY_DIR})
