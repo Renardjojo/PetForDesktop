@@ -12,7 +12,7 @@ A clear and concise description of what the bug is.
 
 ## Version
  - OS: [e.g. Windows, iOS, Linux]
- - Version [e.g. v1.0.0]
+ - Version: [e.g. v1.0.0]
 
 ## How to Reproduce
 Steps to reproduce the behaviour:
