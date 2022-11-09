@@ -17,10 +17,7 @@ set(ABS_RESOURCES_BUILD_LINK "${CMAKE_CURRENT_BINARY_DIR}/${REL_RESOURCES_DIR}")
 set(ABS_LICENSE_PATH "${CMAKE_SOURCE_DIR}/LICENSE")
 set(ABS_README_PATH "${CMAKE_SOURCE_DIR}/README.md")
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-########### Option ############
-option(INSTALLER "Enable installer setting for build" OFF)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 ########### Create project ############
 set(PROJECT_VERSION "1.0.0")
@@ -61,36 +58,6 @@ else()
   install(DIRECTORY ${REL_RESOURCES_DIR} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR})
 endif()
 
-########### Installer ############
-# add CPack to project
-set(CPACK_GENERATOR WIX)
-set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
-set(CPACK_PACKAGE_VENDOR "Jonathan Six")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
-    "A pet for desktop like you've never dreamed 💚")
-set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
-set(CPACK_NSIS_IGNORE_LICENSE_PAGE 1)
-set(CPACK_PACKAGE_INSTALL_DIRECTORY ${PROJECT_NAME})
-
-set_property(
-    INSTALL
-        bin/$<TARGET_FILE_NAME:${PROJECT_NAME}>
-    PROPERTY
-        CPACK_START_MENU_SHORTCUTS
-            ${PROJECT_NAME}
-)
-
-set_property(
-    INSTALL
-        bin/$<TARGET_FILE_NAME:${PROJECT_NAME}>
-    PROPERTY
-        CPACK_DESKTOP_SHORTCUTS
-            ${PROJECT_NAME}
-)
-
-include(CPack)
-set(CPACK_WIX_PROGRAM_MENU_FOLDER ${PROJECT_NAME})
-
 ########### Deps ############
 # GLFW
 set (GLFW_BUILD_EXAMPLES OFF)
@@ -112,18 +79,7 @@ target_link_libraries(${PROJECT_NAME} yaml-cpp)
 
 ########### Define ############
 target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
-
-if (INSTALLER)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="${REL_RESOURCES_DIR}/")
-else()
-    target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="../${REL_RESOURCES_DIR}/")
-endif()
-
-if (WIN32)
-  install(DIRECTORY ${REL_RESOURCES_DIR} DESTINATION ${CMAKE_INSTALL_DATADIR}/)
-else()
-  install(DIRECTORY ${REL_RESOURCES_DIR} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR})
-endif()
+target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="${REL_RESOURCES_DIR}/")
 
 ########### Build link ############
 # Set a symbolic link so exe can find the /Data folder
