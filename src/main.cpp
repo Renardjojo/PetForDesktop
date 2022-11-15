@@ -452,8 +452,8 @@ struct GameData
     Vec2               petPos  = {0.f, 0.f};
     Vec2i              petSize = {0.f, 0.f};
 
-    Vec2i windowExt    = {300.f, 300.f};
-    Vec2i windowMinExt = {300.f, 300.f};
+    Vec2i windowExt    = {0.f, 0.f};
+    Vec2i windowMinExt = {0.f, 0.f};
 
     Vec2i windowSize  = {0.f, 0.f};
     Vec2i windowPos   = {0.f, 0.f};
@@ -1855,7 +1855,6 @@ protected:
         glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, !datas.showFrameBufferBackground);
         glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
         glfwWindowHint(GLFW_FLOATING, datas.useFowardWindow);
-        glfwWindowHint(GLFW_MOUSE_PASSTHROUGH, datas.useMousePassThoughWindow);
 
         datas.monitors    = glfwGetMonitors(&datas.monitorCount);
         datas.videoMode   = glfwGetVideoMode(datas.monitors[0]);
@@ -1873,6 +1872,7 @@ protected:
 
         glfwSetWindowAttrib(datas.window, GLFW_DECORATED, datas.showWindow);
         glfwSetWindowAttrib(datas.window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+        glfwSetWindowAttrib(datas.window, GLFW_MOUSE_PASSTHROUGH, datas.useMousePassThoughWindow);
         glfwDefaultWindowHints();
     }
 
