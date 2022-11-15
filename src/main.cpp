@@ -19,7 +19,6 @@
 #else
 #endif
 
-#include "INIReader.h"
 #include "Vector2.hpp"
 #include "boxer/boxer.h"
 #include "yaml-cpp/yaml.h"
@@ -769,53 +768,65 @@ class Setting
 public:
     Setting(const char* path, GameData& data)
     {
-        INIReader reader(path);
-
-        if (reader.ParseError() == -1)
+        YAML::Node animGraph = YAML::LoadFile(path);
+        if (!animGraph)
         {
             errorAndExit(std::string("Could not find setting file here: ") + path);
         }
 
         std::string section;
         {
-            section = "Game setting";
+            section                 = "Game";
+            YAML::Node nodesSection = animGraph[section];
+            if (!nodesSection)
+                errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
 
-            data.FPS        = std::max(reader.GetInteger(section, "FPS", 60), 1l);
-            data.scale      = std::max(reader.GetInteger(section, "Scale", 1), 1l);
-            data.randomSeed = reader.GetInteger(section, "RandomSeed", -1l);
+            data.FPS        = std::max(nodesSection["FPS"].as<int>(), 1);
+            data.scale      = std::max(nodesSection["Scale"].as<int>(), 1);
+            data.randomSeed = nodesSection["RandomSeed"].as<int>();
         }
 
         {
             section = "Physic";
+            YAML::Node nodesSection = animGraph[section];
+            if (!nodesSection)
+                errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
 
-            data.physicFrameRate = std::max(reader.GetInteger(section, "PhysicFrameRate", 60), 0l);
-            data.bounciness      = std::clamp(reader.GetReal(section, "Bounciness", 0.1), 0.0, 1.0);
+            data.physicFrameRate = std::max(nodesSection["PhysicFrameRate"].as<int>(), 0);
+            data.bounciness      = std::clamp(nodesSection["Bounciness"].as<float>(), 0.f, 1.f);
             data.gravity =
-                Vec2{(float)reader.GetReal(section, "GravityX", 0.0), (float)reader.GetReal(section, "GravityY", 9.81)};
-            data.gravityDir           = data.gravity.normalized();
-            data.friction             = std::clamp(reader.GetReal(section, "Friction", 0.5), 0.0, 1.0);
+                Vec2{nodesSection["GravityX"].as<float>(), nodesSection["GravityY"].as<float>()};
+            data.gravityDir = data.gravity.normalized();
+            data.friction                        = std::clamp(nodesSection["Friction"].as<float>(), 0.f, 1.f);
             data.continusCollisionMaxSqrVelocity =
-                std::max(reader.GetReal(section, "ContinusCollisionMaxVelocity", 100.0), 0.0);
+                std::max(nodesSection["ContinusCollisionMaxVelocity"].as<float>(), 0.f);
             data.continusCollisionMaxSqrVelocity *= data.continusCollisionMaxSqrVelocity;
-            data.footBasasementWidth  = std::max(reader.GetInteger(section, "FootBasasementWidth", 2), 2l);
-            data.footBasasementHeight = std::max(reader.GetInteger(section, "FootBasasementHeight", 2), 2l);
+            data.footBasasementWidth  = std::max(nodesSection["FootBasasementWidth"].as<int>(), 2);
+            data.footBasasementHeight            = std::max(nodesSection["FootBasasementHeight"].as<int>(), 2);
             data.collisionPixelRatioStopMovement =
-                std::clamp(reader.GetInteger(section, "CollisionPixelRatioStopMovement", 0.5), 0l, 1l);
-            data.isGroundedDetection = std::max(reader.GetReal(section, "IsGroundedDetection", 1.0), 0.0);
+                std::clamp(nodesSection["CollisionPixelRatioStopMovement"].as<float>(), 0.f, 1.f);
+            data.isGroundedDetection = std::max(nodesSection["IsGroundedDetection"].as<float>(), 0.f);
         }
 
         {
-            section = "Window";
+            section                 = "Window";
+            YAML::Node nodesSection = animGraph[section];
+            if (!nodesSection)
+                errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
 
-            data.showWindow                = reader.GetBoolean(section, "ShowWindow", false);
-            data.showFrameBufferBackground = reader.GetBoolean(section, "ShowFrameBufferBackground", false);
-            data.useFowardWindow           = reader.GetBoolean(section, "UseFowardWindow", true);
-            data.useMousePassThoughWindow  = reader.GetBoolean(section, "UseMousePassThoughWindow", true);
+            data.showWindow                = nodesSection["ShowWindow"].as<bool>();
+            data.showFrameBufferBackground = nodesSection["ShowFrameBufferBackground"].as<bool>();
+            data.useFowardWindow           = nodesSection["UseFowardWindow"].as<bool>();
+            data.useMousePassThoughWindow  = nodesSection["UseMousePassThoughWindow"].as<bool>();
         }
 
         {
             section                 = "Debug";
-            data.debugEdgeDetection = reader.GetBoolean(section, "ShowEdgeDetection", false);
+            YAML::Node nodesSection = animGraph[section];
+            if (!nodesSection)
+                errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
+
+            data.debugEdgeDetection = nodesSection["ShowEdgeDetection"].as<bool>();
         }
     }
 };
@@ -1910,7 +1921,7 @@ protected:
     }
 
 public:
-    Game() : setting(RESOURCE_PATH "setting/setting.ini", datas), mainLoop(datas), physicSystem(datas)
+    Game() : setting(RESOURCE_PATH "setting/setting.yaml", datas), mainLoop(datas), physicSystem(datas)
     {
         initWindow();
         initOpenGL();
