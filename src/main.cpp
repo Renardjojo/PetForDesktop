@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #ifdef __linux__
 #elif _WIN32
@@ -32,7 +33,6 @@ void log(const char* buffer)
     // log into console
     fputs(buffer, stderr);
 #endif
-    puts(buffer);
 }
 
 void logf(char const* const format, ...)
@@ -43,44 +43,20 @@ void logf(char const* const format, ...)
     // log into console
     vfprintf(stderr, format, arglist);
 #endif
-    vprintf(format, arglist);
     va_end(arglist);
 }
 
-void errorAndExit(const char* msg)
+void errorAndExit(const std::string& msg)
 {
-    logf("Error: %s\n", msg);
-    boxer::Selection selection = boxer::show(msg, "PetForDesktop error", boxer::Style::Error, boxer::Buttons::OK);
+    boxer::Selection selection = boxer::show(msg.c_str(), "PetForDesktop error", boxer::Style::Error, boxer::Buttons::OK);
     exit(-1);
 }
 
-void warning(const char* msg)
+void warning(const std::string& msg)
 {
-    logf("Warning: %s\n", msg);
-    boxer::show(msg, "PetForDesktop warning", boxer::Style::Warning, boxer::Buttons::OK);
+    boxer::show(msg.c_str(), "PetForDesktop warning", boxer::Style::Warning, boxer::Buttons::OK);
     exit(-1);
 }
-
-class Log
-{
-protected:
-    FILE* m_file;
-
-public:
-    Log(const char* output)
-    {
-        m_file = freopen(output, "w", stdout);
-        if (!m_file)
-            warning("Warning: Log file not created");
-
-        logf("PetForDesktop version %s\n", PROJECT_VERSION);
-    }
-
-    ~Log()
-    {
-        fclose(m_file);
-    }
-};
 
 class FileReader
 {
@@ -228,10 +204,7 @@ private:
             if (!success)
             {
                 glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-                logf("ERROR::SHADER_COMPILATION_ERROR of type: %s\n%s\n "
-                     "-------------------------------------------------------\n",
-                     type, infoLog);
-                errorAndExit("Shader error. Check log for more details");
+                errorAndExit(std::string("Shader compilation errorof type") + type + '\n' + infoLog);
             }
         }
         else
@@ -240,10 +213,7 @@ private:
             if (!success)
             {
                 glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-                logf("ERROR::PROGRAM_LINKING_ERROR of type: %s\n%s\n "
-                     "-------------------------------------------------------\n",
-                     type, infoLog);
-                errorAndExit("Shader link error. Check log for more details");
+                errorAndExit(std::string("Program linking errorof type") + type + '\n' + infoLog);
             }
         }
     }
@@ -803,8 +773,7 @@ public:
 
         if (reader.ParseError() == -1)
         {
-            logf("Could not find setting file here: %s", path);
-            errorAndExit("Setting file can't be open. Check log for more details");
+            errorAndExit(std::string("Could not find setting file here: ") + path);
         }
 
         std::string section;
@@ -1606,7 +1575,7 @@ protected:
     bool           loopCurrentAnim;
 
     bool        leftWasPressed = false;
-    std::string spritesPath    = "./resources/sprites/";
+    std::string spritesPath    = RESOURCE_PATH "sprites/";
 
 public:
     Pet(GameData& data) : datas{data}, animator{data}
@@ -1629,7 +1598,7 @@ public:
 
     void parseAnimationGraph()
     {
-        YAML::Node animGraph = YAML::LoadFile("./resources/setting/animation.yaml");
+        YAML::Node  animGraph = YAML::LoadFile(RESOURCE_PATH "setting/animation.yaml");
 
         // Init nodes
         std::map<std::string, std::shared_ptr<StateMachine::Node>> nodes;
@@ -1664,7 +1633,7 @@ public:
             }
             else
             {
-                warning((std::string("Node with name ") + title + " isn't implemented and is skiped").c_str());
+                warning(std::string("Node with name ") + title + " isn't implemented and is skiped");
             }
         }
 
@@ -1714,7 +1683,7 @@ public:
             }
             else
             {
-                warning((std::string("Transition with name ") + title + " isn't implemented and is skiped").c_str());
+                warning(std::string("Transition with name ") + title + " isn't implemented and is skiped");
             }
         }
 
@@ -1861,7 +1830,6 @@ public:
 class Game
 {
 protected:
-    Log          log;
     GameData     datas;
     Setting      setting;
     TimeManager  mainLoop;
@@ -1920,17 +1888,17 @@ protected:
     void createResources()
     {
         datas.pFramebuffer = std::make_unique<Framebuffer>();
-        datas.edgeDetectionShaders.emplace_back("./resources/shader/image.vs",
-                                                "./resources/shader/dFdxEdgeDetection.fs");
+        datas.edgeDetectionShaders.emplace_back(RESOURCE_PATH "shader/image.vs",
+                                                RESOURCE_PATH "shader/dFdxEdgeDetection.fs");
 
-        datas.pImageShader = std::make_unique<Shader>("./resources/shader/image.vs", "./resources/shader/image.fs");
+        datas.pImageShader = std::make_unique<Shader>(RESOURCE_PATH "shader/image.vs", RESOURCE_PATH "shader/image.fs");
 
         if (datas.debugEdgeDetection)
             datas.pImageGreyScale =
-                std::make_unique<Shader>("./resources/shader/image.vs", "./resources/shader/imageGreyScale.fs");
+                std::make_unique<Shader>(RESOURCE_PATH "shader/image.vs", RESOURCE_PATH "shader/imageGreyScale.fs");
 
         datas.pSpriteSheetShader =
-            std::make_unique<Shader>("./resources/shader/spriteSheet.vs", "./resources/shader/image.fs");
+            std::make_unique<Shader>(RESOURCE_PATH "shader/spriteSheet.vs", RESOURCE_PATH "shader/image.fs");
 
         datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
         datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
@@ -1942,7 +1910,7 @@ protected:
     }
 
 public:
-    Game() : log("log.txt"), setting("./resources/setting/setting.ini", datas), mainLoop(datas), physicSystem(datas)
+    Game() : setting(RESOURCE_PATH "setting/setting.ini", datas), mainLoop(datas), physicSystem(datas)
     {
         initWindow();
         initOpenGL();
