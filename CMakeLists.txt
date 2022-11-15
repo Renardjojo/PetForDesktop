@@ -25,16 +25,16 @@ project(${PROJECT_NAME} VERSION "${PROJECT_VERSION}")
 
 ########### Setup ############
 # Set env variable
-IF(CMAKE_BUILD_TYPE MATCHES Release)
+if (CMAKE_BUILD_TYPE MATCHES Release)
     message(STATUS "Generate CMake cache for Release")
-    IF(WIN32)
+    if (WIN32)
         set(SUB_SYS WIN32)
-    ENDIF(WIN32)
+    endif(WIN32)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
-ELSE()
+else ()
     message(STATUS "Generate CMake cache for Debug")
     add_definitions(-DDEBUG)
-ENDIF(CMAKE_BUILD_TYPE MATCHES Release)
+endif (CMAKE_BUILD_TYPE MATCHES Release)
 
 ########### Build ############
 file(GLOB_RECURSE project_source_files    LIST_DIRECTORIES false CONFIGURE_DEPENDS src/*.cpp src/*.c)
@@ -45,8 +45,13 @@ message(STATUS "Sources : ${project_source_files}")
 # Set include directory
 include_directories("${ABS_INCLUDE_DIR}/")
 
+# Set icon
+if (WIN32)
+    set(APP_ICON_RESOURCE "${CMAKE_CURRENT_SOURCE_DIR}/appicon.rc")
+endif ()
+
 # add the executable
-add_executable(${PROJECT_NAME} ${SUB_SYS} ${project_headers} ${project_source_files})
+add_executable(${PROJECT_NAME} ${SUB_SYS} ${project_headers} ${project_source_files} ${APP_ICON_RESOURCE})
 
 ########### Install setup ############
 # Setup install process
