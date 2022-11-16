@@ -40,8 +40,9 @@ Just download the [lastest version](https://github.com/Renardjojo/PetDesktop//re
 - Works on MacOs and Linux...
 
 ## What in the future ?
-You can easily check out the [roadmap](https://github.com/Renardjojo/PetDesktop/projects?query=is%3Aopen) but remember that this software is open source.
-That means you can fork it and modify or contribute to it for anyone! The MTI license allows you to do this, so take advantage of it.
+You can easily check out the [roadmap](https://github.com/Renardjojo/PetDesktop/projects?query=is%3Aopen) but remember that this software is open source.  
+That means you can fork it and modify or contribute to it for anyone! The MTI license allows you to do this, so take advantage of it.  
+Follow the evolution of the project here
 
 ## Disclamer:
 The concept of this application is inspired by another application called [Babafriend](https://hempuli.itch.io/baba-friend). This application is close source and does not allow me to customize the code base and features ... Now you can.  
