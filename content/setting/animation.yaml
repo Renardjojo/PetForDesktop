@@ -1,0 +1,80 @@
+FirstNode: idle
+Nodes:
+    AnimationNode:
+        name: idle
+        sprite: idle.png
+        framerate: 10
+        loop: true
+    GrabNode:
+        name: grab
+        sprite: grab.png
+        framerate: 10
+        loop: true
+    PetWalkNode:
+        name: walk
+        sprite: walk.png
+        framerate: 10
+        direction: [1, 0]
+        thrust: 0.2
+        loop: true
+    PetJumpNode:
+        name: jump
+        sprite: jump.png
+        framerate: 10
+        direction: [1, 0]
+        verticalThrust: 0.15
+        horizontalThrust: 0.3
+    AnimationNode:
+        name: air
+        sprite: air.png
+        framerate: 10
+        loop: true
+    AnimationNode:
+        name: landing
+        sprite: landing.png
+        framerate: 10
+        loop: false
+Transitions:
+    StartLeftClicTransition:
+        from: idle
+        to: grab
+    RandomDelayTransitionMultipleExit:
+        from: idle
+        duration: 3000
+        interval: 1000
+        chanceToEnterEntries:
+          entry:
+            to: walk
+            chance: 1
+          entry:
+            to: jump
+            chance: 1
+    IsNotGroundedTransition:
+        from: idle
+        to: air
+    StartLeftClicTransition:
+        from: walk
+        to: grab
+    RandomDelayTransition:
+        from: walk
+        to: idle
+        duration: 3000
+        interval: 500
+    StartLeftClicTransition:
+        from: walk
+        to: air
+    StartLeftClicTransition:
+        from: jump
+        to: grab
+    AnimationEndTransition:
+        from: jump
+        to: air
+    EndLeftClicTransition:
+        from: grab
+        to: air
+    IsGroundedTransition:
+        from: air
+        to: landing
+    AnimationEndTransition:
+        from: landing
+        to: idle
