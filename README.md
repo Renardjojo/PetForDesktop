@@ -40,7 +40,7 @@ Just download the [lastest version](https://github.com/Renardjojo/PetDesktop//re
 - Works on MacOs and Linux...
 
 ## What in the future ?
-You can easily check out the [roadmap](https://github.com/Renardjojo/PetForDesktop/milestone) but remember that this software is open source.  
+You can easily check out the [roadmap](https://github.com/Renardjojo/PetForDesktop/milestones) but remember that this software is open source.  
 That means you can fork it and modify or contribute to it for anyone! The MTI license allows you to do this, so take advantage of it.  
 
 ## Disclamer:
