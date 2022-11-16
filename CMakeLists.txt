@@ -20,7 +20,7 @@ set(ABS_README_PATH "${CMAKE_SOURCE_DIR}/README.md")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 ########### Create project ############
-set(PROJECT_VERSION "1.0.0")
+set(PROJECT_VERSION "1.1.0")
 project(${PROJECT_NAME} VERSION "${PROJECT_VERSION}")
 
 ########### Setup ############
