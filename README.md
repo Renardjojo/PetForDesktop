@@ -25,7 +25,8 @@ Just download the [lastest version](https://github.com/Renardjojo/PetDesktop//re
 ## What you can do with PetForDesktop:
 - Edge detection of screen content: your pet can jump into any element of your screen.
 - Basic physic: you can drag and drop your pet with gravity but also make it bounce on your screen.
-- Customize settings : to play with the debugging function, configure your own gravity, animation etc...
+- Customize settings : to play with the debugging function, configure your own gravity etc...
+- Customize animation
 - Replace the existing animation with your own horizontal sprite sheet.
 - Walk and jump but also edit and create your own animation !
 - Modify the code and contribute! (it's open source and under MIT license!)
