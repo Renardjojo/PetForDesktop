@@ -47,13 +47,14 @@ void logf(char const* const format, ...)
 
 void errorAndExit(const std::string& msg)
 {
-    boxer::Selection selection = boxer::show(msg.c_str(), "PetForDesktop error", boxer::Style::Error, boxer::Buttons::OK);
+    boxer::Selection selection =
+        boxer::show(msg.c_str(), PROJECT_NAME " error", boxer::Style::Error, boxer::Buttons::OK);
     exit(-1);
 }
 
 void warning(const std::string& msg)
 {
-    boxer::show(msg.c_str(), "PetForDesktop warning", boxer::Style::Warning, boxer::Buttons::OK);
+    boxer::show(msg.c_str(), PROJECT_NAME " warning", boxer::Style::Warning, boxer::Buttons::OK);
     exit(-1);
 }
 
@@ -1872,7 +1873,7 @@ protected:
         datas.petPosLimit = {datas.videoMode->width, datas.videoMode->height};
         datas.windowSize  = {1, 1};
 
-        datas.window = glfwCreateWindow(datas.windowSize.x, datas.windowSize.y, "PetForDesktop", NULL, NULL);
+        datas.window = glfwCreateWindow(datas.windowSize.x, datas.windowSize.y, PROJECT_NAME, NULL, NULL);
         if (!datas.window)
         {
             glfwTerminate();
@@ -1923,6 +1924,7 @@ protected:
 public:
     Game() : setting(RESOURCE_PATH "setting/setting.yaml", datas), mainLoop(datas), physicSystem(datas)
     {
+        logf("%s %s\n", PROJECT_NAME, PROJECT_VERSION);
         initWindow();
         initOpenGL();
 
