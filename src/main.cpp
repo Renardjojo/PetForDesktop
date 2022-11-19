@@ -459,6 +459,8 @@ struct GameData
     Vec2i windowPos   = {0.f, 0.f};
     Vec2i petPosLimit = {0, 0};
 
+    bool shouldUpdateFrame = true;
+
     // Resources
     std::unique_ptr<Framebuffer> pFramebuffer = nullptr;
 
@@ -1182,6 +1184,7 @@ class SpriteAnimator
 protected:
     SpriteSheet* pSheet = nullptr;
     float        timer;
+    float        maxTimer;
     bool         loop;
     bool         isEnd;
     int          frameRate;
@@ -1189,36 +1192,41 @@ protected:
     int indexCurrentAnimSprite;
 
 public:
-    void play(SpriteSheet& inSheet, bool inLoop, int inFrameRate)
+    void play(GameData& data, SpriteSheet& inSheet, bool inLoop, int inFrameRate)
     {
         pSheet                 = &inSheet;
         loop                   = inLoop;
         frameRate              = inFrameRate;
         indexCurrentAnimSprite = 0;
         timer                  = 0.f;
+        maxTimer               = pSheet->getTileCount() / (float)frameRate;
         isEnd                  = false;
+        data.shouldUpdateFrame = true;
     }
 
-    void update(double deltaTime)
+    void update(GameData& data, double deltaTime)
     {
         if (!isDone())
         {
             timer += deltaTime;
-            indexCurrentAnimSprite = timer * frameRate;
 
-            if (indexCurrentAnimSprite >= pSheet->getTileCount())
+            while (timer >= maxTimer)
             {
                 if (loop)
                 {
-
-                    indexCurrentAnimSprite = 0;
-                    timer -= pSheet->getTileCount() / (float)frameRate;
+                    timer -= maxTimer;
                 }
                 else
                 {
-                    indexCurrentAnimSprite = pSheet->getTileCount() - 1;
+                    timer                  = 0.f;
                     isEnd                  = true;
                 }
+            }
+
+            if (indexCurrentAnimSprite != (int)(timer * frameRate))
+            {
+                data.shouldUpdateFrame = true;
+                indexCurrentAnimSprite = timer * frameRate;
             }
         }
     }
@@ -1343,13 +1351,13 @@ public:
     void onEnter(GameData& blackBoard) override
     {
         StateMachine::Node::onEnter(blackBoard);
-        spriteAnimator.play(spriteSheets, loop, frameRate);
+        spriteAnimator.play(blackBoard, spriteSheets, loop, frameRate);
     }
 
     void onUpdate(GameData& blackBoard, double dt) override
     {
         StateMachine::Node::onUpdate(blackBoard, dt);
-        spriteAnimator.update(dt);
+        spriteAnimator.update(blackBoard, dt);
     }
 
     void onExit(GameData& blackBoard) override
@@ -1979,19 +1987,23 @@ public:
         const std::function<void(double)> unlimitedUpdateDebugCollision{[&](double deltaTime) {
             processInput(datas.window);
 
-            physicSystem.update(deltaTime);
-
             // poll for and process events
             glfwPollEvents();
         }};
         const std::function<void(double)> limitedUpdate{[&](double deltaTime) {
-            // render
-            initDrawContext();
+            pet.update(deltaTime);
 
-            pet.draw();
+            if (datas.shouldUpdateFrame)
+            {
+                // render
+                initDrawContext();
 
-            // swap front and back buffers
-            glfwSwapBuffers(datas.window);
+                pet.draw();
+
+                // swap front and back buffers
+                glfwSwapBuffers(datas.window);
+                datas.shouldUpdateFrame = false;
+            }
         }};
 
         const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
@@ -2021,16 +2033,13 @@ public:
         mainLoop.emplaceTimer(
             [&]() {
                 physicSystem.update(1.f / datas.physicFrameRate);
-
-                pet.update(1.f / datas.physicFrameRate);
             },
             1.f / datas.physicFrameRate, true);
 
         mainLoop.start();
         while (!glfwWindowShouldClose(datas.window))
         {
-            mainLoop.update(datas.debugEdgeDetection ? unlimitedUpdateDebugCollision : unlimitedUpdate,
-                            datas.debugEdgeDetection ? limitedUpdateDebugCollision : limitedUpdate);
+            mainLoop.update(unlimitedUpdate, datas.debugEdgeDetection ? limitedUpdateDebugCollision : limitedUpdate);
         }
     }
 };

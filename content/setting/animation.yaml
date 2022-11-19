@@ -3,7 +3,7 @@ Nodes:
     AnimationNode:
         name: idle
         sprite: idle.png
-        framerate: 10
+        framerate: 5
         loop: true
     GrabNode:
         name: grab
