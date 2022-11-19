@@ -1,9 +1,19 @@
-FirstNode: idle
+FirstNode: idle1
 Nodes:
     AnimationNode:
-        name: idle
+        name: idle1
         sprite: idle.png
         framerate: 5
+        loop: true
+    AnimationNode:
+        name: idle2
+        sprite: idle2.png
+        framerate: 8
+        loop: true
+    AnimationNode:
+        name: sleep
+        sprite: sleep.png
+        framerate: 6
         loop: true
     GrabNode:
         name: grab
@@ -36,35 +46,40 @@ Nodes:
         loop: false
 Transitions:
     StartLeftClicTransition:
-        from: idle
+        from: idle1
         to: grab
-    RandomDelayTransitionMultipleExit:
-        from: idle
+    RandomDelayTransition:
+        from: idle1
+        to: [walk, jump, sleep]
         duration: 3000
         interval: 1000
-        chanceToEnterEntries:
-          entry:
-            to: walk
-            chance: 1
-          entry:
-            to: jump
-            chance: 1
     IsNotGroundedTransition:
-        from: idle
+        from: idle1
+        to: air
+    StartLeftClicTransition:
+        from: idle2
+        to: grab
+    RandomDelayTransition:
+        from: idle2
+        to: [walk, jump, sleep]
+        duration: 3000
+        interval: 1000
+    IsNotGroundedTransition:
+        from: idle2
         to: air
     StartLeftClicTransition:
         from: walk
         to: grab
     RandomDelayTransition:
         from: walk
-        to: idle
+        to: [idle1, idle2]
         duration: 3000
         interval: 500
     StartLeftClicTransition:
-        from: walk
-        to: air
-    StartLeftClicTransition:
         from: jump
+        to: grab
+    StartLeftClicTransition:
+        from: sleep
         to: grab
     AnimationEndTransition:
         from: jump
@@ -77,4 +92,9 @@ Transitions:
         to: landing
     AnimationEndTransition:
         from: landing
-        to: idle
+        to: [idle1, idle2]
+    RandomDelayTransition:
+        from: sleep
+        to: [idle1, idle2]
+        duration: 9000
+        interval: 1000
