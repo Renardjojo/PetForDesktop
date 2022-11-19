@@ -1251,7 +1251,7 @@ public:
         struct Transition
         {
             Node*                 pOwner;
-            std::shared_ptr<Node> to;
+            std::vector <std::shared_ptr<Node>> to;
 
             virtual void onEnter(GameData& blackBoard){};
             virtual void onUpdate(GameData& blackBoard, double dt){};
@@ -1325,8 +1325,10 @@ public:
             {
                 pCurrentNode->onExit(blackBoard);
 
-                assert(pNodeTransition->to != nullptr);
-                pCurrentNode = pNodeTransition->to;
+                assert(!pNodeTransition->to.empty());
+                std::shared_ptr<Node>& to = pNodeTransition->to[randNum(0, pNodeTransition->to.size() - 1)];
+                assert(to != nullptr);
+                pCurrentNode = to;
                 pCurrentNode->onEnter(blackBoard);
                 break;
             }
@@ -1503,48 +1505,6 @@ public:
     }
 };
 
-struct RandomDelayTransitionMultipleExit : public RandomDelayTransition
-{
-public:
-    struct NodeChanceToEnter
-    {
-        std::shared_ptr<StateMachine::Node> node;
-        unsigned int                        chanceToEnter;
-    };
-
-protected:
-    std::vector<NodeChanceToEnter> m_nodeChanceToEnterBuffer;
-    unsigned int                   m_total = 0;
-
-public:
-    RandomDelayTransitionMultipleExit(int inBaseDelay_ms, int inInterval_ms,
-                                      const std::vector<NodeChanceToEnter>& nodeChanceToEnterBuffer)
-        : RandomDelayTransition(inBaseDelay_ms, inInterval_ms), m_nodeChanceToEnterBuffer{nodeChanceToEnterBuffer}
-    {
-        for (const NodeChanceToEnter& nodeChanceToEnter : m_nodeChanceToEnterBuffer)
-        {
-            m_total += nodeChanceToEnter.chanceToEnter;
-        }
-    }
-
-    void onExit(GameData& blackBoard) final
-    {
-        int score = randNum(1, m_total);
-
-        unsigned int accScore = 0;
-        for (const NodeChanceToEnter& nodeChanceToEnter : m_nodeChanceToEnterBuffer)
-        {
-            accScore += nodeChanceToEnter.chanceToEnter;
-
-            if (accScore >= score)
-            {
-                to = nodeChanceToEnter.node;
-                break;
-            }
-        }
-    }
-};
-
 struct StartLeftClicTransition : public StateMachine::Node::Transition
 {
     bool canTransition(GameData& blackBoard) final
@@ -1671,11 +1631,6 @@ public:
                 if (!AddBasicTransition<StartLeftClicTransition>(it->second, nodes))
                     continue;
             }
-            else if (title == "RandomDelayTransitionMultipleExit")
-            {
-                if (!AddRandomDelayTransitionMultipleExit(it->second, nodes))
-                    continue;
-            }
             else if (title == "IsNotGroundedTransition")
             {
                 if (!AddBasicTransition<IsNotGroundedTransition>(it->second, nodes))
@@ -1714,7 +1669,17 @@ public:
 
         // Start state machine
         std::string firstNodeName = firstNode.as<std::string>();
-        animator.init(std::static_pointer_cast<StateMachine::Node>(nodes[firstNodeName]));
+        std::shared_ptr<StateMachine::Node>& firstSMNode = nodes[firstNodeName];
+
+        if (firstSMNode != nullptr)
+        {
+            animator.init(std::static_pointer_cast<StateMachine::Node>(firstSMNode));
+        }
+        else
+        {
+            animator.init(std::static_pointer_cast<StateMachine::Node>(nodes.begin()->second));
+            warning("FirstNode name is invalid. First node selected instead");
+        }
     }
 
     template <typename T>
@@ -1773,11 +1738,23 @@ public:
             warning("YAML error: transition invalid");
             return false;
         }
+
         std::string nodeFromName = node["from"].as<std::string>();
-        std::string nodeToName   = node["to"].as<std::string>();
+        YAML::Node toNodes = node["to"];
 
         std::shared_ptr<T> transition = std::make_shared<T>();
-        transition->to                = nodes[nodeToName];
+        if (toNodes.IsSequence())
+        {
+            for (YAML::const_iterator it = toNodes.begin(); it != toNodes.end(); ++it)
+            {
+                transition->to.emplace_back(nodes[it->as<std::string>()]);
+            }
+        }
+        else if (toNodes.IsScalar())
+        {
+            transition->to.emplace_back(nodes[toNodes.as<std::string>()]);
+        }
+
         nodes[nodeFromName]->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         return true;
     }
@@ -1790,46 +1767,23 @@ public:
             return false;
         }
         std::string nodeFromName = node["from"].as<std::string>();
-        std::string nodeToName   = node["to"].as<std::string>();
+        YAML::Node  toNodes      = node["to"];
         int         duration     = node["duration"].as<int>();
         int         interval     = node["interval"].as<int>();
 
         std::shared_ptr<RandomDelayTransition> transition = std::make_shared<RandomDelayTransition>(duration, interval);
-        transition->to                                    = nodes[nodeToName];
-        nodes[nodeFromName]->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
-        return true;
-    }
-
-    bool AddRandomDelayTransitionMultipleExit(YAML::Node                                                  node,
-                                              std::map<std::string, std::shared_ptr<StateMachine::Node>>& nodes)
-    {
-        if (!node.IsMap() || node.size() != 4)
+        
+        if (toNodes.IsSequence())
         {
-            warning("YAML error: transition invalid");
-            return false;
+            for (YAML::const_iterator it = toNodes.begin(); it != toNodes.end(); ++it)
+            {
+                transition->to.emplace_back(nodes[it->as<std::string>()]);
+            }
         }
-        const std::string nodeFromName = node["from"].as<std::string>();
-        const int         duration     = node["duration"].as<int>();
-        const int         interval     = node["interval"].as<int>();
-
-        std::vector<RandomDelayTransitionMultipleExit::NodeChanceToEnter> entries;
-
-        YAML::Node toNodes = node["chanceToEnterEntries"];
-        if (!toNodes || toNodes.size() == 0)
+        else if (toNodes.IsScalar())
         {
-            warning("YAML error: missing entires");
-            return false;
+            transition->to.emplace_back(nodes[toNodes.as<std::string>()]);
         }
-
-        for (YAML::const_iterator it = toNodes.begin(); it != toNodes.end(); ++it)
-        {
-            const std::string  nodeToName = it->second["to"].as<std::string>();
-            const unsigned int chance     = it->second["chance"].as<unsigned int>();
-            entries.emplace_back(RandomDelayTransitionMultipleExit::NodeChanceToEnter{nodes[nodeToName], chance});
-        }
-
-        std::shared_ptr<RandomDelayTransitionMultipleExit> transition =
-            std::make_shared<RandomDelayTransitionMultipleExit>(duration, interval, entries);
         nodes[nodeFromName]->AddTransition(std::static_pointer_cast<StateMachine::Node::Transition>(transition));
         return true;
     }
