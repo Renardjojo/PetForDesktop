@@ -1830,6 +1830,10 @@ protected:
         glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
         glfwWindowHint(GLFW_FLOATING, datas.useFowardWindow);
 
+        // Disable depth and stencil buffers
+        glfwWindowHint(GLFW_DEPTH_BITS, 0);
+        glfwWindowHint(GLFW_STENCIL_BITS, 0);
+
         datas.monitors    = glfwGetMonitors(&datas.monitorCount);
         datas.videoMode   = glfwGetVideoMode(datas.monitors[0]);
         datas.petPosLimit = {datas.videoMode->width, datas.videoMode->height};
@@ -1918,8 +1922,10 @@ public:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glActiveTexture(GL_TEXTURE0);
-
+        glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
         glClear(GL_COLOR_BUFFER_BIT);
+        glDisable(GL_CULL_FACE); 
     }
 
     ~Game()
