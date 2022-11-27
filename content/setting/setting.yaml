@@ -14,9 +14,10 @@ Physic:
     CollisionPixelRatioStopMovement: 0.3 # min 0, max 1. Ratio of pixel with collision to detect a real collision 
     IsGroundedDetection: 1.0 # min 0
 Window:
-    ShowFrameBufferBackground: false
+    ShowFrameBufferBackground: true
     UseFowardWindow: true
     ShowWindow: false
     UseMousePassThoughWindow: true
 Debug:
     ShowEdgeDetection: false
+    AlwaysDraw: true

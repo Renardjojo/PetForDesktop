@@ -1,9 +1,11 @@
-#include <glad/glad.h>
+#define GLAD_GL_IMPLEMENTATION
+#include <glad/gl.h>
 
 #include <GLFW/glfw3.h>
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
 #include <functional>
 #include <map>
 #include <memory>
@@ -11,7 +13,6 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
-#include <filesystem>
 
 #ifdef __linux__
 #elif _WIN32
@@ -120,6 +121,12 @@ public:
     }
 };
 
+// Useful for creating shared data (like textures, VBO..) but cannot be used to hold objects (like VAO, FBO...) for a
+// specific context. Each context must have this data.
+static GladGLContext* sharedContext;
+#define SPRITES_PATH RESOURCE_PATH "sprites/"
+#define EMOTE_PATH SPRITES_PATH "emote/"
+
 class Shader
 {
 public:
@@ -138,58 +145,58 @@ public:
         // compile shaders
         unsigned int vertex, fragment;
         // vertex shader
-        vertex = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertex, 1, &vShaderCode, NULL);
-        glCompileShader(vertex);
+        vertex = sharedContext->CreateShader(GL_VERTEX_SHADER);
+        sharedContext->ShaderSource(vertex, 1, &vShaderCode, NULL);
+        sharedContext->CompileShader(vertex);
         checkCompileErrors(vertex, "VERTEX");
 
         // fragment Shader
-        fragment = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragment, 1, &fShaderCode, NULL);
-        glCompileShader(fragment);
+        fragment = sharedContext->CreateShader(GL_FRAGMENT_SHADER);
+        sharedContext->ShaderSource(fragment, 1, &fShaderCode, NULL);
+        sharedContext->CompileShader(fragment);
         checkCompileErrors(fragment, "FRAGMENT");
 
         // shader Program
-        ID = glCreateProgram();
-        glAttachShader(ID, vertex);
-        glAttachShader(ID, fragment);
-        glLinkProgram(ID);
+        ID = sharedContext->CreateProgram();
+        sharedContext->AttachShader(ID, vertex);
+        sharedContext->AttachShader(ID, fragment);
+        sharedContext->LinkProgram(ID);
         checkCompileErrors(ID, "PROGRAM");
 
         // delete the shaders as they're linked into our program now and no longer necessary
-        glDeleteShader(vertex);
-        glDeleteShader(fragment);
-        log("Shader compilationd done");
+        sharedContext->DeleteShader(vertex);
+        sharedContext->DeleteShader(fragment);
+        log("Shader compilationd done\n");
     }
 
     void use()
     {
-        glUseProgram(ID);
+        sharedContext->UseProgram(ID);
     }
 
     void setBool(const char* name, bool value) const
     {
-        glUniform1i(glGetUniformLocation(ID, name), (int)value);
+        sharedContext->Uniform1i(sharedContext->GetUniformLocation(ID, name), (int)value);
     }
 
     void setInt(const char* name, int value) const
     {
-        glUniform1i(glGetUniformLocation(ID, name), value);
+        sharedContext->Uniform1i(sharedContext->GetUniformLocation(ID, name), value);
     }
 
     void setVec2(const char* name, float v1, float v2) const noexcept
     {
-        glUniform2f(glGetUniformLocation(ID, name), v1, v2);
+        sharedContext->Uniform2f(sharedContext->GetUniformLocation(ID, name), v1, v2);
     }
 
     void setVec4(const char* name, float v1, float v2, float v3, float v4) const noexcept
     {
-        glUniform4f(glGetUniformLocation(ID, name), v1, v2, v3, v4);
+        sharedContext->Uniform4f(sharedContext->GetUniformLocation(ID, name), v1, v2, v3, v4);
     }
 
     void setFloat(const char* name, float value) const
     {
-        glUniform1f(glGetUniformLocation(ID, name), value);
+        sharedContext->Uniform1f(sharedContext->GetUniformLocation(ID, name), value);
     }
 
 private:
@@ -200,19 +207,19 @@ private:
         char infoLog[1024];
         if (type != "PROGRAM")
         {
-            glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+            sharedContext->GetShaderiv(shader, GL_COMPILE_STATUS, &success);
             if (!success)
             {
-                glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+                sharedContext->GetShaderInfoLog(shader, 1024, NULL, infoLog);
                 errorAndExit(std::string("Shader compilation errorof type") + type + '\n' + infoLog);
             }
         }
         else
         {
-            glGetProgramiv(shader, GL_LINK_STATUS, &success);
+            sharedContext->GetProgramiv(shader, GL_LINK_STATUS, &success);
             if (!success)
             {
-                glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+                sharedContext->GetProgramInfoLog(shader, 1024, NULL, infoLog);
                 errorAndExit(std::string("Program linking errorof type") + type + '\n' + infoLog);
             }
         }
@@ -229,8 +236,8 @@ protected:
 public:
     Texture(const char* srcPath, std::function<void()> setupCallback = defaultSetupCallBack)
     {
-        glGenTextures(1, &ID);
-        glBindTexture(GL_TEXTURE_2D, ID);
+        sharedContext->GenTextures(1, &ID);
+        sharedContext->BindTexture(GL_TEXTURE_2D, ID);
 
         setupCallback();
 
@@ -240,13 +247,13 @@ public:
         if (data)
         {
             if (nbChannels == 4)
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                sharedContext->TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
             else
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                sharedContext->TexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         }
         else
         {
-            log("Failed to load texture");
+            log("Failed to load texture\n");
         }
         stbi_image_free(data);
     }
@@ -254,8 +261,8 @@ public:
     Texture(void* data, int pxlWidth, int pxlHeight, int channels = 3,
             std ::function<void()> setupCallback = defaultSetupCallBack)
     {
-        glGenTextures(1, &ID);
-        glBindTexture(GL_TEXTURE_2D, ID);
+        sharedContext->GenTextures(1, &ID);
+        sharedContext->BindTexture(GL_TEXTURE_2D, ID);
 
         setupCallback();
 
@@ -263,13 +270,13 @@ public:
         height          = pxlHeight;
         nbChannels      = channels;
         GLenum chanEnum = getChanelEnum();
-        glTexImage2D(GL_TEXTURE_2D, 0, chanEnum, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
+        sharedContext->TexImage2D(GL_TEXTURE_2D, 0, chanEnum, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
     }
 
     Texture(int pxlWidth, int pxlHeight, int channels = 4, std::function<void()> setupCallback = defaultSetupCallBack)
     {
-        glGenTextures(1, &ID);
-        glBindTexture(GL_TEXTURE_2D, ID);
+        sharedContext->GenTextures(1, &ID);
+        sharedContext->BindTexture(GL_TEXTURE_2D, ID);
 
         setupCallback();
 
@@ -278,27 +285,27 @@ public:
         nbChannels      = channels;
         GLenum chanEnum = getChanelEnum();
 
-        glTexImage2D(GL_TEXTURE_2D, 0, chanEnum, width, height, 0, chanEnum, GL_UNSIGNED_BYTE, 0);
+        sharedContext->TexImage2D(GL_TEXTURE_2D, 0, chanEnum, width, height, 0, chanEnum, GL_UNSIGNED_BYTE, 0);
     }
 
     static void defaultSetupCallBack()
     {
         // set the texture wrapping parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        sharedContext->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        sharedContext->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         // set texture filtering parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        sharedContext->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        sharedContext->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
 
     ~Texture()
     {
-        glDeleteTextures(1, &ID);
+        sharedContext->DeleteTextures(1, &ID);
     }
 
     void use() const
     {
-        glBindTexture(GL_TEXTURE_2D, ID);
+        sharedContext->BindTexture(GL_TEXTURE_2D, ID);
     }
 
     int getHeight() const
@@ -337,7 +344,8 @@ public:
             data.emplace_back(0);
         }
 
-        glGetTextureImage(ID, 0, getChanelEnum(), GL_UNSIGNED_BYTE, pixelsCount * sizeof(unsigned char), &data[0]);
+        sharedContext->GetTextureImage(ID, 0, getChanelEnum(), GL_UNSIGNED_BYTE, pixelsCount * sizeof(unsigned char),
+                                       &data[0]);
     }
 };
 
@@ -349,25 +357,25 @@ protected:
 public:
     Framebuffer()
     {
-        glGenFramebuffers(1, &ID);
+        sharedContext->GenFramebuffers(1, &ID);
     }
 
     ~Framebuffer()
     {
-        glDeleteFramebuffers(1, &ID);
+        sharedContext->DeleteFramebuffers(1, &ID);
     }
 
     void bind()
     {
-        glBindFramebuffer(GL_FRAMEBUFFER, ID);
+        sharedContext->BindFramebuffer(GL_FRAMEBUFFER, ID);
     }
 
     void attachTexture(const Texture& texture)
     {
         // Set "renderedTexture" as our colour attachement #0
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture.getID(), 0);
+        sharedContext->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture.getID(), 0);
 
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        if (sharedContext->CheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
             log("Framebuffer error");
         }
@@ -375,19 +383,74 @@ public:
 
     static void bindScreen()
     {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        sharedContext->BindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+};
+
+class Window
+{
+public:
+    GLFWwindow*                    window;
+    std::unique_ptr<GladGLContext> context;
+    bool                           isDirty;
+    Vec2i                          windowSize   = {0.f, 0.f};
+    Vec2i                          windowPos    = {0.f, 0.f};
+    Vec2i                          windowExt    = {0.f, 0.f};
+    Vec2i                          windowMinExt = {0.f, 0.f};
+
+    Window(GLFWwindow* inWindow)
+    {
+        window = inWindow;
+        glfwMakeContextCurrent(window);
+
+        context = std::make_unique<GladGLContext>();
+        if (!context)
+            errorAndExit("Could not create GLContext");
+
+        int version = gladLoadGLContext(context.get(), glfwGetProcAddress);
+        if (version == 0)
+            errorAndExit("Failed to initialize OpenGL context");
+        logf("Loaded OpenGL %d.%d\n", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
+    } 
+
+    void initDrawContext()
+    {
+        Framebuffer::bindScreen();
+        context->Viewport(0, 0, windowSize.x, windowSize.y);
+
+        context->Enable(GL_BLEND);
+        context->BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        context->ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        context->ActiveTexture(GL_TEXTURE0);
+
+        context->Clear(GL_COLOR_BUFFER_BIT);
+    }
+
+    void draw(std::function<void(Window&)> drawCallback, bool forceDraw)
+    {
+        if (isDirty || forceDraw)
+        {
+            glfwMakeContextCurrent(window);
+
+            // render
+            initDrawContext();
+
+            drawCallback(*this);
+
+            // swap front and back buffers
+            glfwSwapBuffers(window);
+            isDirty = false;
+        }
     }
 };
 
 // TODO full screen Triangle
 class ScreenSpaceQuad
 {
-protected:
+public:
     unsigned int VBO;
-    unsigned int VAO;
     unsigned int EBO;
 
-public:
     ScreenSpaceQuad(float minPos = -1.f, float maxPos = 1.f)
     {
         // TODO: Pos vec2 ?
@@ -404,62 +467,76 @@ public:
             1, 2, 3  // second triangle
         };
 
-        glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &VBO);
-        glGenBuffers(1, &EBO);
+        sharedContext->GenBuffers(1, &VBO);
+        sharedContext->GenBuffers(1, &EBO);
 
-        glBindVertexArray(VAO);
+        sharedContext->BindBuffer(GL_ARRAY_BUFFER, VBO);
+        sharedContext->BufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-        // position attribute
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-        // texture coord attribute
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(1);
+        sharedContext->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        sharedContext->BufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     }
 
     ~ScreenSpaceQuad()
     {
-        glDeleteVertexArrays(1, &VAO);
-        glDeleteBuffers(1, &VBO);
-        glDeleteBuffers(1, &EBO);
+        sharedContext->DeleteBuffers(1, &VBO);
+        sharedContext->DeleteBuffers(1, &EBO);
+    }
+};
+
+class Mesh
+{
+protected:
+    unsigned int   VAO;
+    GladGLContext* context;
+
+public:
+    Mesh(ScreenSpaceQuad& meshData, GladGLContext* inContext)
+    {
+        context = inContext;
+        context->GenVertexArrays(1, &VAO);
+        context->BindVertexArray(VAO);
+
+        context->BindBuffer(GL_ARRAY_BUFFER, meshData.VBO);
+        context->BindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshData.EBO);
+
+        // position attribute
+        context->VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        context->EnableVertexAttribArray(0);
+        // texture coord attribute
+        context->VertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+        context->EnableVertexAttribArray(1);
     }
 
     void use()
     {
-        glBindVertexArray(VAO);
+        context->BindVertexArray(VAO);
     }
 
     void draw()
     {
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        context->DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
+
+    ~Mesh()
+    {
+        context->DeleteVertexArrays(1, &VAO);
     }
 };
 
 struct GameData
 {
     // Window and monitor
-    GLFWwindow*        window       = nullptr;
-    GLFWmonitor**      monitors     = nullptr;
-    const GLFWvidmode* videoMode    = nullptr;
-    int                monitorCount = 0, monitorX = 0, monitorY = 0;
-    Vec2               petPos  = {0.f, 0.f};
-    Vec2i              petSize = {0.f, 0.f};
+    std::unique_ptr<Window> petWindow         = nullptr;
+    std::unique_ptr<Window> dialogPopupWindow = nullptr;
+    std::vector<Window>     windows;
+    GLFWmonitor**           monitors          = nullptr;
+    const GLFWvidmode*      videoMode         = nullptr;
+    int                     monitorCount = 0, monitorX = 0, monitorY = 0;
+    Vec2                    petPos  = {0.f, 0.f};
+    Vec2i                   petSize = {0.f, 0.f};
 
-    Vec2i windowExt    = {0.f, 0.f};
-    Vec2i windowMinExt = {0.f, 0.f};
-
-    Vec2i windowSize  = {0.f, 0.f};
-    Vec2i windowPos   = {0.f, 0.f};
     Vec2i petPosLimit = {0, 0};
-
-    bool shouldUpdateFrame = true;
 
     // Resources
     std::unique_ptr<Framebuffer> pFramebuffer = nullptr;
@@ -472,8 +549,12 @@ struct GameData
     std::unique_ptr<Texture> pCollisionTexture     = nullptr;
     std::unique_ptr<Texture> pEdgeDetectionTexture = nullptr;
 
-    std::unique_ptr<ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
-    std::unique_ptr<ScreenSpaceQuad> pFullScreenQuad     = nullptr;
+    std::unique_ptr<ScreenSpaceQuad> pUnitFullScreenQuadData = nullptr;
+    std::unique_ptr<ScreenSpaceQuad> pFullScreenQuadData     = nullptr;
+    std::unique_ptr<Mesh>            pUnitFullScreenQuadC1   = nullptr;
+    std::unique_ptr<Mesh>            pFullScreenQuadC1       = nullptr;
+    std::unique_ptr<Mesh>            pFullScreenQuadC2       = nullptr;
+    std::vector<Mesh>                pFullScreenQuad;
 
     // Inlog
     float prevCursorPosX  = 0;
@@ -504,8 +585,8 @@ struct GameData
     bool  isGrounded                      = false;
 
     // Animation
-    bool  side                 = true; // false left / true right
-    bool  isGrab               = false;
+    bool side   = true; // false left / true right
+    bool isGrab = false;
 
     // Time
     double timeAcc = 0.f;
@@ -518,19 +599,20 @@ struct GameData
 
     // Debug
     bool debugEdgeDetection = false;
+    bool alwaysDraw         = false;
 };
 
 // Dont forgot to use glDeleteTextures(1, &ID); after usage
 void createTextureFromScreenShoot(unsigned int& ID)
 {
-    glGenTextures(1, &ID);
-    glBindTexture(GL_TEXTURE_2D, ID);
+    sharedContext->GenTextures(1, &ID);
+    sharedContext->BindTexture(GL_TEXTURE_2D, ID);
     // set the texture wrapping parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    sharedContext->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    sharedContext->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     // set texture filtering parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    sharedContext->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    sharedContext->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     ScreenShoot screenshoot(0, 0, 400, 400);
 
@@ -538,7 +620,8 @@ void createTextureFromScreenShoot(unsigned int& ID)
     int                      height = 400;
     const ScreenShoot::Data& data   = screenshoot.get();
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, data.width, data.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data.bits);
+    sharedContext->TexImage2D(GL_TEXTURE_2D, 0, GL_RGB, data.width, data.height, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+                              data.bits);
 }
 
 float gammaToLinearByte(char gammaValue)
@@ -593,7 +676,7 @@ void processMousePassTHoughWindow(GLFWwindow* window, GameData& datas)
 {
     double xPos, yPos;
     glfwGetCursorPos(window, &xPos, &yPos);
-    const Vec2 localWinPos             = datas.petPos - datas.windowPos;
+    const Vec2 localWinPos             = datas.petPos - datas.petWindow->windowPos;
     const bool isCursorInsidePetWindow = xPos > localWinPos.x && yPos > localWinPos.y &&
                                          xPos < localWinPos.x + (float)datas.petSize.x &&
                                          yPos < localWinPos.y + (float)datas.petSize.y;
@@ -729,21 +812,23 @@ public:
 
     void useSection(GameData& data, Shader& shader, int idSection, bool hFlip = false)
     {
-        data.petSize.x    = height * data.scale; // use height because texture is horizontal sprite sheet only
-        data.petSize.y    = height * data.scale;
-        data.windowSize.x = data.petSize.x + data.windowExt.x + data.windowMinExt.x;
-        data.windowSize.y = data.petSize.y + data.windowExt.y + data.windowMinExt.y;
-        data.petPosLimit  = {data.videoMode->width - data.petSize.x, data.videoMode->height - data.petSize.y};
-        glfwSetWindowSize(data.window, data.windowSize.x, data.windowSize.y);
+        data.petSize.x = height * data.scale; // use height because texture is horizontal sprite sheet only
+        data.petSize.y = height * data.scale;
+        data.petWindow->windowSize.x = data.petSize.x + data.petWindow->windowExt.x + data.petWindow->windowMinExt.x;
+        data.petWindow->windowSize.y = data.petSize.y + data.petWindow->windowExt.y + data.petWindow->windowMinExt.y;
+        data.petPosLimit = {data.videoMode->width - data.petSize.x, data.videoMode->height - data.petSize.y};
+        glfwSetWindowSize(data.petWindow->window, data.petWindow->windowSize.x, data.petWindow->windowSize.y);
 
         float       hScale  = 1.f / tileCount;
         const float vScale  = 1.f; // This field can be used
         float       hOffSet = idSection / (float)tileCount;
         const float vOffset = 0.f; // This field can be used
 
-        Vec2 clipSpacePos  = Vec2::remap(static_cast<Vec2i>(data.petPos), data.windowPos,
-                                        data.windowPos + data.windowSize, Vec2{0, 1}, Vec2{1, 0});          // [-1, 1]
-        Vec2 clipSpaceSize = Vec2::remap(data.petSize, Vec2{0, 0}, data.windowSize, Vec2{0, 0}, Vec2{1, 1}); // [0, 1]
+        Vec2 clipSpacePos =
+            Vec2::remap(static_cast<Vec2i>(data.petPos), data.petWindow->windowPos,
+                        data.petWindow->windowPos + data.petWindow->windowSize, Vec2{0, 1}, Vec2{1, 0}); // [-1, 1]
+        Vec2 clipSpaceSize =
+            Vec2::remap(data.petSize, Vec2{0, 0}, data.petWindow->windowSize, Vec2{0, 0}, Vec2{1, 1}); // [0, 1]
 
         // In shader, based on bottom left instead of upper left
         clipSpacePos.y -= clipSpaceSize.y;
@@ -790,22 +875,21 @@ public:
         }
 
         {
-            section = "Physic";
+            section                 = "Physic";
             YAML::Node nodesSection = animGraph[section];
             if (!nodesSection)
                 errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
 
             data.physicFrameRate = std::max(nodesSection["PhysicFrameRate"].as<int>(), 0);
             data.bounciness      = std::clamp(nodesSection["Bounciness"].as<float>(), 0.f, 1.f);
-            data.gravity =
-                Vec2{nodesSection["GravityX"].as<float>(), nodesSection["GravityY"].as<float>()};
-            data.gravityDir = data.gravity.normalized();
-            data.friction                        = std::clamp(nodesSection["Friction"].as<float>(), 0.f, 1.f);
+            data.gravity         = Vec2{nodesSection["GravityX"].as<float>(), nodesSection["GravityY"].as<float>()};
+            data.gravityDir      = data.gravity.normalized();
+            data.friction        = std::clamp(nodesSection["Friction"].as<float>(), 0.f, 1.f);
             data.continusCollisionMaxSqrVelocity =
                 std::max(nodesSection["ContinusCollisionMaxVelocity"].as<float>(), 0.f);
             data.continusCollisionMaxSqrVelocity *= data.continusCollisionMaxSqrVelocity;
             data.footBasasementWidth  = std::max(nodesSection["FootBasasementWidth"].as<int>(), 2);
-            data.footBasasementHeight            = std::max(nodesSection["FootBasasementHeight"].as<int>(), 2);
+            data.footBasasementHeight = std::max(nodesSection["FootBasasementHeight"].as<int>(), 2);
             data.collisionPixelRatioStopMovement =
                 std::clamp(nodesSection["CollisionPixelRatioStopMovement"].as<float>(), 0.f, 1.f);
             data.isGroundedDetection = std::max(nodesSection["IsGroundedDetection"].as<float>(), 0.f);
@@ -830,6 +914,7 @@ public:
                 errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
 
             data.debugEdgeDetection = nodesSection["ShowEdgeDetection"].as<bool>();
+            data.alwaysDraw         = nodesSection["AlwaysDraw"].as<bool>();
         }
     }
 };
@@ -887,8 +972,8 @@ public:
         {
             screenShootPosX  = 0.f;
             screenShootPosY  = 0.f;
-            screenShootSizeX = data.windowSize.x;
-            screenShootSizeY = data.windowSize.y;
+            screenShootSizeX = data.petWindow->windowSize.x;
+            screenShootSizeY = data.petWindow->windowSize.y;
         }
         else
         {
@@ -907,9 +992,10 @@ public:
         data.pCollisionTexture     = std::make_unique<Texture>(pxlData.bits, pxlData.width, pxlData.height, 4);
         data.pEdgeDetectionTexture = std::make_unique<Texture>(pxlData.width, pxlData.height, 4);
 
-        glDisable(GL_BLEND);
-        glViewport(0, 0, pxlData.width, pxlData.height);
+        sharedContext->Disable(GL_BLEND);
+        sharedContext->Viewport(0, 0, pxlData.width, pxlData.height);
 
+        glfwMakeContextCurrent(data.petWindow->window);
         if (data.edgeDetectionShaders.size() == 1)
         {
             data.pFramebuffer->bind();
@@ -919,8 +1005,8 @@ public:
             data.edgeDetectionShaders[0].setInt("uTexture", 0);
             data.edgeDetectionShaders[0].setVec2("resolution", pxlData.width, pxlData.height);
             data.pCollisionTexture->use();
-            data.pFullScreenQuad->use();
-            data.pFullScreenQuad->draw();
+            data.pFullScreenQuadC1->use();
+            data.pFullScreenQuadC1->draw();
         }
         else
         {
@@ -930,8 +1016,8 @@ public:
             data.edgeDetectionShaders[0].use();
             data.edgeDetectionShaders[0].setInt("uTexture", 0);
             data.pCollisionTexture->use();
-            data.pFullScreenQuad->use();
-            data.pFullScreenQuad->draw();
+            data.pFullScreenQuadC1->use();
+            data.pFullScreenQuadC1->draw();
 
             data.pFramebuffer->bind();
             data.pFramebuffer->attachTexture(*data.pEdgeDetectionTexture);
@@ -940,8 +1026,8 @@ public:
             data.edgeDetectionShaders[1].setInt("uTexture", 0);
             data.edgeDetectionShaders[1].setVec2("resolution", pxlData.width, pxlData.height);
             data.pCollisionTexture->use();
-            data.pFullScreenQuad->use();
-            data.pFullScreenQuad->draw();
+            data.pFullScreenQuadC1->use();
+            data.pFullScreenQuadC1->draw();
         }
     }
 
@@ -1082,9 +1168,9 @@ public:
             data.deltaCursorPosY = 0;
         }
 
-        data.windowPos.x = data.petPos.x - data.windowMinExt.x;
-        data.windowPos.y = data.petPos.y - data.windowMinExt.y;
-        glfwSetWindowPos(data.window, data.windowPos.x, data.windowPos.y);
+        data.petWindow->windowPos.x = data.petPos.x - data.petWindow->windowMinExt.x;
+        data.petWindow->windowPos.y = data.petPos.y - data.petWindow->windowMinExt.y;
+        glfwSetWindowPos(data.petWindow->window, data.petWindow->windowPos.x, data.petWindow->windowPos.y);
     }
 };
 
@@ -1194,14 +1280,14 @@ protected:
 public:
     void play(GameData& data, SpriteSheet& inSheet, bool inLoop, int inFrameRate)
     {
-        pSheet                 = &inSheet;
-        loop                   = inLoop;
-        frameRate              = inFrameRate;
-        indexCurrentAnimSprite = 0;
-        timer                  = 0.f;
-        maxTimer               = pSheet->getTileCount() / (float)frameRate;
-        isEnd                  = false;
-        data.shouldUpdateFrame = true;
+        pSheet                  = &inSheet;
+        loop                    = inLoop;
+        frameRate               = inFrameRate;
+        indexCurrentAnimSprite  = 0;
+        timer                   = 0.f;
+        maxTimer                = pSheet->getTileCount() / (float)frameRate;
+        isEnd                   = false;
+        data.petWindow->isDirty = true;
     }
 
     void update(GameData& data, double deltaTime)
@@ -1218,15 +1304,15 @@ public:
                 }
                 else
                 {
-                    timer                  = 0.f;
-                    isEnd                  = true;
+                    timer = 0.f;
+                    isEnd = true;
                 }
             }
 
             if (indexCurrentAnimSprite != (int)(timer * frameRate))
             {
-                data.shouldUpdateFrame = true;
-                indexCurrentAnimSprite = timer * frameRate;
+                data.petWindow->isDirty = true;
+                indexCurrentAnimSprite  = timer * frameRate;
             }
         }
     }
@@ -1250,8 +1336,8 @@ public:
     {
         struct Transition
         {
-            Node*                 pOwner;
-            std::vector <std::shared_ptr<Node>> to;
+            Node*                              pOwner;
+            std::vector<std::shared_ptr<Node>> to;
 
             virtual void onEnter(GameData& blackBoard){};
             virtual void onUpdate(GameData& blackBoard, double dt){};
@@ -1554,8 +1640,32 @@ protected:
     int            indexCurrentAnimSprite = 0;
     bool           loopCurrentAnim;
 
-    bool        leftWasPressed = false;
-    std::string spritesPath    = RESOURCE_PATH "sprites/";
+    bool leftWasPressed = false;
+
+public:
+    static void initWindow(GameData& data)
+    {
+        GLFWwindow* window = glfwCreateWindow(1, 1, PROJECT_NAME, NULL, NULL);
+
+        if (!window)
+        {
+            glfwTerminate();
+            errorAndExit("Create Window error");
+        }
+
+        data.petWindow = std::make_unique<Window>(window);
+
+        glfwSetWindowAttrib(data.petWindow->window, GLFW_FLOATING, data.useFowardWindow);
+        glfwSetWindowAttrib(data.petWindow->window, GLFW_DECORATED, data.showWindow);
+        glfwSetWindowAttrib(data.petWindow->window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+        glfwSetWindowAttrib(data.petWindow->window, GLFW_MOUSE_PASSTHROUGH, data.useMousePassThoughWindow);
+        glfwShowWindow(window);
+    }
+
+    static void SetCurrentContext(GameData& datas)
+    {
+        glfwMakeContextCurrent(datas.petWindow->window);
+    }
 
 public:
     Pet(GameData& data) : datas{data}, animator{data}
@@ -1572,13 +1682,15 @@ public:
         }
         else
         {
-            return spriteSheets.emplace(file, (spritesPath + file).c_str()).first->second;
+            std::string path = SPRITES_PATH;
+            path += file;
+            return spriteSheets.emplace(file, path.c_str()).first->second;
         }
     }
 
     void parseAnimationGraph()
     {
-        YAML::Node  animGraph = YAML::LoadFile(RESOURCE_PATH "setting/animation.yaml");
+        YAML::Node animGraph = YAML::LoadFile(RESOURCE_PATH "setting/animation.yaml");
 
         // Init nodes
         std::map<std::string, std::shared_ptr<StateMachine::Node>> nodes;
@@ -1668,8 +1780,8 @@ public:
             errorAndExit("Cannot find \"FirstNode\" in animation.yaml");
 
         // Start state machine
-        std::string firstNodeName = firstNode.as<std::string>();
-        std::shared_ptr<StateMachine::Node>& firstSMNode = nodes[firstNodeName];
+        std::string                          firstNodeName = firstNode.as<std::string>();
+        std::shared_ptr<StateMachine::Node>& firstSMNode   = nodes[firstNodeName];
 
         if (firstSMNode != nullptr)
         {
@@ -1740,7 +1852,7 @@ public:
         }
 
         std::string nodeFromName = node["from"].as<std::string>();
-        YAML::Node toNodes = node["to"];
+        YAML::Node  toNodes      = node["to"];
 
         std::shared_ptr<T> transition = std::make_shared<T>();
         if (toNodes.IsSequence())
@@ -1772,7 +1884,7 @@ public:
         int         interval     = node["interval"].as<int>();
 
         std::shared_ptr<RandomDelayTransition> transition = std::make_shared<RandomDelayTransition>(duration, interval);
-        
+
         if (toNodes.IsSequence())
         {
             for (YAML::const_iterator it = toNodes.begin(); it != toNodes.end(); ++it)
@@ -1796,8 +1908,64 @@ public:
     void draw()
     {
         spriteAnimator.draw(datas, *datas.pSpriteSheetShader, datas.side);
-        datas.pUnitFullScreenQuad->use();
-        datas.pUnitFullScreenQuad->draw();
+        datas.pUnitFullScreenQuadC1->use();
+        datas.pUnitFullScreenQuadC1->draw();
+    }
+};
+
+class DialogPopup
+{
+protected:
+    GameData& datas;
+    Texture   background;
+    Texture   emote;
+
+public:
+    static void initWindow(GameData& datas)
+    {
+        GLFWwindow* window = glfwCreateWindow(1, 1, PROJECT_NAME "_dialogPopup", NULL, datas.petWindow->window);
+
+        if (!window)
+        {
+            glfwTerminate();
+            errorAndExit("Create Window error");
+        }
+        datas.dialogPopupWindow             = std::make_unique<Window>(window);
+        datas.dialogPopupWindow->windowSize = {1, 1};
+
+        glfwSetWindowAttrib(datas.dialogPopupWindow->window, GLFW_FLOATING, datas.useFowardWindow);
+        glfwSetWindowAttrib(datas.dialogPopupWindow->window, GLFW_DECORATED, datas.showWindow);
+        glfwSetWindowAttrib(datas.dialogPopupWindow->window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+        glfwSetWindowAttrib(datas.dialogPopupWindow->window, GLFW_MOUSE_PASSTHROUGH, datas.useMousePassThoughWindow);
+        glfwShowWindow(window);
+    }
+
+    static void SetCurrentContext(GameData& datas)
+    {
+        glfwMakeContextCurrent(datas.dialogPopupWindow->window);
+    }
+
+public:
+    DialogPopup(GameData& inDatas)
+        : datas{inDatas}, background{EMOTE_PATH "emote1_.png"}, emote{EMOTE_PATH "exclamation.png"}
+    {
+    }
+
+    void draw()
+    {
+        datas.dialogPopupWindow->windowSize = {300, 300};
+        glfwSetWindowSize(datas.dialogPopupWindow->window, datas.dialogPopupWindow->windowSize.x,
+                          datas.dialogPopupWindow->windowSize.y);
+
+        datas.pImageShader->use();
+        datas.pImageShader->setInt("uTexture", 0);
+        datas.pFullScreenQuadC2->use();
+
+        background.use();
+        datas.pFullScreenQuadC2->draw();
+
+        emote.use();
+        datas.pFullScreenQuadC2->draw();
     }
 };
 
@@ -1825,42 +1993,41 @@ protected:
 #ifdef __APPLE__
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-
         glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, !datas.showFrameBufferBackground);
         glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
-        glfwWindowHint(GLFW_FLOATING, datas.useFowardWindow);
 
         datas.monitors    = glfwGetMonitors(&datas.monitorCount);
         datas.videoMode   = glfwGetVideoMode(datas.monitors[0]);
         datas.petPosLimit = {datas.videoMode->width, datas.videoMode->height};
-        datas.windowSize  = {1, 1};
-
-        datas.window = glfwCreateWindow(datas.windowSize.x, datas.windowSize.y, PROJECT_NAME, NULL, NULL);
-        if (!datas.window)
-        {
-            glfwTerminate();
-            errorAndExit("Create Window error");
-        }
-
-        glfwMakeContextCurrent(datas.window);
-
-        glfwSetWindowAttrib(datas.window, GLFW_DECORATED, datas.showWindow);
-        glfwSetWindowAttrib(datas.window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
-        glfwSetWindowAttrib(datas.window, GLFW_MOUSE_PASSTHROUGH, datas.useMousePassThoughWindow);
-        glfwDefaultWindowHints();
-    }
-
-    void initOpenGL()
-    {
-        glGetString == nullptr;
-
-        // glad: load all OpenGL function pointers
-        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-            errorAndExit("Failed to initialize OpenGL (GLAD)");
     }
 
     void createResources()
     {
+        Pet::initWindow(datas);
+        DialogPopup::initWindow(datas);
+        Pet::SetCurrentContext(datas);
+        sharedContext      = datas.petWindow->context.get();
+
+        for (size_t i = 0; i < 10; i++)
+        {
+            GLFWwindow* window = glfwCreateWindow(1, 1, PROJECT_NAME "_dialogPopup", NULL, datas.petWindow->window);
+
+            if (!window)
+            {
+                glfwTerminate();
+                errorAndExit("Create Window error");
+            }
+            datas.windows.emplace_back(window);
+            datas.windows.back().windowSize = {1, 1};
+
+            glfwSetWindowAttrib(datas.windows.back().window, GLFW_FLOATING, datas.useFowardWindow);
+            glfwSetWindowAttrib(datas.windows.back().window, GLFW_DECORATED, datas.showWindow);
+            glfwSetWindowAttrib(datas.windows.back().window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+            glfwSetWindowAttrib(datas.windows.back().window, GLFW_MOUSE_PASSTHROUGH,
+                                datas.useMousePassThoughWindow);
+            glfwShowWindow(window);
+        }
+
         datas.pFramebuffer = std::make_unique<Framebuffer>();
         datas.edgeDetectionShaders.emplace_back(RESOURCE_PATH "shader/image.vs",
                                                 RESOURCE_PATH "shader/dFdxEdgeDetection.fs");
@@ -1874,12 +2041,25 @@ protected:
         datas.pSpriteSheetShader =
             std::make_unique<Shader>(RESOURCE_PATH "shader/spriteSheet.vs", RESOURCE_PATH "shader/image.fs");
 
-        datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
-        datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
+        datas.pUnitFullScreenQuadData = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
+        datas.pFullScreenQuadData     = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
+
+        DialogPopup::SetCurrentContext(datas);
+        datas.pFullScreenQuadC2 = std::make_unique<Mesh>(*datas.pFullScreenQuadData.get(), datas.dialogPopupWindow->context.get());
+        
+        for (size_t i = 0; i < datas.windows.size(); i++)
+        {
+            glfwMakeContextCurrent(datas.windows[i].window);
+            datas.pFullScreenQuad.emplace_back(*datas.pFullScreenQuadData.get(),datas.windows[i].context.get());
+        }
+
+        Pet::SetCurrentContext(datas);
+        datas.pUnitFullScreenQuadC1 = std::make_unique<Mesh>(*datas.pUnitFullScreenQuadData.get(), datas.petWindow->context.get());
+        datas.pFullScreenQuadC1 = std::make_unique<Mesh>(*datas.pFullScreenQuadData.get(), datas.petWindow->context.get());
 
 #ifdef _DEBUG
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageCallback(GLDebugMessageCallback, NULL);
+        sharedContext->Enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        sharedContext->DebugMessageCallback(GLDebugMessageCallback, NULL);
 #endif
     }
 
@@ -1888,38 +2068,22 @@ public:
     {
         logf("%s %s\n", PROJECT_NAME, PROJECT_VERSION);
         initWindow();
-        initOpenGL();
 
         createResources();
 
         glfwGetMonitorPos(datas.monitors[0], &datas.monitorX, &datas.monitorY);
 
-        datas.windowPos =
+        datas.petWindow->windowPos =
             Vec2{datas.monitorX + (datas.videoMode->width) / 2.f, datas.monitorY + (datas.videoMode->height) / 2.f};
-        datas.petPos = datas.windowPos;
-        glfwSetWindowPos(datas.window, datas.windowPos.x, datas.windowPos.y);
+        datas.petPos = datas.petWindow->windowPos;
+        glfwSetWindowPos(datas.petWindow->window, datas.petWindow->windowPos.x, datas.petWindow->windowPos.y);
 
-        glfwShowWindow(datas.window);
+        glfwSetWindowUserPointer(datas.petWindow->window, &datas);
 
-        glfwSetWindowUserPointer(datas.window, &datas);
-
-        glfwSetMouseButtonCallback(datas.window, mousButtonCallBack);
-        glfwSetCursorPosCallback(datas.window, cursorPositionCallback);
+        glfwSetMouseButtonCallback(datas.petWindow->window, mousButtonCallBack);
+        glfwSetCursorPosCallback(datas.petWindow->window, cursorPositionCallback);
 
         srand(datas.randomSeed == -1 ? (unsigned)time(nullptr) : datas.randomSeed);
-    }
-
-    void initDrawContext()
-    {
-        Framebuffer::bindScreen();
-        glViewport(0, 0, datas.windowSize.x, datas.windowSize.y);
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        glActiveTexture(GL_TEXTURE0);
-
-        glClear(GL_COLOR_BUFFER_BIT);
     }
 
     ~Game()
@@ -1929,69 +2093,93 @@ public:
 
     void run()
     {
-        Pet pet(datas);
+        Pet         pet(datas);
+        DialogPopup dialogPopup(datas);
+
+        Texture background{EMOTE_PATH "emote1_.png"};
+        Texture emote{EMOTE_PATH "exclamation.png"};
 
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
-            processInput(datas.window);
+            processInput(datas.petWindow->window);
 
             // poll for and process events
             glfwPollEvents();
         }};
 
         const std::function<void(double)> unlimitedUpdateDebugCollision{[&](double deltaTime) {
-            processInput(datas.window);
+            processInput(datas.petWindow->window);
 
             // poll for and process events
             glfwPollEvents();
         }};
+
         const std::function<void(double)> limitedUpdate{[&](double deltaTime) {
             pet.update(deltaTime);
 
-            if (datas.shouldUpdateFrame)
+            datas.petWindow->draw(
+                [&](Window& win) {
+                    Framebuffer::bindScreen();
+                    pet.draw();
+                },
+                datas.alwaysDraw);
+
+            datas.dialogPopupWindow->isDirty = true;
+            datas.dialogPopupWindow->draw(
+                [&](Window& win) {
+                    dialogPopup.draw();
+                },
+                datas.alwaysDraw);
+
+            for (size_t i = 0; i < datas.windows.size(); i++)
             {
-                // render
-                initDrawContext();
+                datas.windows[i].draw([&](Window& win)
+                    {
+                        win.windowSize = {300, 300};
+                        glfwSetWindowSize(win.window, win.windowSize.x,
+                                          win.windowSize.y);
 
-                pet.draw();
+                        datas.pImageShader->use();
+                        datas.pImageShader->setInt("uTexture", 0);
+                        datas.pFullScreenQuad[i].use();
 
-                // swap front and back buffers
-                glfwSwapBuffers(datas.window);
-                datas.shouldUpdateFrame = false;
+                        background.use();
+                        datas.pFullScreenQuad[i].draw();
+
+                        emote.use();
+                        datas.pFullScreenQuad[i].draw();
+                    }, datas.alwaysDraw);
             }
         }};
 
         const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
             // fullscreen
-            datas.windowSize.x = datas.videoMode->width / 1.f;
-            datas.windowSize.y = datas.videoMode->height / 1.f;
-            datas.petPosLimit  = {datas.videoMode->width - datas.windowSize.x,
-                                 datas.videoMode->height - datas.windowSize.y};
-            glfwSetWindowSize(datas.window, datas.windowSize.x, datas.windowSize.y);
+            datas.petWindow->windowSize.x = datas.videoMode->width / 1.f;
+            datas.petWindow->windowSize.y = datas.videoMode->height / 1.f;
+            datas.petPosLimit             = {datas.videoMode->width - datas.petWindow->windowSize.x,
+                                 datas.videoMode->height - datas.petWindow->windowSize.y};
+            glfwSetWindowSize(datas.petWindow->window, datas.petWindow->windowSize.x, datas.petWindow->windowSize.y);
 
-            // render
-            initDrawContext();
-
-            if (datas.pImageGreyScale && datas.pEdgeDetectionTexture && datas.pFullScreenQuad)
-            {
-                datas.pImageGreyScale->use();
-                datas.pImageGreyScale->setInt("uTexture", 0);
-                datas.pFullScreenQuad->use();
-                datas.pEdgeDetectionTexture->use();
-                datas.pFullScreenQuad->draw();
-            }
-
-            // swap front and back buffers
-            glfwSwapBuffers(datas.window);
+            datas.petWindow->isDirty = true;
+            datas.petWindow->draw(
+                [&](Window& win) {
+                    if (datas.pImageGreyScale && datas.pEdgeDetectionTexture && datas.pFullScreenQuadC1)
+                    {
+                        datas.pImageGreyScale->use();
+                        datas.pImageGreyScale->setInt("uTexture", 0);
+                        datas.pFullScreenQuadC1->use();
+                        datas.pEdgeDetectionTexture->use();
+                        datas.pFullScreenQuadC1->draw();
+                    }
+                },
+                true);
         }};
 
-        mainLoop.emplaceTimer(
-            [&]() {
-                physicSystem.update(1.f / datas.physicFrameRate);
-            },
-            1.f / datas.physicFrameRate, true);
+         mainLoop.emplaceTimer([&]() { physicSystem.update(1.f / datas.physicFrameRate); }, 1.f /
+         datas.physicFrameRate,
+                              true);
 
         mainLoop.start();
-        while (!glfwWindowShouldClose(datas.window))
+        while (!glfwWindowShouldClose(datas.petWindow->window))
         {
             mainLoop.update(unlimitedUpdate, datas.debugEdgeDetection ? limitedUpdateDebugCollision : limitedUpdate);
         }
@@ -2022,3 +2210,126 @@ int main(int argc, char** argv)
 
     return 0;
 }
+
+/*
+#include <iostream>
+
+// Window dimensions
+const GLuint WIDTH = 400, HEIGHT = 300;
+GLFWwindow* create_window(const char* name, int major, int minor, GLFWwindow* shared = NULL)
+{
+    std::cout << "Creating Window, OpenGL " << major << "." << minor << ": " << name << std::endl;
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, name, NULL, shared);
+    return window;
+}
+
+GladGLContext* create_context(GLFWwindow* window)
+{
+    glfwMakeContextCurrent(window);
+
+    GladGLContext* context = (GladGLContext*)calloc(1, sizeof(GladGLContext));
+    if (!context)
+        return NULL;
+
+    int version = gladLoadGLContext(context, glfwGetProcAddress);
+    std::cout << "Loaded OpenGL " << GLAD_VERSION_MAJOR(version) << "." << GLAD_VERSION_MINOR(version) << std::endl;
+
+    return context;
+}
+
+void free_context(GladGLContext* context)
+{
+    free(context);
+}
+
+void draw(GLFWwindow* window, GladGLContext* gl, float r, float g, float b, Shader& shader, Texture& texture,
+          Mesh& mesh)
+{
+    glfwMakeContextCurrent(window);
+
+    gl->ClearColor(r, g, b, 1.0f);
+    gl->Clear(GL_COLOR_BUFFER_BIT);
+
+    shader.use();
+    shader.setInt("uTexture", 0);
+    texture.use();
+    mesh.use();
+    gl->DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    glfwSwapBuffers(window);
+
+    if (glfwWindowShouldClose(window) || glfwGetKey(window, GLFW_KEY_ESCAPE))
+    {
+        glfwTerminate();
+        exit(EXIT_SUCCESS);
+    }
+}
+
+// Is called whenever a key is pressed/released via GLFW
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GL_TRUE);
+}
+
+int main()
+{
+    glfwInit();
+
+    GLFWwindow* window1 = create_window("Window 1", 4, 6, NULL);
+    GLFWwindow* window2 = create_window("Window 2", 4, 6, window1);
+
+    if (!window1 || !window2)
+    {
+        std::cout << "Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+
+    glfwSetKeyCallback(window1, key_callback);
+    glfwSetKeyCallback(window2, key_callback);
+
+    GladGLContext* context1 = create_context(window1);
+    GladGLContext* context2 = create_context(window2);
+    sharedContext           = context1;
+
+    Texture         background{EMOTE_PATH "emote1_.png"};
+    ScreenSpaceQuad pFullScreenQuad(-1.f, 1.f);
+    Shader          pImageShader(RESOURCE_PATH "shader/image.vs", RESOURCE_PATH "shader/image.fs");
+
+    if (!context1 || !context2)
+    {
+        std::cout << "Failed to initialize GL contexts" << std::endl;
+        free_context(context1);
+        free_context(context2);
+    }
+
+    glfwMakeContextCurrent(window1);
+    context1->Viewport(0, 0, WIDTH, HEIGHT);
+    Mesh mesh1(pFullScreenQuad, context1);
+    glfwMakeContextCurrent(window2);
+    context2->Viewport(0, 0, WIDTH, HEIGHT);
+    Mesh mesh2(pFullScreenQuad, context2);
+
+
+    while (!glfwWindowShouldClose(window1) && !glfwWindowShouldClose(window2))
+    {
+        glfwPollEvents();
+
+        draw(window1, context1, 0.5, 0.2, 0.6, pImageShader, background, mesh1);
+        draw(window2, context2, 0.0, 0.1, 0.8, pImageShader, background, mesh2);
+    }
+
+    free_context(context1);
+    free_context(context2);
+
+    glfwTerminate();
+
+    return 0;
+}*/
