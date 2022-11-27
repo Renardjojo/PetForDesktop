@@ -4,6 +4,7 @@
 #include "Game/GameData.hpp"
 
 #include "Engine/PhysicSystem.hpp"
+#include "Engine/Utilities.hpp"
 #include "Engine/Settings.hpp"
 #include "Engine/SpriteSheet.hpp"
 #include "Engine/Window.hpp"
@@ -75,8 +76,6 @@ protected:
 
     void initOpenGL()
     {
-        glGetString == nullptr;
-
         // glad: load all OpenGL function pointers
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
             errorAndExit("Failed to initialize OpenGL (GLAD)");
@@ -187,8 +186,8 @@ public:
 
         const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
             // fullscreen
-            datas.windowSize.x = datas.videoMode->width / 1.f;
-            datas.windowSize.y = datas.videoMode->height / 1.f;
+            datas.windowSize.x = datas.videoMode->width;
+            datas.windowSize.y = datas.videoMode->height;
             datas.petPosLimit  = {datas.videoMode->width - datas.windowSize.x,
                                  datas.videoMode->height - datas.windowSize.y};
             glfwSetWindowSize(datas.window, datas.windowSize.x, datas.windowSize.y);

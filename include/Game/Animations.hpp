@@ -64,7 +64,7 @@ public:
 
         if (spriteAnimator.isDone()) // Enter only for jump begin because don't loop.
         {
-            blackBoard.velocity += baseDir * (blackBoard.side * 2 - 1) * hThrust - blackBoard.gravity * vThrust;
+            blackBoard.velocity += baseDir * (blackBoard.side * 2.f - 1.f) * hThrust - blackBoard.gravity * vThrust;
             blackBoard.isGrounded = false;
         }
     }
@@ -107,12 +107,12 @@ public:
     {
         AnimationNode::onEnter(blackBoard);
         blackBoard.side = randNum(0, 1);
-        blackBoard.continusVelocity += baseDir * (blackBoard.side * 2 - 1) * thrust;
+        blackBoard.continusVelocity += baseDir * (blackBoard.side * 2.f - 1.f) * thrust;
     }
 
     void onExit(GameData& blackBoard) override
     {
         AnimationNode::onExit(blackBoard);
-        blackBoard.continusVelocity -= baseDir * (blackBoard.side * 2 - 1) * thrust;
+        blackBoard.continusVelocity -= baseDir * (blackBoard.side * 2.f - 1.f) * thrust;
     }
 };

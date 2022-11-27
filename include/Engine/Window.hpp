@@ -12,8 +12,8 @@ void cursorPositionCallback(GLFWwindow* window, double x, double y)
 
     if (datas.leftButtonEvent == GLFW_PRESS)
     {
-        datas.deltaCursorPosX = x - datas.prevCursorPosX;
-        datas.deltaCursorPosY = y - datas.prevCursorPosY;
+        datas.deltaCursorPosX = static_cast<float>(x) - datas.prevCursorPosX;
+        datas.deltaCursorPosY = static_cast<float>(y) - datas.prevCursorPosY;
     }
 }
 
@@ -31,8 +31,8 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
         case GLFW_PRESS:
             double x, y;
             glfwGetCursorPos(window, &x, &y);
-            datas.prevCursorPosX  = floor(x);
-            datas.prevCursorPosY  = floor(y);
+            datas.prevCursorPosX  = static_cast<float>(floor(x));
+            datas.prevCursorPosY  = static_cast<float>(floor(y));
             datas.deltaCursorPosX = 0.f;
             datas.deltaCursorPosY = 0.f;
             datas.isGrounded      = false;

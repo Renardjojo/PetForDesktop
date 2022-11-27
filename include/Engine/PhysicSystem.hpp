@@ -41,13 +41,13 @@ public:
 
         if (data.petPos.x > data.petPosLimit.x)
         {
-            data.petPos.x = data.petPosLimit.x;
+            data.petPos.x = static_cast<float>(data.petPosLimit.x);
             data.velocity = data.velocity.reflect(Vec2::left()) * data.bounciness;
         }
 
         if (data.petPos.y > data.petPosLimit.y)
         {
-            data.petPos.y = data.petPosLimit.y;
+            data.petPos.y = static_cast<float>(data.petPosLimit.y);
             data.velocity = data.velocity.reflect(Vec2::up()) * data.bounciness;
 
             // check if is grounded
@@ -61,8 +61,8 @@ public:
         int screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY;
         if (data.debugEdgeDetection)
         {
-            screenShootPosX  = 0.f;
-            screenShootPosY  = 0.f;
+            screenShootPosX  = 0;
+            screenShootPosY  = 0;
             screenShootSizeX = data.windowSize.x;
             screenShootSizeY = data.windowSize.y;
         }
@@ -71,10 +71,10 @@ public:
             const float xPadding = prevToNewWinPos.x < 0.f ? prevToNewWinPos.x : 0.f;
             const float yPadding = prevToNewWinPos.y < 0.f ? prevToNewWinPos.y : 0.f;
 
-            screenShootPosX  = data.petPos.x + data.petSize.x / 2.f + xPadding - data.footBasasementWidth / 2.f;
-            screenShootPosY  = data.petPos.y + data.petSize.y + 1 + yPadding - data.footBasasementHeight / 2.f;
-            screenShootSizeX = abs(prevToNewWinPos.x) + data.footBasasementWidth;
-            screenShootSizeY = abs(prevToNewWinPos.y) + data.footBasasementHeight;
+            screenShootPosX  = static_cast<int>(data.petPos.x + data.petSize.x / 2.f + xPadding - data.footBasasementWidth / 2.f);
+            screenShootPosY  = static_cast<int>(data.petPos.y + data.petSize.y + 1 + yPadding - data.footBasasementHeight / 2.f);
+            screenShootSizeX = static_cast<int>(abs(prevToNewWinPos.x) + data.footBasasementWidth);
+            screenShootSizeY = static_cast<int>(abs(prevToNewWinPos.y) + data.footBasasementHeight);
         }
 
         ScreenShoot              screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
@@ -93,7 +93,7 @@ public:
 
             data.edgeDetectionShaders[0].use();
             data.edgeDetectionShaders[0].setInt("uTexture", 0);
-            data.edgeDetectionShaders[0].setVec2("resolution", pxlData.width, pxlData.height);
+            data.edgeDetectionShaders[0].setVec2("resolution", static_cast<float>(pxlData.width), static_cast<float>(pxlData.height));
             data.pCollisionTexture->use();
             data.pFullScreenQuad->use();
             data.pFullScreenQuad->draw();
@@ -114,7 +114,7 @@ public:
 
             data.edgeDetectionShaders[1].use();
             data.edgeDetectionShaders[1].setInt("uTexture", 0);
-            data.edgeDetectionShaders[1].setVec2("resolution", pxlData.width, pxlData.height);
+            data.edgeDetectionShaders[1].setVec2("resolution", static_cast<float>(pxlData.width), static_cast<float>(pxlData.height));
             data.pCollisionTexture->use();
             data.pFullScreenQuad->use();
             data.pFullScreenQuad->draw();
@@ -201,7 +201,7 @@ public:
             const Vec2 acc = data.gravity * !data.isGrounded;
 
             // V = Acc * Time
-            data.velocity += acc * deltaTime;
+            data.velocity += acc * (float)deltaTime;
 
             // Evaluate pixel distance based on dpi and monitor size
             // TODO: bake it
@@ -214,7 +214,7 @@ public:
             const Vec2 prevWinPos = data.petPos;
             // Pos = PrevPos + V * Time
             const Vec2 newWinPos = data.petPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) *
-                                                  pixelPerMeter * deltaTime);
+                                                  pixelPerMeter * (float)deltaTime);
             const Vec2 prevToNewWinPos = newWinPos - prevWinPos;
             if ((prevToNewWinPos.sqrLength() <= data.continusCollisionMaxSqrVelocity && prevToNewWinPos.y > 0.f) ||
                 data.debugEdgeDetection)
@@ -258,8 +258,8 @@ public:
             data.deltaCursorPosY = 0;
         }
 
-        data.windowPos.x = data.petPos.x - data.windowMinExt.x;
-        data.windowPos.y = data.petPos.y - data.windowMinExt.y;
+        data.windowPos.x = static_cast<int>(data.petPos.x) - data.windowMinExt.x;
+        data.windowPos.y = static_cast<int>(data.petPos.y) - data.windowMinExt.y;
         glfwSetWindowPos(data.window, data.windowPos.x, data.windowPos.y);
     }
 };

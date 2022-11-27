@@ -6,13 +6,13 @@
 class SpriteAnimator
 {
 protected:
-    SpriteSheet* pSheet = nullptr;
-    float        timer;
-    float        maxTimer;
-    bool         loop;
-    bool         isEnd;
-    int          frameRate;
-    int          indexCurrentAnimSprite;
+    SpriteSheet* pSheet                 = nullptr;
+    float        timer                  = 0.f;
+    float        maxTimer               = 0.f;
+    bool         loop                   = false;
+    bool         isEnd                  = false;
+    int          frameRate              = 0;
+    int          indexCurrentAnimSprite = 0;
 
 public:
     void play(GameData& data, SpriteSheet& inSheet, bool inLoop, int inFrameRate)
@@ -31,7 +31,7 @@ public:
     {
         if (!isDone())
         {
-            timer += deltaTime;
+            timer += (float)deltaTime;
 
             while (timer >= maxTimer)
             {
@@ -49,7 +49,7 @@ public:
             if (indexCurrentAnimSprite != (int)(timer * frameRate))
             {
                 data.shouldUpdateFrame = true;
-                indexCurrentAnimSprite = timer * frameRate;
+                indexCurrentAnimSprite = static_cast<int>(timer * frameRate);
             }
         }
     }

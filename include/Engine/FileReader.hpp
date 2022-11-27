@@ -7,12 +7,12 @@
 class FileReader
 {
 protected:
-    char* buffer = NULL;
+    char* buffer = nullptr;
 
 public:
     FileReader(const char* filename)
     {
-        int     string_size, read_size;
+        size_t     string_size, read_size;
         FILE*   handler;
         errno_t err;
 

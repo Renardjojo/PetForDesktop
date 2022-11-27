@@ -54,14 +54,14 @@ public:
 
     void onEnter(GameData& blackBoard) final
     {
-        timer = 0;
-        delay = baseDelay_ms + randNum(-interval_ms, interval_ms);
-        delay *= 0.001; // to seconde
+        timer = 0.f;
+        delay = static_cast<float>(baseDelay_ms + randNum(-interval_ms, interval_ms));
+        delay *= 0.001f; // to seconde
     }
 
     void onUpdate(GameData& blackBoard, double dt) final
     {
-        timer += dt;
+        timer += static_cast<float>(dt);
     }
 };
 

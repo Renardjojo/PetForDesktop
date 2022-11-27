@@ -17,13 +17,13 @@ struct GameData
     const GLFWvidmode* videoMode    = nullptr;
     int                monitorCount = 0, monitorX = 0, monitorY = 0;
     Vec2               petPos  = {0.f, 0.f};
-    Vec2i              petSize = {0.f, 0.f};
+    Vec2i              petSize = {0, 0};
 
-    Vec2i windowExt    = {0.f, 0.f};
-    Vec2i windowMinExt = {0.f, 0.f};
+    Vec2i windowExt    = {0, 0};
+    Vec2i windowMinExt = {0, 0};
 
-    Vec2i windowSize  = {0.f, 0.f};
-    Vec2i windowPos   = {0.f, 0.f};
+    Vec2i windowSize  = {0, 0};
+    Vec2i windowPos   = {0, 0};
     Vec2i petPosLimit = {0, 0};
 
     bool shouldUpdateFrame = true;
@@ -75,7 +75,7 @@ struct GameData
     bool isGrab = false;
 
     // Time
-    double timeAcc = 0.f;
+    double timeAcc = 0.0;
 
     // Window
     bool showWindow                = false;

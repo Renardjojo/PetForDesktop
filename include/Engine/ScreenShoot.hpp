@@ -21,7 +21,7 @@ protected:
     HDC     hDC     = nullptr;
     HBITMAP hBitmap = nullptr;
     HGDIOBJ old_obj = nullptr;
-    HANDLE  hDIB    = nullptr;
+    HGLOBAL  hDIB    = nullptr;
 
     Data data;
 

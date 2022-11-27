@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Game/GameData.hpp"
 #include "Engine/Utilities.hpp"
+#include "Game/GameData.hpp"
 
+#include <assert.h>
 #include <memory>
 #include <vector>
-#include <assert.h>
 
 class StateMachine
 {
@@ -14,7 +14,7 @@ public:
     {
         struct Transition
         {
-            Node*                              pOwner;
+            Node*                              pOwner = nullptr;
             std::vector<std::shared_ptr<Node>> to;
 
             virtual void onEnter(GameData& blackBoard){};
@@ -90,7 +90,7 @@ public:
                 pCurrentNode->onExit(blackBoard);
 
                 assert(!pNodeTransition->to.empty());
-                std::shared_ptr<Node>& to = pNodeTransition->to[randNum(0, pNodeTransition->to.size() - 1)];
+                std::shared_ptr<Node>& to = pNodeTransition->to[randNum(0, (int)pNodeTransition->to.size() - 1)];
                 assert(to != nullptr);
                 pCurrentNode = to;
                 pCurrentNode->onEnter(blackBoard);
