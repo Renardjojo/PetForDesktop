@@ -1,3 +1,7 @@
+#pragma once
+
+#ifdef __linux__
+#elif _WIN32
 #define NOMINMAX
 #include <Windows.h>
 
@@ -100,3 +104,5 @@ public:
         return data;
     }
 };
+#else
+#endif
