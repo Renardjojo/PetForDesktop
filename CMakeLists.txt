@@ -20,6 +20,8 @@ set(ABS_README_PATH "${CMAKE_SOURCE_DIR}/README.md")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 ########### Create version ############
+find_package(Git)
+
 if(GIT_EXECUTABLE)
   # Generate a git-describe version string from Git repository tags
   execute_process(
@@ -119,10 +121,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION_SHORT="${PROJ
 
 ########### Build link ############
 # Set a symbolic link so exe can find the /Data folder
-add_custom_command( 
-    TARGET ${PROJECT_NAME} 
-    POST_BUILD COMMAND ${CMAKE_COMMAND} 
-        -E create_symlink ${ABS_RESOURCE_DIR} ${ABS_RESOURCES_BUILD_LINK} 
-    DEPENDS ${ABS_RESOURCES_BUILD_LINK} 
-    COMMENT "symbolic link ${ABS_RESOURCE_DIR} => ${ABS_RESOURCES_BUILD_LINK}" 
+add_custom_target(copy_assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/${REL_RESOURCES_DIR} ${CMAKE_CURRENT_BINARY_DIR}/${REL_RESOURCES_DIR}
 )
+add_dependencies(${PROJECT_NAME} copy_assets)
