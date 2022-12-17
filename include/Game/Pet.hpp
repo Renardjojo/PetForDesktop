@@ -1,17 +1,107 @@
 #pragma once
 
-#include "Engine/StateMachine.hpp"
+#include "Engine/Log.hpp"
 #include "Engine/SpriteAnimator.hpp"
 #include "Engine/SpriteSheet.hpp"
-#include "Engine/Log.hpp"
-#include "Game/GameData.hpp"
-#include "Game/Animations.hpp"
+#include "Engine/StateMachine.hpp"
 #include "Game/AnimationTransitions.hpp"
+#include "Game/Animations.hpp"
+#include "Game/GameData.hpp"
 
 #include <map>
 #include <string>
 
 #include "yaml-cpp/yaml.h"
+
+enum class EPopupType
+{
+    Dialogue,
+    Dream,
+    Exclamation,
+
+    COUNT
+};
+
+enum class ENeed
+{
+    None,
+    Love,
+    Sleep,
+    Hungry,
+    Sad,
+    Happy,
+    Angry,
+
+    COUNT
+};
+
+class DialoguePopUp
+{
+protected:
+    GameData&                     datas;
+    std::string                   emotesPath = RESOURCE_PATH "sprites/emote/";
+    std::map<EPopupType, Texture> popups;
+    std::map<ENeed, Texture>      speachs;
+
+    bool       m_isActive = false;
+    float      m_displayDuration = 0.f;
+    float      m_displayerCurrentTimer = 0.f;
+    EPopupType m_backgroundToDisplay;
+    ENeed      m_forgroundToDisplay;
+
+public:
+    DialoguePopUp(GameData& data) : datas{data}
+    {
+        popups.emplace(EPopupType::Dialogue, (emotesPath + "emote1_.png").c_str());
+
+        speachs.emplace(ENeed::Love, (emotesPath + "heart.png").c_str());
+        speachs.emplace(ENeed::Sleep, (emotesPath + "sleep2.png").c_str());
+        speachs.emplace(ENeed::Hungry, (emotesPath + "drop1.png").c_str());
+        speachs.emplace(ENeed::Sad, (emotesPath + "faceSad.png").c_str());
+        speachs.emplace(ENeed::Happy, (emotesPath + "faceHappy.png").c_str());
+        speachs.emplace(ENeed::Angry, (emotesPath + "faceAngry.png").c_str());
+    }
+
+    void update(double deltaTime)
+    {
+        if (m_isActive)
+        {
+            m_displayerCurrentTimer += deltaTime;
+
+            if (m_displayerCurrentTimer >= m_displayDuration)
+            {
+                m_isActive = false;
+            }
+        }
+    }
+
+    void display(float displayDuration, EPopupType backgroundToDisplay, ENeed forgroundToDisplay)
+    {
+        m_isActive              = true;
+        m_displayerCurrentTimer = 0.f;
+        m_displayDuration       = displayDuration;
+        m_backgroundToDisplay   = backgroundToDisplay;
+        m_forgroundToDisplay    = forgroundToDisplay;
+    }
+
+    void drawIfActive()
+    {
+        if (m_isActive)
+        {
+            datas.pSpriteSheetShader->use();
+            datas.pSpriteSheetShader->setVec4("uScaleOffSet", 1, 1, 0, 0);
+            datas.pSpriteSheetShader->setVec4("uClipSpacePosSize", 0.33, 0.5, 0.33, 0.33);
+
+            datas.pUnitFullScreenQuad->use();
+
+            popups.at(m_backgroundToDisplay).use();
+            datas.pUnitFullScreenQuad->draw();
+
+            speachs.at(m_forgroundToDisplay).use();
+            datas.pUnitFullScreenQuad->draw();
+        }
+    }
+};
 
 class Pet
 {
@@ -32,11 +122,12 @@ protected:
     int            indexCurrentAnimSprite = 0;
     bool           loopCurrentAnim;
 
-    bool        leftWasPressed = false;
-    std::string spritesPath    = RESOURCE_PATH "sprites/";
+    bool          leftWasPressed = false;
+    std::string   spritesPath    = RESOURCE_PATH "sprites/";
+    DialoguePopUp dialoguePopup;
 
 public:
-    Pet(GameData& data) : datas{data}, animator{data}
+    Pet(GameData& data) : datas{data}, animator{data}, dialoguePopup{data}
     {
         parseAnimationGraph();
     }
@@ -268,11 +359,21 @@ public:
 
     void update(double deltaTime)
     {
+        if (randNum(0, 30) == 1)
+        {
+            dialoguePopup.display(2.f, EPopupType::Dialogue, (ENeed)(randNum(1, (int)ENeed::COUNT - 1)));
+        }
+
         animator.update(deltaTime);
+        dialoguePopup.update(deltaTime);
     }
 
     void draw()
     {
+        // Drax dialogue pop up
+        dialoguePopup.drawIfActive();
+
+        // Draw pet
         spriteAnimator.draw(datas, *datas.pSpriteSheetShader, datas.side);
         datas.pUnitFullScreenQuad->use();
         datas.pUnitFullScreenQuad->draw();
