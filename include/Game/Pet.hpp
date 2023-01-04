@@ -4,6 +4,7 @@
 #include "Engine/SpriteAnimator.hpp"
 #include "Engine/SpriteSheet.hpp"
 #include "Engine/StateMachine.hpp"
+#include "Engine/UtilitySystem.hpp"
 #include "Game/AnimationTransitions.hpp"
 #include "Game/Animations.hpp"
 #include "Game/GameData.hpp"
@@ -15,7 +16,7 @@
 
 enum class EPopupType
 {
-    Dialogue,
+    Dialogue = 0,
     Dream,
     Exclamation,
 
@@ -24,14 +25,13 @@ enum class EPopupType
 
 enum class ENeed
 {
-    None,
-    Love,
+    Love = 0,
     Sleep,
     Hungry,
     Sad,
     Happy,
     Angry,
-
+    None,
     COUNT
 };
 
@@ -43,8 +43,8 @@ protected:
     std::map<EPopupType, Texture> popups;
     std::map<ENeed, Texture>      speachs;
 
-    bool       m_isActive = false;
-    float      m_displayDuration = 0.f;
+    bool       m_isActive              = false;
+    float      m_displayDuration       = 0.f;
     float      m_displayerCurrentTimer = 0.f;
     EPopupType m_backgroundToDisplay;
     ENeed      m_forgroundToDisplay;
@@ -103,6 +103,78 @@ public:
     }
 };
 
+class NeedUpdator
+{
+    DialoguePopUp& m_dialoguePopup;
+    UtilitySystem& m_utilitySystem;
+    GameData&      m_datas;
+    int            lastNeed;
+    bool           leftWasPressed = false;
+    float          displayPopupCurrentTimer = 0.f;
+    float          nexTimeDisplayPopup = 0.f;
+
+    public:
+
+    NeedUpdator(GameData& datas, DialoguePopUp& dialoguePopup, UtilitySystem& utilitySystem)
+        : m_datas{datas}, m_dialoguePopup{dialoguePopup}, m_utilitySystem{utilitySystem}
+    {
+        nexTimeDisplayPopup = randNum(5000, 10000) / 1000.f;
+    }
+
+    void update(float deltaTime)
+    {
+        int currentNeedIndex = m_utilitySystem.getPriority();
+
+        if (currentNeedIndex != -1)
+        {
+            if (currentNeedIndex != lastNeed)
+            {
+                m_dialoguePopup.display(1.f, EPopupType::Dialogue, ENeed::Angry);
+                displayPopupCurrentTimer = 0;
+                lastNeed                 = currentNeedIndex;
+                nexTimeDisplayPopup      = randNum(5000, 10000) / 1000.f;
+            }
+            else
+            {
+                displayPopupCurrentTimer += deltaTime;
+
+                if (displayPopupCurrentTimer > nexTimeDisplayPopup)
+                {
+                    displayPopupCurrentTimer -= nexTimeDisplayPopup;
+                    nexTimeDisplayPopup = randNum(5000, 10000) / 1000.f;
+                    m_dialoguePopup.display(2.f, EPopupType::Dialogue, ENeed::Angry);
+                }
+            }
+        }
+        else
+        {
+            displayPopupCurrentTimer += deltaTime;
+
+            if (displayPopupCurrentTimer > nexTimeDisplayPopup)
+            {
+                displayPopupCurrentTimer -= nexTimeDisplayPopup;
+                nexTimeDisplayPopup = randNum(5000, 10000) / 1000.f;
+                m_dialoguePopup.display(2.f, EPopupType::Dialogue, ENeed::Love);
+            }
+        }
+        
+        for (size_t i = 0; i < m_utilitySystem.needs.size(); i++)
+        {
+            m_utilitySystem.needs[i].reduce(0.5 * deltaTime);
+        }
+
+        if (m_datas.leftButtonEvent == GLFW_PRESS)
+        {
+            leftWasPressed = true;
+        }
+        else if (leftWasPressed)
+        {
+            leftWasPressed = false;
+            m_utilitySystem.needs[(int)ENeed::Love].add(100);
+        }
+    }
+};
+
 class Pet
 {
 protected:
@@ -122,14 +194,17 @@ protected:
     int            indexCurrentAnimSprite = 0;
     bool           loopCurrentAnim;
 
-    bool          leftWasPressed = false;
-    std::string   spritesPath    = RESOURCE_PATH "sprites/";
+    std::string   spritesPath = RESOURCE_PATH "sprites/";
     DialoguePopUp dialoguePopup;
+    UtilitySystem utilitySystem;
+    NeedUpdator   needUpdator;
 
 public:
-    Pet(GameData& data) : datas{data}, animator{data}, dialoguePopup{data}
+    Pet(GameData& data)
+        : datas{data}, animator{data}, dialoguePopup{data}, needUpdator(data, dialoguePopup, utilitySystem)
     {
         parseAnimationGraph();
+        setupUtilitySystem();
     }
 
     SpriteSheet& getOrAddSpriteSheet(const char* file)
@@ -251,6 +326,12 @@ public:
         }
     }
 
+    void setupUtilitySystem()
+    {
+        // Love
+        utilitySystem.addNeed(100, 0, 100, 0, 60);
+    }
+
     template <typename T>
     bool AddBasicNode(YAML::Node node, std::map<std::string, std::shared_ptr<StateMachine::Node>>& nodes)
     {
@@ -359,11 +440,7 @@ public:
 
     void update(double deltaTime)
     {
-        if (randNum(0, 30) == 1)
-        {
-            dialoguePopup.display(2.f, EPopupType::Dialogue, (ENeed)(randNum(1, (int)ENeed::COUNT - 1)));
-        }
-
+        needUpdator.update(deltaTime);
         animator.update(deltaTime);
         dialoguePopup.update(deltaTime);
     }
