@@ -19,9 +19,40 @@ set(ABS_README_PATH "${CMAKE_SOURCE_DIR}/README.md")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+########### Create version ############
+find_package(Git)
+
+if(GIT_EXECUTABLE)
+  # Generate a git-describe version string from Git repository tags
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe --tags --dirty --match "v*"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_DESCRIBE_VERSION
+    RESULT_VARIABLE GIT_DESCRIBE_ERROR_CODE
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+  if(NOT GIT_DESCRIBE_ERROR_CODE)
+    string(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" VERSION_MAJOR "${GIT_DESCRIBE_VERSION}")
+    string(REGEX REPLACE "^v[0-9]+\\.([0-9]+).*" "\\1" VERSION_MINOR "${GIT_DESCRIBE_VERSION}")
+    string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" VERSION_PATCH "${GIT_DESCRIBE_VERSION}")
+    string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+(.*)" "\\1" VERSION_SHA1 "${GIT_DESCRIBE_VERSION}")
+    set(PROJECT_VERSION_SHORT "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+    set(PROJECT_VERSION_SHA ${GIT_DESCRIBE_VERSION})
+  endif()
+endif()
+
+# Final fallback: Just use a bogus version string that is semantically older
+# than anything else and spit out a warning to the developer.
+if(NOT DEFINED PROJECT_VERSION_SHA)
+  set(PROJECT_VERSION_SHA v0.0.0-unknown)
+  set(PROJECT_VERSION_SHORT v0.0.0)
+  message(WARNING "Failed to determine PROJECT_VERSION_SHA from Git tags. Using default version \"${PROJECT_VERSION_SHA}\".")
+endif()
+
 ########### Create project ############
-set(PROJECT_VERSION "1.1.0")
-project(${PROJECT_NAME} VERSION "${PROJECT_VERSION}")
+project(${PROJECT_NAME} VERSION ${PROJECT_VERSION_SHORT})
+message(STATUS "Project ${PROJECT_NAME} ${PROJECT_VERSION_SHORT}")
 
 ########### Setup ############
 # Set env variable
@@ -82,16 +113,19 @@ target_link_libraries(${PROJECT_NAME} Boxer)
 add_subdirectory(${ABS_DEPS_DIR}/yaml-cpp)
 target_link_libraries(${PROJECT_NAME} yaml-cpp)
 
+# cpr
+add_subdirectory(${ABS_DEPS_DIR}/cpr)
+target_link_libraries(${PROJECT_NAME} cpr)
+
 ########### Define ############
-target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="${REL_RESOURCES_DIR}/")
+target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_NAME="${PROJECT_NAME}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VERSION_SHA}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION_SHORT="${PROJECT_VERSION_SHORT}")
 
 ########### Build link ############
 # Set a symbolic link so exe can find the /Data folder
-add_custom_command( 
-    TARGET ${PROJECT_NAME} 
-    POST_BUILD COMMAND ${CMAKE_COMMAND} 
-        -E create_symlink ${ABS_RESOURCE_DIR} ${ABS_RESOURCES_BUILD_LINK} 
-    DEPENDS ${ABS_RESOURCES_BUILD_LINK} 
-    COMMENT "symbolic link ${ABS_RESOURCE_DIR} => ${ABS_RESOURCES_BUILD_LINK}" 
+add_custom_target(copy_assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/${REL_RESOURCES_DIR} ${CMAKE_CURRENT_BINARY_DIR}/${REL_RESOURCES_DIR}
 )
+add_dependencies(${PROJECT_NAME} copy_assets)

@@ -1,3 +1,7 @@
+#pragma once
+
+#ifdef __linux__
+#elif _WIN32
 #define NOMINMAX
 #include <Windows.h>
 
@@ -17,7 +21,7 @@ protected:
     HDC     hDC     = nullptr;
     HBITMAP hBitmap = nullptr;
     HGDIOBJ old_obj = nullptr;
-    HANDLE  hDIB    = nullptr;
+    HGLOBAL  hDIB    = nullptr;
 
     Data data;
 
@@ -100,3 +104,5 @@ public:
         return data;
     }
 };
+#else
+#endif

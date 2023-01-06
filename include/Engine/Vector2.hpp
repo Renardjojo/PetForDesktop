@@ -384,8 +384,8 @@ struct convert<Vector2<T>>
             return false;
         }
 
-        rhs.x = node[0].as<double>();
-        rhs.y = node[1].as<double>();
+        rhs.x = node[0].as<float>();
+        rhs.y = node[1].as<float>();
         return true;
     }
 };
