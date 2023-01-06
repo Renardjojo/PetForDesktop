@@ -113,6 +113,10 @@ target_link_libraries(${PROJECT_NAME} Boxer)
 add_subdirectory(${ABS_DEPS_DIR}/yaml-cpp)
 target_link_libraries(${PROJECT_NAME} yaml-cpp)
 
+# cpr
+add_subdirectory(${ABS_DEPS_DIR}/cpr)
+target_link_libraries(${PROJECT_NAME} cpr)
+
 ########### Define ############
 target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="${REL_RESOURCES_DIR}/")
 target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_NAME="${PROJECT_NAME}")

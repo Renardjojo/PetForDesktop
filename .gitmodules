@@ -7,3 +7,6 @@
 [submodule "deps/yaml-cpp"]
 	path = deps/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "deps/cpr"]
+	path = deps/cpr
+	url = https://github.com/libcpr/cpr.git
