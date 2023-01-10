@@ -56,17 +56,17 @@ protected:
         glfwWindowHint(GLFW_DEPTH_BITS, 0);
         glfwWindowHint(GLFW_STENCIL_BITS, 0);
 
-        datas.monitors    = glfwGetMonitors(&datas.monitorCount);
-        datas.videoMode   = glfwGetVideoMode(datas.monitors[0]);
-        datas.petPosLimit = {datas.videoMode->width, datas.videoMode->height};
+        glfwSetMonitorCallback(setMonitorCallback);
+        datas.monitors.init();
+        Vec2i monitorSize = datas.monitors.getMonitorsSize();
+        Vec2i monitorsSizeMM = datas.monitors.getMonitorPhysicalSize();
+
+        datas.petPosLimit = monitorSize;
         datas.windowSize  = {1, 1};
 
         // Evaluate pixel distance based on dpi and monitor size
-        // TODO: bake it
-        int width_mm, height_mm;
-        glfwGetMonitorPhysicalSize(datas.monitors[0], &width_mm, &height_mm);
-        datas.pixelPerMeter = {(float)datas.videoMode->width / (width_mm * 0.001f),
-                                 (float)datas.videoMode->height / (height_mm * 0.001f)};
+        datas.pixelPerMeter = {(float)monitorSize.x / (monitorsSizeMM.x * 0.001f),
+                               (float)monitorSize.y / (monitorsSizeMM.y * 0.001f)};
 
         datas.window = glfwCreateWindow(datas.windowSize.x, datas.windowSize.y, PROJECT_NAME, NULL, NULL);
         if (!datas.window)
@@ -122,10 +122,10 @@ public:
 
         createResources();
 
-        glfwGetMonitorPos(datas.monitors[0], &datas.monitorX, &datas.monitorY);
+        //glfwGetMonitorPos(datas.monitors[0], &datas.monitorX, &datas.monitorY);
+        Vec2i monitorSize = datas.monitors.getMonitorsSize();
 
-        datas.windowPos =
-            Vec2{datas.monitorX + (datas.videoMode->width) / 2.f, datas.monitorY + (datas.videoMode->height) / 2.f};
+        datas.windowPos = Vec2{monitorSize.x / 2.f, monitorSize.y / 2.f};
         datas.petPos = datas.windowPos;
         glfwSetWindowPos(datas.window, datas.windowPos.x, datas.windowPos.y);
 
@@ -190,10 +190,9 @@ public:
 
         const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
             // fullscreen
-            datas.windowSize.x = datas.videoMode->width;
-            datas.windowSize.y = datas.videoMode->height;
-            datas.petPosLimit  = {datas.videoMode->width - datas.windowSize.x,
-                                 datas.videoMode->height - datas.windowSize.y};
+            Vec2i monitorSize  = datas.monitors.getMonitorsSize();
+            datas.windowSize  = monitorSize;
+            datas.petPosLimit  = {monitorSize.x - datas.windowSize.x, monitorSize.y - datas.windowSize.y};
             glfwSetWindowSize(datas.window, datas.windowSize.x, datas.windowSize.y);
 
             // render

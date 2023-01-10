@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Engine/Log.hpp"
+#include "Engine/Vector2.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"

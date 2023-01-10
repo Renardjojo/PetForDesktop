@@ -23,7 +23,8 @@ public:
         data.petSize.y    = height * data.scale;
         data.windowSize.x = data.petSize.x + data.windowExt.x + data.windowMinExt.x;
         data.windowSize.y = data.petSize.y + data.windowExt.y + data.windowMinExt.y;
-        data.petPosLimit  = {data.videoMode->width - data.petSize.x, data.videoMode->height - data.petSize.y};
+        Vec2i monitorSize = data.monitors.getMonitorsSize();
+        data.petPosLimit  = {monitorSize.x - data.petSize.x, monitorSize.y - data.petSize.y};
         glfwSetWindowSize(data.window, data.windowSize.x, data.windowSize.y);
 
         float       hScale  = 1.f / tileCount;
