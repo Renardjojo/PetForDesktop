@@ -61,6 +61,13 @@ protected:
         datas.petPosLimit = {datas.videoMode->width, datas.videoMode->height};
         datas.windowSize  = {1, 1};
 
+        // Evaluate pixel distance based on dpi and monitor size
+        // TODO: bake it
+        int width_mm, height_mm;
+        glfwGetMonitorPhysicalSize(datas.monitors[0], &width_mm, &height_mm);
+        datas.pixelPerMeter = {(float)datas.videoMode->width / (width_mm * 0.001f),
+                                 (float)datas.videoMode->height / (height_mm * 0.001f)};
+
         datas.window = glfwCreateWindow(datas.windowSize.x, datas.windowSize.y, PROJECT_NAME, NULL, NULL);
         if (!datas.window)
         {

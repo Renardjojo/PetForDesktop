@@ -97,5 +97,13 @@ public:
             }
             m_timerQueue.pop();
         }
+
+        while (!datas.deltasCursorPosBuffer.empty() &&
+               datas.deltasCursorPosBuffer.top().timer + datas.coyoteTimeCursorPos <= datas.timeAcc)
+        {
+            const GameData::DeltaCursosPosElem& elem = datas.deltasCursorPosBuffer.top();
+            datas.deltaCursorAcc -= elem.pos;
+            datas.deltasCursorPosBuffer.pop();
+        }
     }
 };
