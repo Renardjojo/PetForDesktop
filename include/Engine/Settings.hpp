@@ -49,6 +49,28 @@ public:
             data.collisionPixelRatioStopMovement =
                 std::clamp(nodesSection["CollisionPixelRatioStopMovement"].as<float>(), 0.f, 1.f);
             data.isGroundedDetection = std::max(nodesSection["IsGroundedDetection"].as<float>(), 0.f);
+            data.releaseImpulse      = std::max(nodesSection["InputReleaseImpulse"].as<float>(), 0.f);
+        }
+
+        {
+            section                 = "GamePlay";
+            YAML::Node nodesSection = animGraph[section];
+            if (!nodesSection)
+                errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
+
+            data.coyoteTimeCursorPos = std::max(nodesSection["CoyoteTimeCursorMovement"].as<float>(), 0.f);
+        }
+
+        {
+            section                 = "Window";
+            YAML::Node nodesSection = animGraph[section];
+            if (!nodesSection)
+                errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
+
+            data.showWindow                = nodesSection["ShowWindow"].as<bool>();
+            data.showFrameBufferBackground = nodesSection["ShowFrameBufferBackground"].as<bool>();
+            data.useFowardWindow           = nodesSection["UseFowardWindow"].as<bool>();
+            data.useMousePassThoughWindow  = nodesSection["UseMousePassThoughWindow"].as<bool>();
         }
 
         {

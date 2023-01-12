@@ -9,11 +9,13 @@
 void cursorPositionCallback(GLFWwindow* window, double x, double y)
 {
     GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
-
     if (datas.leftButtonEvent == GLFW_PRESS)
     {
         datas.deltaCursorPosX = static_cast<float>(x) - datas.prevCursorPosX;
         datas.deltaCursorPosY = static_cast<float>(y) - datas.prevCursorPosY;
+        Vec2 delta(datas.deltaCursorPosX, datas.deltaCursorPosY);
+        datas.deltasCursorPosBuffer.emplace(datas.timeAcc, delta);
+        datas.deltaCursorAcc += delta;
     }
 }
 
@@ -38,7 +40,7 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
             datas.isGrounded      = false;
             break;
         case GLFW_RELEASE:
-            datas.velocity = Vec2{datas.deltaCursorPosX / datas.FPS, datas.deltaCursorPosY / datas.FPS};
+            datas.velocity = datas.deltaCursorAcc / datas.coyoteTimeCursorPos / datas.pixelPerMeter * datas.releaseImpulse;
             break;
         default:
             break;

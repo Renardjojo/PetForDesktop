@@ -203,18 +203,10 @@ public:
             // V = Acc * Time
             data.velocity += acc * (float)deltaTime;
 
-            // Evaluate pixel distance based on dpi and monitor size
-            // TODO: bake it
-            int width_mm, height_mm;
-            glfwGetMonitorPhysicalSize(data.monitors[0], &width_mm, &height_mm);
-
-            const vec2 pixelPerMeter{(float)data.videoMode->width / (width_mm * 0.001f),
-                                     (float)data.videoMode->height / (height_mm * 0.001f)};
-
             const Vec2 prevWinPos = data.petPos;
             // Pos = PrevPos + V * Time
             const Vec2 newWinPos = data.petPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) *
-                                                  pixelPerMeter * (float)deltaTime);
+                                                  data.pixelPerMeter * (float)deltaTime);
             const Vec2 prevToNewWinPos = newWinPos - prevWinPos;
             if ((prevToNewWinPos.sqrLength() <= data.continusCollisionMaxSqrVelocity && prevToNewWinPos.y > 0.f) ||
                 data.debugEdgeDetection)

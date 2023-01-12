@@ -8,6 +8,7 @@
 #include <GLFW/glfw3.h>
 #include <vector>
 #include <memory>
+#include <queue>
 
 struct GameData
 {
@@ -48,6 +49,24 @@ struct GameData
     float deltaCursorPosX = 0;
     float deltaCursorPosY = 0;
     int   leftButtonEvent = 0;
+
+    struct DeltaCursosPosElem
+    {
+        float timer;
+        Vec2  pos;
+
+        bool operator>(const DeltaCursosPosElem& other) const noexcept
+        {
+            return timer > other.timer;
+        }
+    };
+
+    std::priority_queue<DeltaCursosPosElem, std::vector<DeltaCursosPosElem>, std::greater<DeltaCursosPosElem>>
+          deltasCursorPosBuffer;
+    float coyoteTimeCursorPos = 0.1f;
+    float releaseImpulse      = 3.f;
+    Vec2  deltaCursorAcc      = {0.f, 0.f};
+    Vec2  pixelPerMeter;
 
     // Settings
     int FPS        = 0;
