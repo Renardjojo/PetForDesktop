@@ -64,4 +64,11 @@ public:
     {
         return pSheet == nullptr || isEnd;
     }
+
+    bool isMouseOver(Vec2i cursorPos)
+    {
+        // Assuming square image
+        cursorPos.x += indexCurrentAnimSprite * pSheet->getHeight();
+        return pSheet != nullptr ? pSheet->isPixelOpaque(cursorPos) : false;
+    }
 };

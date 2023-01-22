@@ -79,7 +79,6 @@ protected:
 
         glfwSetWindowAttrib(datas.window, GLFW_DECORATED, datas.showWindow);
         glfwSetWindowAttrib(datas.window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
-        glfwSetWindowAttrib(datas.window, GLFW_MOUSE_PASSTHROUGH, datas.useMousePassThoughWindow);
         glfwDefaultWindowHints();
     }
 
@@ -167,12 +166,8 @@ public:
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
             processInput(datas.window);
 
-            // poll for and process events
-            glfwPollEvents();
-        }};
-
-        const std::function<void(double)> unlimitedUpdateDebugCollision{[&](double deltaTime) {
-            processInput(datas.window);
+            if (datas.useMousePassThoughWindow)
+                glfwSetWindowAttrib(datas.window, GLFW_MOUSE_PASSTHROUGH, !pet.isMouseOver());
 
             // poll for and process events
             glfwPollEvents();
