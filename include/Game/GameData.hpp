@@ -44,6 +44,7 @@ struct GameData
     std::unique_ptr<ScreenSpaceQuad> pFullScreenQuad     = nullptr;
 
     // Inlog
+    Vec2i  cursorPos;
     float prevCursorPosX  = 0;
     float prevCursorPosY  = 0;
     float deltaCursorPosX = 0;

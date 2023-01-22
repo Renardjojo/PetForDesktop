@@ -455,4 +455,23 @@ public:
         datas.pUnitFullScreenQuad->use();
         datas.pUnitFullScreenQuad->draw();
     }
+    
+    bool isMouseOver()
+    {
+        const Vec2 localWinPos             = datas.petPos - datas.windowPos;
+        const bool isCursorInsidePetWindow = datas.cursorPos.x > localWinPos.x && datas.cursorPos.y > localWinPos.y &&
+                                             datas.cursorPos.x < localWinPos.x + (float)datas.petSize.x &&
+                                             datas.cursorPos.y < localWinPos.y + (float)datas.petSize.y;
+
+        if (isCursorInsidePetWindow)
+        {
+            Vec2i localCursoPos{static_cast<int>(floor(datas.cursorPos.x / (float)datas.scale)),
+                                static_cast<int>(floor(datas.cursorPos.y / (float)datas.scale))};
+            return spriteAnimator.isMouseOver(localCursoPos);
+        }
+        else
+        {
+            return false;
+        }
+    }
 };

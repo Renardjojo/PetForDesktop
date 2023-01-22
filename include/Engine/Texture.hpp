@@ -15,6 +15,7 @@ protected:
     unsigned int ID;
     int          width, height;
     int          nbChannels;
+    unsigned char* data = nullptr;
 
 public:
     Texture(const char* srcPath, std::function<void()> setupCallback = defaultSetupCallBack)
@@ -26,7 +27,7 @@ public:
 
         // load image, create texture and generate mipmaps
         stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-        unsigned char* data = stbi_load(srcPath, &width, &height, &nbChannels, 0);
+        data = stbi_load(srcPath, &width, &height, &nbChannels, 0);
         if (data)
         {
             if (nbChannels == 4)
@@ -38,7 +39,6 @@ public:
         {
             log("Failed to load texture");
         }
-        stbi_image_free(data);
     }
 
     Texture(void* data, int pxlWidth, int pxlHeight, int channels = 3,
@@ -83,7 +83,15 @@ public:
 
     ~Texture()
     {
+        if (data != nullptr)
+            stbi_image_free(data);
         glDeleteTextures(1, &ID);
+    }
+
+    bool isPixelOpaque(Vec2i cursorPos) const
+    {        
+        return *(data + (cursorPos.x + (height - 1 - cursorPos.y) * width) * sizeof(unsigned char) * nbChannels +
+                 3 * sizeof(unsigned char)) > 0;
     }
 
     void use() const
