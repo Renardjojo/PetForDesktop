@@ -78,16 +78,16 @@ struct GameData
     int  physicFrameRate = 60;
     Vec2 velocity        = {0.f, 0.f};
     // This value is not changed by the physic system. Usefull for movement. Friction is applied to this value
-    Vec2  continusVelocity                = {0.f, 0.f};
+    Vec2  continuousVelocity                = {0.f, 0.f};
     Vec2  gravity                         = {0.f, 0.f};
     Vec2  gravityDir                      = {0.f, 0.f};
     float bounciness                      = 0.f;
     float friction                        = 0.f;
-    float continusCollisionMaxSqrVelocity = 0.f;
+    float continuousCollisionMaxSqrVelocity = 0.f;
     float collisionPixelRatioStopMovement = 0.f;
     float isGroundedDetection             = 0.f;
-    int   footBasasementWidth             = 1;
-    int   footBasasementHeight            = 1;
+    int   footBasementWidth             = 1;
+    int   footBasementHeight            = 1;
     bool  isGrounded                      = false;
 
     // Animation
@@ -100,7 +100,7 @@ struct GameData
     // Window
     bool showWindow                = false;
     bool showFrameBufferBackground = false;
-    bool useFowardWindow           = true;
+    bool useForwardWindow           = true;
     bool useMousePassThoughWindow  = true;
 
     // Debug

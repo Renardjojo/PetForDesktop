@@ -50,7 +50,7 @@ protected:
 
         glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, !datas.showFrameBufferBackground);
         glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
-        glfwWindowHint(GLFW_FLOATING, datas.useFowardWindow);
+        glfwWindowHint(GLFW_FLOATING, datas.useForwardWindow);
 
         // Disable depth and stencil buffers
         glfwWindowHint(GLFW_DEPTH_BITS, 0);

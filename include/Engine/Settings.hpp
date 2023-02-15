@@ -41,11 +41,11 @@ public:
             data.gravity         = Vec2{nodesSection["GravityX"].as<float>(), nodesSection["GravityY"].as<float>()};
             data.gravityDir      = data.gravity.normalized();
             data.friction        = std::clamp(nodesSection["Friction"].as<float>(), 0.f, 1.f);
-            data.continusCollisionMaxSqrVelocity =
-                std::max(nodesSection["ContinusCollisionMaxVelocity"].as<float>(), 0.f);
-            data.continusCollisionMaxSqrVelocity *= data.continusCollisionMaxSqrVelocity;
-            data.footBasasementWidth  = std::max(nodesSection["FootBasasementWidth"].as<int>(), 2);
-            data.footBasasementHeight = std::max(nodesSection["FootBasasementHeight"].as<int>(), 2);
+            data.continuousCollisionMaxSqrVelocity =
+                std::max(nodesSection["ContinuousCollisionMaxVelocity"].as<float>(), 0.f);
+            data.continuousCollisionMaxSqrVelocity *= data.continuousCollisionMaxSqrVelocity;
+            data.footBasementWidth  = std::max(nodesSection["FootBasementWidth"].as<int>(), 2);
+            data.footBasementHeight = std::max(nodesSection["FootBasementHeight"].as<int>(), 2);
             data.collisionPixelRatioStopMovement =
                 std::clamp(nodesSection["CollisionPixelRatioStopMovement"].as<float>(), 0.f, 1.f);
             data.isGroundedDetection = std::max(nodesSection["IsGroundedDetection"].as<float>(), 0.f);
@@ -69,7 +69,7 @@ public:
 
             data.showWindow                = nodesSection["ShowWindow"].as<bool>();
             data.showFrameBufferBackground = nodesSection["ShowFrameBufferBackground"].as<bool>();
-            data.useFowardWindow           = nodesSection["UseFowardWindow"].as<bool>();
+            data.useForwardWindow          = nodesSection["UseForwardWindow"].as<bool>();
             data.useMousePassThoughWindow  = nodesSection["UseMousePassThoughWindow"].as<bool>();
         }
 
@@ -81,7 +81,7 @@ public:
 
             data.showWindow                = nodesSection["ShowWindow"].as<bool>();
             data.showFrameBufferBackground = nodesSection["ShowFrameBufferBackground"].as<bool>();
-            data.useFowardWindow           = nodesSection["UseFowardWindow"].as<bool>();
+            data.useForwardWindow           = nodesSection["UseForwardWindow"].as<bool>();
             data.useMousePassThoughWindow  = nodesSection["UseMousePassThoughWindow"].as<bool>();
         }
 

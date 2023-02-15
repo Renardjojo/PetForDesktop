@@ -107,12 +107,12 @@ public:
     {
         AnimationNode::onEnter(blackBoard);
         blackBoard.side = randNum(0, 1);
-        blackBoard.continusVelocity += baseDir * (blackBoard.side * 2.f - 1.f) * thrust;
+        blackBoard.continuousVelocity += baseDir * (blackBoard.side * 2.f - 1.f) * thrust;
     }
 
     void onExit(GameData& blackBoard) override
     {
         AnimationNode::onExit(blackBoard);
-        blackBoard.continusVelocity -= baseDir * (blackBoard.side * 2.f - 1.f) * thrust;
+        blackBoard.continuousVelocity -= baseDir * (blackBoard.side * 2.f - 1.f) * thrust;
     }
 };

@@ -71,10 +71,10 @@ public:
             const float xPadding = prevToNewWinPos.x < 0.f ? prevToNewWinPos.x : 0.f;
             const float yPadding = prevToNewWinPos.y < 0.f ? prevToNewWinPos.y : 0.f;
 
-            screenShootPosX  = static_cast<int>(data.petPos.x + data.petSize.x / 2.f + xPadding - data.footBasasementWidth / 2.f);
-            screenShootPosY  = static_cast<int>(data.petPos.y + data.petSize.y + 1 + yPadding - data.footBasasementHeight / 2.f);
-            screenShootSizeX = static_cast<int>(abs(prevToNewWinPos.x) + data.footBasasementWidth);
-            screenShootSizeY = static_cast<int>(abs(prevToNewWinPos.y) + data.footBasasementHeight);
+            screenShootPosX  = static_cast<int>(data.petPos.x + data.petSize.x / 2.f + xPadding - data.footBasementWidth / 2.f);
+            screenShootPosY  = static_cast<int>(data.petPos.y + data.petSize.y + 1 + yPadding - data.footBasementHeight / 2.f);
+            screenShootSizeX = static_cast<int>(abs(prevToNewWinPos.x) + data.footBasementWidth);
+            screenShootSizeY = static_cast<int>(abs(prevToNewWinPos.y) + data.footBasementHeight);
         }
 
         ScreenShoot              screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
@@ -155,17 +155,17 @@ public:
         int width  = data.pEdgeDetectionTexture->getWidth();
         int height = data.pEdgeDetectionTexture->getHeight();
 
-        float row    = prevToNewWinPosDir.y < 0.f ? height - data.footBasasementHeight : 0.f;
-        float column = prevToNewWinPosDir.x < 0.f ? width - data.footBasasementWidth : 0.f;
+        float row    = prevToNewWinPosDir.y < 0.f ? height - data.footBasementHeight : 0.f;
+        float column = prevToNewWinPosDir.x < 0.f ? width - data.footBasementWidth : 0.f;
 
-        int iterationCount = iterationOnX ? width - data.footBasasementWidth : height - data.footBasasementHeight;
+        int iterationCount = iterationOnX ? width - data.footBasementWidth : height - data.footBasementHeight;
         for (int i = 0; i < iterationCount + 1; i++)
         {
             float count = 0;
 
-            for (int y = 0; y < data.footBasasementHeight; y++)
+            for (int y = 0; y < data.footBasementHeight; y++)
             {
-                for (int x = 0; x < data.footBasasementWidth; x++)
+                for (int x = 0; x < data.footBasementWidth; x++)
                 {
                     // flip Y and find index
                     int rowFlipped = height - 1 - (int)row - y;
@@ -173,7 +173,7 @@ public:
                     count += pixels[index] == 255;
                 }
             }
-            count /= data.footBasasementWidth * data.footBasasementHeight;
+            count /= data.footBasementWidth * data.footBasementHeight;
 
             if (count > data.collisionPixelRatioStopMovement)
             {
@@ -205,10 +205,11 @@ public:
 
             const Vec2 prevWinPos = data.petPos;
             // Pos = PrevPos + V * Time
-            const Vec2 newWinPos = data.petPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) *
+            const Vec2 newWinPos = data.petPos + ((data.continuousVelocity + data.velocity) * (1.f - data.friction) *
                                                   data.pixelPerMeter * (float)deltaTime);
+            
             const Vec2 prevToNewWinPos = newWinPos - prevWinPos;
-            if ((prevToNewWinPos.sqrLength() <= data.continusCollisionMaxSqrVelocity && prevToNewWinPos.y > 0.f) ||
+            if ((prevToNewWinPos.sqrLength() <= data.continuousCollisionMaxSqrVelocity && prevToNewWinPos.y > 0.f) ||
                 data.debugEdgeDetection)
             {
                 Vec2 newPos;
@@ -233,7 +234,7 @@ public:
                 if (data.isGrounded && data.petPos.y != data.petPosLimit.y)
                 {
                     Vec2 newPos;
-                    Vec2 footBasement((float)data.footBasasementWidth, (float)data.footBasasementHeight);
+                    Vec2 footBasement((float)data.footBasementWidth, (float)data.footBasementHeight);
                     data.isGrounded = CatpureScreenCollision(footBasement, newPos);
                 }
 
