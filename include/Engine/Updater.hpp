@@ -115,9 +115,16 @@ class Updater
         {
             if (matches[1] != "v" PROJECT_VERSION)
             {
-                boxer::Selection selection = boxer::show(
-                    (std::string(PROJECT_NAME " ") + matches[1].str() + " is available. Do you want download it ?")
-                        .c_str(),
+                pattern = "\"body\":\\s*\"(.*?)\"";
+                std::string content = std::string(PROJECT_NAME " ") + matches[1].str() + " is available. Do you want download it ?";
+                // Looking for changelog
+                if (std::regex_search(json, matches, pattern))
+                {
+                    content += "\n\n";
+                    content += markdownToPlainText(matches[1].str());
+                }
+
+                boxer::Selection selection = boxer::show(content.c_str(),
                     PROJECT_NAME " " PROJECT_VERSION " updater", boxer::Style::Question, boxer::Buttons::YesNo);
 
                 // TODO: Dialog pop up ?
@@ -141,5 +148,34 @@ class Updater
                 logf("The version %s is the latest\n", PROJECT_VERSION);
             }
         }
+    }
+
+    static std::string markdownToPlainText(const std::string& markdown)
+    {
+        // Replace '\\r' and '\\n' with '\n'
+        std::string lineBreakSearch  = "\\\\n|\\\\r";
+        std::string lineBreakReplace = "\n";  
+        std::regex  lineBreakRegex(lineBreakSearch);
+        std::string plainText = std::regex_replace(markdown, lineBreakRegex, lineBreakReplace);
+
+        // Regular expressions for Markdown syntax
+        std::regex headerRegex("#+\\s*(.*)");
+        std::regex listRegex("\\*\\s+(.*)");
+        std::regex linkRegex("\\[(.*?)\\]\\((https?://\\S+)\\)");
+        std::regex boldRegex("\\*\\*(.*?)\\*\\*");
+
+        // Replace headers with plain text
+        plainText = std::regex_replace(plainText, headerRegex, "$1");
+
+        // Replace list items with plain text
+        plainText = std::regex_replace(plainText, listRegex, "- $1");
+
+        // Replace links with plain text
+        plainText = std::regex_replace(plainText, linkRegex, "$2");
+
+        // Remove bold sections
+        plainText = std::regex_replace(plainText, boldRegex, "$1");
+
+        return plainText;
     }
 };
