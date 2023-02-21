@@ -245,9 +245,9 @@ public:
                 if (!AddBasicNode<GrabNode>(it->second, nodes))
                     continue;
             }
-            else if (title == "PetWalkNode")
+            else if (title == "MovementDirectionNode")
             {
-                if (!AddWalkNode(it->second, nodes))
+                if (!AddMovementNode(it->second, nodes))
                     continue;
             }
             else if (title == "PetJumpNode")
@@ -348,18 +348,35 @@ public:
         return true;
     }
 
-    bool AddWalkNode(YAML::Node node, std::map<std::string, std::shared_ptr<StateMachine::Node>>& nodes)
+    bool AddMovementNode(YAML::Node node, std::map<std::string, std::shared_ptr<StateMachine::Node>>& nodes)
     {
         if (!node.IsMap() || node.size() != 6)
         {
-            warning("YAML error: PetWalkNode invalid");
+            warning("YAML error: MovementDirectionNode invalid");
             return false;
         }
         std::string                  nodeName    = node["name"].as<std::string>();
         SpriteSheet&                 spriteSheet = getOrAddSpriteSheet(node["sprite"].as<std::string>().c_str());
-        std::shared_ptr<PetWalkNode> p_node      = std::make_shared<PetWalkNode>(
-            spriteAnimator, spriteSheet, node["framerate"].as<int>(), node["direction"].as<Vec2>(),
-            node["thrust"].as<float>(), node["loop"].as<bool>());
+        int                          framerate   = node["framerate"].as<int>();
+        YAML::Node                   directionsNode = node["directions"];
+        std::vector<Vec2>            directions;
+        bool                         applyGravity = node["applyGravity"].as<bool>();
+        bool                         loop = node["loop"].as<bool>();
+
+        if (directionsNode.IsSequence())
+        {
+            for (YAML::const_iterator it = directionsNode.begin(); it != directionsNode.end(); ++it)
+            {
+                directions.emplace_back(it->as<Vec2>());
+            }
+        }
+        else if (directionsNode.IsScalar())
+        {
+            directions.emplace_back(directionsNode.as<Vec2>());
+        }
+
+        std::shared_ptr<MovementDirectionNode> p_node = std::make_shared<MovementDirectionNode>(
+            spriteAnimator, spriteSheet, framerate, directions, applyGravity, loop);
         nodes.emplace(nodeName, std::static_pointer_cast<StateMachine::Node>(p_node));
         return true;
     }

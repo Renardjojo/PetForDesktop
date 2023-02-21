@@ -230,7 +230,7 @@ public:
         {
             // Acc = Sum of force / Mass
             // G is already an acceleration
-            const Vec2 acc = data.gravity * !data.isGrounded;
+            const Vec2 acc = data.gravity * data.applyGravity * !data.isGrounded;
 
             // V = Acc * Time
             data.velocity += acc * (float)deltaTime;
