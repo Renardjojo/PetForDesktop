@@ -25,7 +25,7 @@ union Vector2 {
     {
     }
 
-    constexpr Vector2(const T x_, const T y_ = static_cast<T>(0)) noexcept : x{x_}, y{y_}
+    constexpr Vector2(const T x_, const T y_) noexcept : x{x_}, y{y_}
     {
     }
 
@@ -352,9 +352,7 @@ union Vector2 {
 
     constexpr Vector2 operator/(const T k) const noexcept
     {
-        const float reciprocal{static_cast<T>(1) / k};
-
-        return {x * reciprocal, y * reciprocal};
+        return {x / k, y / k};
     }
 
     template <typename U>

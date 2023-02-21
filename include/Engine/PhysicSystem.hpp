@@ -25,34 +25,66 @@ public:
         return std::abs(data.gravityDir.dot(data.velocity)) < data.isGroundedDetection;
     }
 
+    static bool isRectAOutsideRectB(const Vec2i posA, const Vec2i sizeA, const Vec2i posB, const Vec2i sizeB)
+    {
+        // Check if the rectangles are disjoint (i.e. do not overlap)
+        return posA.x + sizeA.x < posB.x || posA.x > posB.x + sizeB.x || posA.y + sizeA.y < posB.y ||
+               posA.y > posB.y + sizeB.y;
+    }
+
+
     void computeMonitorCollisions()
     {
-        if (data.petPos.x < 0.f)
+        std::vector<Vec2i> monitorsPosition;
+        std::vector<Vec2i> monitorSize;
+        bool  isOutside                = true;
+
+        // 1: Check if pet is outside of all monitors
+        for (int i = 0; i < data.monitors.getMonitorsCount(); ++i)
         {
-            data.petPos.x = 0.f;
-            data.velocity = data.velocity.reflect(Vec2::right()) * data.bounciness;
+            monitorsPosition.emplace_back();
+            monitorSize.emplace_back();
+            data.monitors.getMonitorWorkingArea(i, monitorsPosition[i], monitorSize[i]);
+            isOutside &= isRectAOutsideRectB(data.petPos, data.petSize, monitorsPosition[i], monitorSize[i]);
         }
 
-        if (data.petPos.y < 0.f)
+        // 2: If pet is outside need correction
+        float minSqrDistance = FLT_MAX;
+        Vec2  reelPositionCorrection;
+        if (isOutside)
         {
-            data.petPos.y = 0.f;
-            data.velocity = data.velocity.reflect(Vec2::down()) * data.bounciness;
-        }
+            for (int i = 0; i < data.monitors.getMonitorsCount(); ++i)
+            {
+                Vec2 positionCorrection = data.petPos;
 
-        if (data.petPos.x > data.petPosLimit.x)
-        {
-            data.petPos.x = static_cast<float>(data.petPosLimit.x);
-            data.velocity = data.velocity.reflect(Vec2::left()) * data.bounciness;
-        }
+                if (data.petPos.x < monitorsPosition[i].x)
+                {
+                    positionCorrection.x = monitorsPosition[i].x;
+                }
+                else if (data.petPos.x + data.petSize.x > monitorsPosition[i].x + monitorSize[i].x)
+                {
+                    positionCorrection.x = monitorsPosition[i].x + monitorSize[i].x - data.petSize.x;
+                }
 
-        if (data.petPos.y > data.petPosLimit.y)
-        {
-            data.petPos.y = static_cast<float>(data.petPosLimit.y);
-            data.velocity = data.velocity.reflect(Vec2::up()) * data.bounciness;
+                if (data.petPos.y < monitorsPosition[i].y)
+                {
+                    positionCorrection.y = monitorsPosition[i].y;
+                }
+                else if (data.petPos.y + data.petSize.y > monitorsPosition[i].y + monitorSize[i].y)
+                {
+                    positionCorrection.y = monitorsPosition[i].y + monitorSize[i].y - data.petSize.y;
+                }
+                
+                float currentSqrDistance = (positionCorrection - data.petPos).sqrLength();
+                if (currentSqrDistance < minSqrDistance)
+                {
+                    minSqrDistance         = currentSqrDistance;
+                    reelPositionCorrection = positionCorrection;
+                }
+            }
 
-            // check if is grounded
-            data.isGrounded = checkIsGrounded();
-            data.velocity *= !data.isGrounded; // reset velocity if is grounded
+            data.velocity = data.velocity.reflect((reelPositionCorrection - data.petPos).normalized()) * data.bounciness;
+            data.petPos   = reelPositionCorrection;
         }
     }
 
@@ -71,10 +103,10 @@ public:
             const float xPadding = prevToNewWinPos.x < 0.f ? prevToNewWinPos.x : 0.f;
             const float yPadding = prevToNewWinPos.y < 0.f ? prevToNewWinPos.y : 0.f;
 
-            screenShootPosX  = static_cast<int>(data.petPos.x + data.petSize.x / 2.f + xPadding - data.footBasasementWidth / 2.f);
-            screenShootPosY  = static_cast<int>(data.petPos.y + data.petSize.y + 1 + yPadding - data.footBasasementHeight / 2.f);
-            screenShootSizeX = static_cast<int>(abs(prevToNewWinPos.x) + data.footBasasementWidth);
-            screenShootSizeY = static_cast<int>(abs(prevToNewWinPos.y) + data.footBasasementHeight);
+            screenShootPosX  = static_cast<int>(data.petPos.x + data.petSize.x / 2.f + xPadding - data.footBasementWidth / 2.f);
+            screenShootPosY  = static_cast<int>(data.petPos.y + data.petSize.y + 1 + yPadding - data.footBasementHeight / 2.f);
+            screenShootSizeX = static_cast<int>(abs(prevToNewWinPos.x) + data.footBasementWidth);
+            screenShootSizeY = static_cast<int>(abs(prevToNewWinPos.y) + data.footBasementHeight);
         }
 
         ScreenShoot              screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
@@ -155,17 +187,17 @@ public:
         int width  = data.pEdgeDetectionTexture->getWidth();
         int height = data.pEdgeDetectionTexture->getHeight();
 
-        float row    = prevToNewWinPosDir.y < 0.f ? height - data.footBasasementHeight : 0.f;
-        float column = prevToNewWinPosDir.x < 0.f ? width - data.footBasasementWidth : 0.f;
+        float row    = prevToNewWinPosDir.y < 0.f ? height - data.footBasementHeight : 0.f;
+        float column = prevToNewWinPosDir.x < 0.f ? width - data.footBasementWidth : 0.f;
 
-        int iterationCount = iterationOnX ? width - data.footBasasementWidth : height - data.footBasasementHeight;
+        int iterationCount = iterationOnX ? width - data.footBasementWidth : height - data.footBasementHeight;
         for (int i = 0; i < iterationCount + 1; i++)
         {
             float count = 0;
 
-            for (int y = 0; y < data.footBasasementHeight; y++)
+            for (int y = 0; y < data.footBasementHeight; y++)
             {
-                for (int x = 0; x < data.footBasasementWidth; x++)
+                for (int x = 0; x < data.footBasementWidth; x++)
                 {
                     // flip Y and find index
                     int rowFlipped = height - 1 - (int)row - y;
@@ -173,7 +205,7 @@ public:
                     count += pixels[index] == 255;
                 }
             }
-            count /= data.footBasasementWidth * data.footBasasementHeight;
+            count /= data.footBasementWidth * data.footBasementHeight;
 
             if (count > data.collisionPixelRatioStopMovement)
             {
@@ -205,10 +237,11 @@ public:
 
             const Vec2 prevWinPos = data.petPos;
             // Pos = PrevPos + V * Time
-            const Vec2 newWinPos = data.petPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) *
+            const Vec2 newWinPos = data.petPos + ((data.continuousVelocity + data.velocity) * (1.f - data.friction) *
                                                   data.pixelPerMeter * (float)deltaTime);
+            
             const Vec2 prevToNewWinPos = newWinPos - prevWinPos;
-            if ((prevToNewWinPos.sqrLength() <= data.continusCollisionMaxSqrVelocity && prevToNewWinPos.y > 0.f) ||
+            if ((prevToNewWinPos.sqrLength() <= data.continuousCollisionMaxSqrVelocity && prevToNewWinPos.y > 0.f) ||
                 data.debugEdgeDetection)
             {
                 Vec2 newPos;
@@ -233,7 +266,7 @@ public:
                 if (data.isGrounded && data.petPos.y != data.petPosLimit.y)
                 {
                     Vec2 newPos;
-                    Vec2 footBasement((float)data.footBasasementWidth, (float)data.footBasasementHeight);
+                    Vec2 footBasement((float)data.footBasementWidth, (float)data.footBasementHeight);
                     data.isGrounded = CatpureScreenCollision(footBasement, newPos);
                 }
 
