@@ -25,7 +25,12 @@ public:
         }
     }
 
-    Vec2i getMonitorsSize()
+    void getMainMonitorWorkingArea(Vec2i& position, Vec2i& size) const
+    {
+        glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &position.x, &position.y, &size.x, &size.y);
+    }
+
+    Vec2i getMonitorsSize() const
     {
         Vec2i size = Vec2i::zero();
         const GLFWvidmode* currentVideoMode;
@@ -34,11 +39,19 @@ public:
             currentVideoMode = glfwGetVideoMode(monitors[i]);
             size.x += currentVideoMode->width;
             size.y += currentVideoMode->height;
+
+            int xpos, ypos, width, height;
+            glfwGetMonitorWorkarea(monitors[i], &xpos, &ypos, &width, &height);
         }
         return size;
     }
 
-    Vec2i getMonitorPhysicalSize()
+    void getMonitorWorkingArea(int index, Vec2i& position, Vec2i& size) const
+    {
+        glfwGetMonitorWorkarea(monitors[index], &position.x, &position.y, &size.x, &size.y);
+    }
+
+    Vec2i getMonitorPhysicalSize() const
     {
         Vec2i sizeMM = Vec2i::zero();
         int width_mm, height_mm;
@@ -66,5 +79,10 @@ public:
                 break;
             }
         }
+    }
+
+    int getMonitorsCount() const
+    {
+        return monitors.size();
     }
 };

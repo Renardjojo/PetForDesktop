@@ -122,10 +122,11 @@ public:
 
         createResources();
 
-        //glfwGetMonitorPos(datas.monitors[0], &datas.monitorX, &datas.monitorY);
-        Vec2i monitorSize = datas.monitors.getMonitorsSize();
+        Vec2i mainMonitorPosition;
+        Vec2i mainMonitorSize;
+        datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
 
-        datas.windowPos = Vec2{monitorSize.x / 2.f, monitorSize.y / 2.f};
+        datas.windowPos = mainMonitorPosition + mainMonitorSize / 2;
         datas.petPos = datas.windowPos;
         glfwSetWindowPos(datas.window, datas.windowPos.x, datas.windowPos.y);
 

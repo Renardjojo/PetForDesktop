@@ -25,34 +25,66 @@ public:
         return std::abs(data.gravityDir.dot(data.velocity)) < data.isGroundedDetection;
     }
 
+    static bool isRectAOutsideRectB(const Vec2i posA, const Vec2i sizeA, const Vec2i posB, const Vec2i sizeB)
+    {
+        // Check if the rectangles are disjoint (i.e. do not overlap)
+        return posA.x + sizeA.x < posB.x || posA.x > posB.x + sizeB.x || posA.y + sizeA.y < posB.y ||
+               posA.y > posB.y + sizeB.y;
+    }
+
+
     void computeMonitorCollisions()
     {
-        if (data.petPos.x < 0.f)
+        std::vector<Vec2i> monitorsPosition;
+        std::vector<Vec2i> monitorSize;
+        bool  isOutside                = true;
+
+        // 1: Check if pet is outside of all monitors
+        for (int i = 0; i < data.monitors.getMonitorsCount(); ++i)
         {
-            data.petPos.x = 0.f;
-            data.velocity = data.velocity.reflect(Vec2::right()) * data.bounciness;
+            monitorsPosition.emplace_back();
+            monitorSize.emplace_back();
+            data.monitors.getMonitorWorkingArea(i, monitorsPosition[i], monitorSize[i]);
+            isOutside &= isRectAOutsideRectB(data.petPos, data.petSize, monitorsPosition[i], monitorSize[i]);
         }
 
-        if (data.petPos.y < 0.f)
+        // 2: If pet is outside need correction
+        float minSqrDistance = FLT_MAX;
+        Vec2  reelPositionCorrection;
+        if (isOutside)
         {
-            data.petPos.y = 0.f;
-            data.velocity = data.velocity.reflect(Vec2::down()) * data.bounciness;
-        }
+            for (int i = 0; i < data.monitors.getMonitorsCount(); ++i)
+            {
+                Vec2 positionCorrection = data.petPos;
 
-        if (data.petPos.x > data.petPosLimit.x)
-        {
-            data.petPos.x = static_cast<float>(data.petPosLimit.x);
-            data.velocity = data.velocity.reflect(Vec2::left()) * data.bounciness;
-        }
+                if (data.petPos.x < monitorsPosition[i].x)
+                {
+                    positionCorrection.x = monitorsPosition[i].x;
+                }
+                else if (data.petPos.x + data.petSize.x > monitorsPosition[i].x + monitorSize[i].x)
+                {
+                    positionCorrection.x = monitorsPosition[i].x + monitorSize[i].x - data.petSize.x;
+                }
 
-        if (data.petPos.y > data.petPosLimit.y)
-        {
-            data.petPos.y = static_cast<float>(data.petPosLimit.y);
-            data.velocity = data.velocity.reflect(Vec2::up()) * data.bounciness;
+                if (data.petPos.y < monitorsPosition[i].y)
+                {
+                    positionCorrection.y = monitorsPosition[i].y;
+                }
+                else if (data.petPos.y + data.petSize.y > monitorsPosition[i].y + monitorSize[i].y)
+                {
+                    positionCorrection.y = monitorsPosition[i].y + monitorSize[i].y - data.petSize.y;
+                }
+                
+                float currentSqrDistance = (positionCorrection - data.petPos).sqrLength();
+                if (currentSqrDistance < minSqrDistance)
+                {
+                    minSqrDistance         = currentSqrDistance;
+                    reelPositionCorrection = positionCorrection;
+                }
+            }
 
-            // check if is grounded
-            data.isGrounded = checkIsGrounded();
-            data.velocity *= !data.isGrounded; // reset velocity if is grounded
+            data.velocity = data.velocity.reflect((reelPositionCorrection - data.petPos).normalized()) * data.bounciness;
+            data.petPos   = reelPositionCorrection;
         }
     }
 
