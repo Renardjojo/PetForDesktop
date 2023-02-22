@@ -66,9 +66,9 @@ public:
                     positionCorrection.x = monitorsPosition[i].x + monitorSize[i].x - data.petSize.x;
                 }
 
-                if (data.petPos.y < monitorsPosition[i].y)
+                if (data.petPos.y + data.petSize.y < monitorsPosition[i].y)
                 {
-                    positionCorrection.y = monitorsPosition[i].y;
+                    positionCorrection.y = monitorsPosition[i].y - data.petSize.y;
                 }
                 else if (data.petPos.y + data.petSize.y > monitorsPosition[i].y + monitorSize[i].y)
                 {

@@ -29,7 +29,7 @@ Nodes:
         loop: true
     MovementDirectionNode:
         name: fly
-        sprite: air.png
+        sprite: flyBubble.png
         framerate: 10
         directions: [[0.15, -0.1], [0.1, -0.1], [-0.1, -0.1], [-0.15, -0.1]]
         applyGravity: false
