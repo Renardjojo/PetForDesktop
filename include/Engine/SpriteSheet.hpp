@@ -1,30 +1,29 @@
 #pragma once
 
-#include "Game/GameData.hpp"
-#include "Engine/Vector2.hpp"
 #include "Engine/Shader.hpp"
+#include "Engine/Vector2.hpp"
+#include "Game/GameData.hpp"
 
 #include <glad/glad.h>
 
 class SpriteSheet : public Texture
 {
 protected:
-    int tileCount;
+    int   tileCount;
+    float sizeFactor = 1.f;
 
 public:
-    SpriteSheet(const char* srcPath) : Texture(srcPath)
+    SpriteSheet(const char* srcPath, int inTileCount, float inSizeFactor)
+        : Texture(srcPath), tileCount{inTileCount}, sizeFactor{inSizeFactor}
     {
-        tileCount = width / height;
     }
 
     void useSection(GameData& data, Shader& shader, int idSection, bool hFlip = false)
     {
-        data.petSize.x    = height * data.scale; // use height because texture is horizontal sprite sheet only
-        data.petSize.y    = height * data.scale;
+        data.petSize.x    = width / tileCount * data.scale * sizeFactor;
+        data.petSize.y    = height * data.scale * sizeFactor;
         data.windowSize.x = data.petSize.x + data.windowExt.x + data.windowMinExt.x;
         data.windowSize.y = data.petSize.y + data.windowExt.y + data.windowMinExt.y;
-        Vec2i monitorSize = data.monitors.getMonitorsSize();
-        data.petPosLimit  = {monitorSize.x - data.petSize.x, monitorSize.y - data.petSize.y};
         glfwSetWindowSize(data.window, data.windowSize.x, data.windowSize.y);
 
         float       hScale  = 1.f / tileCount;
@@ -49,6 +48,11 @@ public:
         shader.setVec4("uScaleOffSet", hScale, vScale, hOffSet, vOffset);
         shader.setVec4("uClipSpacePosSize", clipSpacePos.x, clipSpacePos.y, clipSpaceSize.x, clipSpaceSize.y);
         use();
+    }
+
+    float getSizeFactor() const
+    {
+        return sizeFactor;
     }
 
     int getTileCount() const

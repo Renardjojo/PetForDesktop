@@ -61,7 +61,6 @@ protected:
         Vec2i monitorSize = datas.monitors.getMonitorsSize();
         Vec2i monitorsSizeMM = datas.monitors.getMonitorPhysicalSize();
 
-        datas.petPosLimit = monitorSize;
         datas.windowSize  = {1, 1};
 
         // Evaluate pixel distance based on dpi and monitor size
@@ -193,7 +192,6 @@ public:
             // fullscreen
             Vec2i monitorSize  = datas.monitors.getMonitorsSize();
             datas.windowSize  = monitorSize;
-            datas.petPosLimit  = {monitorSize.x - datas.windowSize.x, monitorSize.y - datas.windowSize.y};
             glfwSetWindowSize(datas.window, datas.windowSize.x, datas.windowSize.y);
 
             // render

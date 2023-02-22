@@ -109,12 +109,11 @@ class NeedUpdator
     UtilitySystem& m_utilitySystem;
     GameData&      m_datas;
     int            lastNeed;
-    bool           leftWasPressed = false;
+    bool           leftWasPressed           = false;
     float          displayPopupCurrentTimer = 0.f;
-    float          nexTimeDisplayPopup = 0.f;
+    float          nexTimeDisplayPopup      = 0.f;
 
-    public:
-
+public:
     NeedUpdator(GameData& datas, DialoguePopUp& dialoguePopup, UtilitySystem& utilitySystem)
         : m_datas{datas}, m_dialoguePopup{dialoguePopup}, m_utilitySystem{utilitySystem}
     {
@@ -157,7 +156,7 @@ class NeedUpdator
                 m_dialoguePopup.display(2.f, EPopupType::Dialogue, ENeed::Love);
             }
         }
-        
+
         for (size_t i = 0; i < m_utilitySystem.needs.size(); i++)
         {
             m_utilitySystem.needs[i].reduce(0.5 * deltaTime);
@@ -207,7 +206,7 @@ public:
         setupUtilitySystem();
     }
 
-    SpriteSheet& getOrAddSpriteSheet(const char* file)
+    SpriteSheet& getOrAddSpriteSheet(const char* file, int inTileCount, float inSizeFactor)
     {
         auto it = spriteSheets.find(file);
         if (it != spriteSheets.end())
@@ -216,7 +215,8 @@ public:
         }
         else
         {
-            return spriteSheets.emplace(file, (spritesPath + file).c_str()).first->second;
+            return spriteSheets.try_emplace(file, (spritesPath + file).c_str(), inTileCount, inSizeFactor)
+                .first->second;
         }
     }
 
@@ -332,16 +332,25 @@ public:
         utilitySystem.addNeed(100, 0, 100, 0, 60);
     }
 
+    SpriteSheet& parseAnimation(YAML::Node node)
+    {
+        YAML::Node sizeFactorNode = node["sizeFactor"];
+        YAML::Node tileCountNode  = node["tileCount"];
+        return getOrAddSpriteSheet(node["sprite"].as<std::string>().c_str(),
+                                   tileCountNode.IsDefined() ? tileCountNode.as<int>() : 1,
+                                   sizeFactorNode.IsDefined() ? sizeFactorNode.as<float>() : 1.f);
+    }
+
     template <typename T>
     bool AddBasicNode(YAML::Node node, std::map<std::string, std::shared_ptr<StateMachine::Node>>& nodes)
     {
-        if (!node.IsMap() || node.size() != 4)
+        if (!node.IsMap())
         {
             warning("YAML error: node invalid");
             return false;
         }
         std::string        nodeName    = node["name"].as<std::string>();
-        SpriteSheet&       spriteSheet = getOrAddSpriteSheet(node["sprite"].as<std::string>().c_str());
+        SpriteSheet&       spriteSheet = parseAnimation(node);
         std::shared_ptr<T> p_node =
             std::make_shared<T>(spriteAnimator, spriteSheet, node["framerate"].as<int>(), node["loop"].as<bool>());
         nodes.emplace(nodeName, std::static_pointer_cast<StateMachine::Node>(p_node));
@@ -350,18 +359,18 @@ public:
 
     bool AddMovementNode(YAML::Node node, std::map<std::string, std::shared_ptr<StateMachine::Node>>& nodes)
     {
-        if (!node.IsMap() || node.size() != 6)
+        if (!node.IsMap())
         {
             warning("YAML error: MovementDirectionNode invalid");
             return false;
         }
-        std::string                  nodeName    = node["name"].as<std::string>();
-        SpriteSheet&                 spriteSheet = getOrAddSpriteSheet(node["sprite"].as<std::string>().c_str());
-        int                          framerate   = node["framerate"].as<int>();
-        YAML::Node                   directionsNode = node["directions"];
-        std::vector<Vec2>            directions;
-        bool                         applyGravity = node["applyGravity"].as<bool>();
-        bool                         loop = node["loop"].as<bool>();
+        std::string       nodeName       = node["name"].as<std::string>();
+        SpriteSheet&      spriteSheet    = parseAnimation(node);
+        int               framerate      = node["framerate"].as<int>();
+        YAML::Node        directionsNode = node["directions"];
+        std::vector<Vec2> directions;
+        bool              applyGravity = node["applyGravity"].as<bool>();
+        bool              loop         = node["loop"].as<bool>();
 
         if (directionsNode.IsSequence())
         {
@@ -383,13 +392,13 @@ public:
 
     bool AddJumpNode(YAML::Node node, std::map<std::string, std::shared_ptr<StateMachine::Node>>& nodes)
     {
-        if (!node.IsMap() || node.size() != 6)
+        if (!node.IsMap())
         {
             warning("YAML error: PetJumpNode invalid");
             return false;
         }
         std::string                  nodeName    = node["name"].as<std::string>();
-        SpriteSheet&                 spriteSheet = getOrAddSpriteSheet(node["sprite"].as<std::string>().c_str());
+        SpriteSheet&                 spriteSheet = parseAnimation(node);
         std::shared_ptr<PetJumpNode> p_node      = std::make_shared<PetJumpNode>(
             spriteAnimator, spriteSheet, node["framerate"].as<int>(), node["direction"].as<Vec2>(),
             node["verticalThrust"].as<float>(), node["horizontalThrust"].as<float>());
@@ -472,7 +481,7 @@ public:
         datas.pUnitFullScreenQuad->use();
         datas.pUnitFullScreenQuad->draw();
     }
-    
+
     bool isMouseOver()
     {
         const Vec2 localWinPos             = datas.petPos - datas.windowPos;
@@ -482,8 +491,9 @@ public:
 
         if (isCursorInsidePetWindow)
         {
-            Vec2i localCursoPos{static_cast<int>(floor(datas.cursorPos.x / (float)datas.scale)),
-                                static_cast<int>(floor(datas.cursorPos.y / (float)datas.scale))};
+            Vec2i localCursoPos{
+                static_cast<int>(floor(datas.cursorPos.x / (float)(datas.scale * spriteAnimator.getSizeFactor()))),
+                static_cast<int>(floor(datas.cursorPos.y / (float)(datas.scale * spriteAnimator.getSizeFactor())))};
             return spriteAnimator.isMouseOver(localCursoPos);
         }
         else
