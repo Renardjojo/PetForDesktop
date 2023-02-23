@@ -40,7 +40,7 @@ Nodes:
     MovementDirectionNode:
         name: fly
         sprite: flyBubble.png
-        sizeFactor: 2
+        sizeFactor: 1
         tileCount: 1
         framerate: 10
         directions: [[0.15, -0.1], [0.1, -0.1], [-0.1, -0.1], [-0.15, -0.1]]
