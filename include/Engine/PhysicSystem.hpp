@@ -263,7 +263,7 @@ public:
             else
             {
                 // Update is grounded
-                if (data.isGrounded && data.petPos.y != data.petPosLimit.y)
+                if (data.isGrounded)
                 {
                     Vec2 newPos;
                     Vec2 footBasement((float)data.footBasementWidth, (float)data.footBasementHeight);

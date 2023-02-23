@@ -1,6 +1,6 @@
 Game:
     FPS: 60  # min 1
-    Scale: 4 # min 1
+    Scale: 2 # min 1
     RandomSeed: -1 # -1: use random seed
 Physic:
     PhysicFrameRate: 60 # min 0

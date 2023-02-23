@@ -24,7 +24,6 @@ struct GameData
 
     Vec2i windowSize  = {0, 0};
     Vec2i windowPos   = {0, 0};
-    Vec2i petPosLimit = {0, 0};
 
     bool shouldUpdateFrame = true;
 

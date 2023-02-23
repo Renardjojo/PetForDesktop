@@ -3,26 +3,36 @@ Nodes:
     AnimationNode:
         name: idle1
         sprite: idle.png
+        sizeFactor: 2
+        tileCount: 5
         framerate: 5
         loop: true
     AnimationNode:
         name: idle2
         sprite: idle2.png
+        sizeFactor: 2
+        tileCount: 14
         framerate: 8
         loop: true
     AnimationNode:
         name: sleep
         sprite: sleep.png
+        sizeFactor: 2
+        tileCount: 6
         framerate: 6
         loop: true
     GrabNode:
         name: grab
         sprite: grab.png
+        sizeFactor: 2
+        tileCount: 4
         framerate: 10
         loop: true
     MovementDirectionNode:
         name: walk
         sprite: walk.png
+        sizeFactor: 2
+        tileCount: 8
         framerate: 10
         directions: [[0.2, 0], [-0.2, 0]]
         applyGravity: true
@@ -30,6 +40,8 @@ Nodes:
     MovementDirectionNode:
         name: fly
         sprite: flyBubble.png
+        sizeFactor: 2
+        tileCount: 1
         framerate: 10
         directions: [[0.15, -0.1], [0.1, -0.1], [-0.1, -0.1], [-0.15, -0.1]]
         applyGravity: false
@@ -37,6 +49,8 @@ Nodes:
     PetJumpNode:
         name: jump
         sprite: jump.png
+        sizeFactor: 2
+        tileCount: 4
         framerate: 10
         direction: [1, 0]
         verticalThrust: 0.15
@@ -44,11 +58,15 @@ Nodes:
     AnimationNode:
         name: air
         sprite: air.png
+        sizeFactor: 2
+        tileCount: 1
         framerate: 10
         loop: true
     AnimationNode:
         name: landing
         sprite: landing.png
+        sizeFactor: 2
+        tileCount: 6
         framerate: 10
         loop: false
 Transitions:

@@ -65,10 +65,14 @@ public:
         return pSheet == nullptr || isEnd;
     }
 
+    float getSizeFactor() const
+    {
+        return pSheet->getSizeFactor();
+    }
+
     bool isMouseOver(Vec2i cursorPos)
     {
-        // Assuming square image
-        cursorPos.x += indexCurrentAnimSprite * pSheet->getHeight();
+        cursorPos.x += indexCurrentAnimSprite * pSheet->getWidth() / pSheet->getTileCount();
         return pSheet != nullptr ? pSheet->isPixelOpaque(cursorPos) : false;
     }
 };
