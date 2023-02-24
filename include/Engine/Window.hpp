@@ -51,16 +51,14 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
 
 void setMonitorCallback(GLFWmonitor* monitor, int event)
 {
-    GameData& datas = *static_cast<GameData*>(glfwGetMonitorUserPointer(monitor));
-
     switch (event)
     {
     case GLFW_CONNECTED:
-        datas.monitors.addMonitor(monitor);
+        Monitors::getInstance().addMonitor(monitor);
         break;
 
     case GLFW_DISCONNECTED:
-        datas.monitors.removeMonitor(monitor);
+        Monitors::getInstance().removeMonitor(monitor);
         break;
     }
 }

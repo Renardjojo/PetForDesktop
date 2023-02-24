@@ -11,9 +11,20 @@ class Monitors
 protected:
     std::vector<GLFWmonitor*> monitors;
 
+private:
+    static Monitors* s_instances;
+
+public:
+    static Monitors& getInstance()
+    {
+        return *s_instances;
+    }
+
 public:
     void init()
     {
+        s_instances = this;
+
         int           monitorCount;
         GLFWmonitor** pMonitors = glfwGetMonitors(&monitorCount);
         monitors.reserve(monitorCount);
@@ -21,13 +32,13 @@ public:
         for (int i = 0; i < monitorCount; ++i)
         {
             addMonitor(pMonitors[i]);
-            glfwSetMonitorUserPointer(pMonitors[i], this);
         }
     }
 
     void getMainMonitorWorkingArea(Vec2i& position, Vec2i& size) const
     {
-        glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &position.x, &position.y, &size.x, &size.y);
+        getMonitorPosition(0, position);
+        getMonitorSize(0, size);
     }
 
     Vec2i getMonitorsSize() const
@@ -39,16 +50,21 @@ public:
             currentVideoMode = glfwGetVideoMode(monitors[i]);
             size.x += currentVideoMode->width;
             size.y += currentVideoMode->height;
-
-            int xpos, ypos, width, height;
-            glfwGetMonitorWorkarea(monitors[i], &xpos, &ypos, &width, &height);
         }
         return size;
     }
-
-    void getMonitorWorkingArea(int index, Vec2i& position, Vec2i& size) const
+    
+    void getMonitorPosition(int index, Vec2i& position) const
     {
-        glfwGetMonitorWorkarea(monitors[index], &position.x, &position.y, &size.x, &size.y);
+        glfwGetMonitorPos(monitors[index], &position.x, &position.y);
+    }
+    
+    void getMonitorSize(int index, Vec2i& size) const
+    {
+        const GLFWvidmode* currentVideoMode;
+        currentVideoMode = glfwGetVideoMode(monitors[index]);
+        size.x = currentVideoMode->width;
+        size.y = currentVideoMode->height;
     }
 
     Vec2i getMonitorPhysicalSize() const
