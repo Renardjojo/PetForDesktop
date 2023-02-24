@@ -3,33 +3,54 @@ Nodes:
     AnimationNode:
         name: idle1
         sprite: idle.png
+        sizeFactor: 2
+        tileCount: 5
         framerate: 5
         loop: true
     AnimationNode:
         name: idle2
         sprite: idle2.png
+        sizeFactor: 2
+        tileCount: 14
         framerate: 8
         loop: true
     AnimationNode:
         name: sleep
         sprite: sleep.png
+        sizeFactor: 2
+        tileCount: 6
         framerate: 6
         loop: true
     GrabNode:
         name: grab
         sprite: grab.png
+        sizeFactor: 2
+        tileCount: 4
         framerate: 10
         loop: true
-    PetWalkNode:
+    MovementDirectionNode:
         name: walk
         sprite: walk.png
+        sizeFactor: 2
+        tileCount: 8
         framerate: 10
-        direction: [1, 0]
-        thrust: 0.2
+        directions: [[0.2, 0], [-0.2, 0]]
+        applyGravity: true
+        loop: true
+    MovementDirectionNode:
+        name: fly
+        sprite: flyBubble.png
+        sizeFactor: 1
+        tileCount: 1
+        framerate: 10
+        directions: [[0.15, -0.1], [0.1, -0.1], [-0.1, -0.1], [-0.15, -0.1]]
+        applyGravity: false
         loop: true
     PetJumpNode:
         name: jump
         sprite: jump.png
+        sizeFactor: 2
+        tileCount: 4
         framerate: 10
         direction: [1, 0]
         verticalThrust: 0.15
@@ -37,11 +58,15 @@ Nodes:
     AnimationNode:
         name: air
         sprite: air.png
+        sizeFactor: 2
+        tileCount: 1
         framerate: 10
         loop: true
     AnimationNode:
         name: landing
         sprite: landing.png
+        sizeFactor: 2
+        tileCount: 6
         framerate: 10
         loop: false
 Transitions:
@@ -50,7 +75,7 @@ Transitions:
         to: grab
     RandomDelayTransition:
         from: idle1
-        to: [walk, jump, sleep]
+        to: [walk, jump, sleep, fly]
         duration: 3000
         interval: 1000
     IsNotGroundedTransition:
@@ -61,7 +86,7 @@ Transitions:
         to: grab
     RandomDelayTransition:
         from: idle2
-        to: [walk, jump, sleep]
+        to: [walk, jump, sleep, fly]
         duration: 3000
         interval: 1000
     IsNotGroundedTransition:
@@ -70,11 +95,25 @@ Transitions:
     StartLeftClicTransition:
         from: walk
         to: grab
+    TouchScreenEdgeTransition:
+        from: walk
+        to: [idle1, idle2]
     RandomDelayTransition:
         from: walk
         to: [idle1, idle2]
         duration: 3000
         interval: 500
+    TouchScreenEdgeTransition:
+        from: fly
+        to: [idle1, idle2]
+    StartLeftClicTransition:
+        from: fly
+        to: grab
+    RandomDelayTransition:
+        from: fly
+        to: [idle1, idle2]
+        duration: 5000
+        interval: 1000
     StartLeftClicTransition:
         from: jump
         to: grab

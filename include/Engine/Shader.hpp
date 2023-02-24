@@ -44,7 +44,7 @@ public:
         // delete the shaders as they're linked into our program now and no longer necessary
         glDeleteShader(vertex);
         glDeleteShader(fragment);
-        log("Shader compilationd done");
+        log("Shader compilation done\n");
     }
 
     void use()
