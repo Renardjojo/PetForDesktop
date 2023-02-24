@@ -116,7 +116,7 @@ public:
     void onExit(GameData& blackBoard) override
     {
         AnimationNode::onExit(blackBoard);
-        blackBoard.applyGravity = !applyGravity;
+        blackBoard.applyGravity = true;
         blackBoard.continuousVelocity -= baseDir;
     }
 };

@@ -41,7 +41,6 @@ struct GameData
     std::unique_ptr<ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
     std::unique_ptr<ScreenSpaceQuad> pFullScreenQuad     = nullptr;
 
-    // Inlog
     Vec2i cursorPos;
     float prevCursorPosX  = 0;
     float prevCursorPosY  = 0;
@@ -76,6 +75,9 @@ struct GameData
     int  physicFrameRate = 60;
     Vec2 velocity        = {0.f, 0.f};
     bool applyGravity    = true;
+    bool touchScreenEdge = false;
+    bool isOnBottomOfWindow = false;
+
 
     // This value is not changed by the physic system. Usefull for movement. Friction is applied to this value
     Vec2  continuousVelocity                = {0.f, 0.f};

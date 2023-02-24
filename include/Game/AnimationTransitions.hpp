@@ -73,6 +73,14 @@ struct StartLeftClicTransition : public StateMachine::Node::Transition
     };
 };
 
+struct TouchScreenEdgeTransition : public StateMachine::Node::Transition
+{
+    bool canTransition(GameData& blackBoard) final
+    {
+        return blackBoard.touchScreenEdge;
+    };
+};
+
 struct EndLeftClicTransition : public StateMachine::Node::Transition
 {
 protected:

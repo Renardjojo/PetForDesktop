@@ -275,6 +275,11 @@ public:
                 if (!AddBasicTransition<StartLeftClicTransition>(it->second, nodes))
                     continue;
             }
+            else if (title == "TouchScreenEdgeTransition")
+            {
+                if (!AddBasicTransition<TouchScreenEdgeTransition>(it->second, nodes))
+                    continue;
+            }
             else if (title == "IsNotGroundedTransition")
             {
                 if (!AddBasicTransition<IsNotGroundedTransition>(it->second, nodes))

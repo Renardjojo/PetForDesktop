@@ -95,11 +95,17 @@ Transitions:
     StartLeftClicTransition:
         from: walk
         to: grab
+    TouchScreenEdgeTransition:
+        from: walk
+        to: [idle1, idle2]
     RandomDelayTransition:
         from: walk
         to: [idle1, idle2]
         duration: 3000
         interval: 500
+    TouchScreenEdgeTransition:
+        from: fly
+        to: [idle1, idle2]
     StartLeftClicTransition:
         from: fly
         to: grab
