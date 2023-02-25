@@ -12,10 +12,10 @@
 #include "Engine/SpriteSheet.hpp"
 #include "Engine/Texture.hpp"
 #include "Engine/TimeManager.hpp"
+#include "Engine/Updater.hpp"
 #include "Engine/Utilities.hpp"
 #include "Engine/Vector2.hpp"
 #include "Engine/Window.hpp"
-#include "Engine/Updater.hpp"
 
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
@@ -58,10 +58,10 @@ protected:
 
         glfwSetMonitorCallback(setMonitorCallback);
         datas.monitors.init();
-        Vec2i monitorSize = datas.monitors.getMonitorsSize();
+        Vec2i monitorSize    = datas.monitors.getMonitorsSize();
         Vec2i monitorsSizeMM = datas.monitors.getMonitorPhysicalSize();
 
-        datas.windowSize  = {1, 1};
+        datas.windowSize = {1, 1};
 
         // Evaluate pixel distance based on dpi and monitor size
         datas.pixelPerMeter = {(float)monitorSize.x / (monitorsSizeMM.x * 0.001f),
@@ -121,18 +121,8 @@ public:
 
         createResources();
 
-        Vec2i mainMonitorPosition;
-        Vec2i mainMonitorSize;
-        datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
-
-        datas.windowPos = mainMonitorPosition + mainMonitorSize / 2;
-        datas.petPos = datas.windowPos;
-        glfwSetWindowPos(datas.window, datas.windowPos.x, datas.windowPos.y);
-
         glfwShowWindow(datas.window);
-
         glfwSetWindowUserPointer(datas.window, &datas);
-
         glfwSetMouseButtonCallback(datas.window, mousButtonCallBack);
         glfwSetCursorPosCallback(datas.window, cursorPositionCallback);
 
@@ -159,8 +149,64 @@ public:
         glfwTerminate();
     }
 
+    void runCollisionDetectionMode()
+    {
+        const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
+            // poll for and process events
+            glfwPollEvents();
+        }};
+
+        int frameCount = 0;
+        const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
+            ++frameCount;
+
+            // render
+            initDrawContext();
+           
+            if (!(frameCount & 1) && datas.pImageGreyScale && datas.pEdgeDetectionTexture && datas.pFullScreenQuad)
+            {
+                datas.pImageGreyScale->use();
+                datas.pImageGreyScale->setInt("uTexture", 0);
+                datas.pFullScreenQuad->use();
+                datas.pEdgeDetectionTexture->use();
+                datas.pFullScreenQuad->draw();
+            }
+
+            // swap front and back buffers
+            glfwSwapBuffers(datas.window);
+            
+            if (frameCount & 1)
+            {
+                Vec2 newPos;
+                physicSystem.CatpureScreenCollision(datas.windowSize, newPos);
+            }
+        }};
+
+        // fullscreen
+        Vec2i monitorSize;
+        datas.monitors.getMonitorSize(0, monitorSize);
+        datas.windowSize = monitorSize;
+        glfwSetWindowSize(datas.window, datas.windowSize.x, datas.windowSize.y);
+        glfwSetWindowPos(datas.window, 0, 0);
+        glfwSetWindowAttrib(datas.window, GLFW_MOUSE_PASSTHROUGH, true);
+        glfwSetWindowAttrib(datas.window, GLFW_TRANSPARENT_FRAMEBUFFER, true);
+        mainLoop.setFrameRate(1);
+
+        mainLoop.start();
+        while (!glfwWindowShouldClose(datas.window))
+        {
+            mainLoop.update(unlimitedUpdate, limitedUpdateDebugCollision);
+        }
+    }
+
     void run()
     {
+        if (datas.debugEdgeDetection)
+        {
+            runCollisionDetectionMode();
+            return;
+        }
+
         Pet pet(datas);
 
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
@@ -172,6 +218,7 @@ public:
             // poll for and process events
             glfwPollEvents();
         }};
+
         const std::function<void(double)> limitedUpdate{[&](double deltaTime) {
             pet.update(deltaTime);
 
@@ -188,27 +235,12 @@ public:
             }
         }};
 
-        const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
-            // fullscreen
-            Vec2i monitorSize  = datas.monitors.getMonitorsSize();
-            datas.windowSize  = monitorSize;
-            glfwSetWindowSize(datas.window, datas.windowSize.x, datas.windowSize.y);
-
-            // render
-            initDrawContext();
-
-            if (datas.pImageGreyScale && datas.pEdgeDetectionTexture && datas.pFullScreenQuad)
-            {
-                datas.pImageGreyScale->use();
-                datas.pImageGreyScale->setInt("uTexture", 0);
-                datas.pFullScreenQuad->use();
-                datas.pEdgeDetectionTexture->use();
-                datas.pFullScreenQuad->draw();
-            }
-
-            // swap front and back buffers
-            glfwSwapBuffers(datas.window);
-        }};
+        Vec2i                             mainMonitorPosition;
+        Vec2i                             mainMonitorSize;
+        datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
+        datas.windowPos = mainMonitorPosition + mainMonitorSize / 2;
+        datas.petPos    = datas.windowPos;
+        glfwSetWindowPos(datas.window, datas.windowPos.x, datas.windowPos.y);
 
         mainLoop.emplaceTimer([&]() { physicSystem.update(1.f / datas.physicFrameRate); }, 1.f / datas.physicFrameRate,
                               true);
@@ -216,7 +248,7 @@ public:
         mainLoop.start();
         while (!glfwWindowShouldClose(datas.window))
         {
-            mainLoop.update(unlimitedUpdate, datas.debugEdgeDetection ? limitedUpdateDebugCollision : limitedUpdate);
+            mainLoop.update(unlimitedUpdate, limitedUpdate);
         }
     }
 };
