@@ -12,14 +12,14 @@ Nodes:
         sprite: idle2.png
         sizeFactor: 2
         tileCount: 14
-        framerate: 8
+        framerate: 7
         loop: true
     AnimationNode:
         name: sleep
         sprite: sleep.png
         sizeFactor: 2
         tileCount: 6
-        framerate: 6
+        framerate: 4
         loop: true
     GrabNode:
         name: grab
@@ -75,9 +75,9 @@ Transitions:
         to: grab
     RandomDelayTransition:
         from: idle1
-        to: [walk, jump, sleep, fly]
-        duration: 3000
-        interval: 1000
+        to: [walk, walk, jump, sleep]
+        duration: 4000
+        interval: 2000
     IsNotGroundedTransition:
         from: idle1
         to: air
@@ -86,8 +86,8 @@ Transitions:
         to: grab
     RandomDelayTransition:
         from: idle2
-        to: [walk, jump, sleep, fly]
-        duration: 3000
+        to: [walk, jump, jump, fly]
+        duration: 2000
         interval: 1000
     IsNotGroundedTransition:
         from: idle2
@@ -101,8 +101,8 @@ Transitions:
     RandomDelayTransition:
         from: walk
         to: [idle1, idle2]
-        duration: 3000
-        interval: 500
+        duration: 2000
+        interval: 1000
     TouchScreenEdgeTransition:
         from: fly
         to: [idle1, idle2]
@@ -112,8 +112,8 @@ Transitions:
     RandomDelayTransition:
         from: fly
         to: [idle1, idle2]
-        duration: 5000
-        interval: 1000
+        duration: 6000
+        interval: 2000
     StartLeftClicTransition:
         from: jump
         to: grab
@@ -135,5 +135,5 @@ Transitions:
     RandomDelayTransition:
         from: sleep
         to: [idle1, idle2]
-        duration: 9000
-        interval: 1000
+        duration: 30000
+        interval: 15000
