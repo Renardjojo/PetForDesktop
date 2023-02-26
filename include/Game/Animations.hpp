@@ -91,28 +91,32 @@ public:
     }
 };
 
-class PetWalkNode : public AnimationNode
+class MovementDirectionNode : public AnimationNode
 {
-    Vec2  baseDir = {0.f, 0.f};
-    float thrust  = 0.f;
+    std::vector<Vec2> directions;
+    Vec2              baseDir;
+    bool              applyGravity;
 
 public:
-    PetWalkNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, Vec2 inRigghtDir,
-                float inThrust, bool inLoop = true)
-        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, inLoop), baseDir{inRigghtDir}, thrust{inThrust}
+    MovementDirectionNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate,
+                          std::vector<Vec2> inDir, bool inApplyGravity = true, bool inLoop = true)
+        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, inLoop), directions{inDir}, applyGravity{inApplyGravity}
     {
     }
 
     void onEnter(GameData& blackBoard) override
     {
         AnimationNode::onEnter(blackBoard);
-        blackBoard.side = randNum(0, 1);
-        blackBoard.continusVelocity += baseDir * (blackBoard.side * 2.f - 1.f) * thrust;
+        baseDir         = directions[randNum(0, directions.size() - 1)];
+        blackBoard.side = baseDir.dot(Vec2::right()) > 0.f;
+        blackBoard.applyGravity = applyGravity;
+        blackBoard.continuousVelocity += baseDir;
     }
 
     void onExit(GameData& blackBoard) override
     {
         AnimationNode::onExit(blackBoard);
-        blackBoard.continusVelocity -= baseDir * (blackBoard.side * 2.f - 1.f) * thrust;
+        blackBoard.applyGravity = true;
+        blackBoard.continuousVelocity -= baseDir;
     }
 };

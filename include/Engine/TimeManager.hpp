@@ -58,6 +58,11 @@ public:
         m_timerQueue.emplace(functionToExecute, delay, delay + datas.timeAcc, isLooping);
     }
 
+    void setFrameRate(int FPS)
+    {
+        m_fixedDeltaTime = 1. / FPS;
+    }
+
     void update(std::function<void(double deltaTime)> unlimitedUpdateFunction,
                 std::function<void(double deltaTime)> limitedUpdateFunction)
     {
@@ -96,6 +101,14 @@ public:
                 emplaceTimer(timerTask.task, timerTask.localTimer, timerTask.isLooping);
             }
             m_timerQueue.pop();
+        }
+
+        while (!datas.deltasCursorPosBuffer.empty() &&
+               datas.deltasCursorPosBuffer.top().timer + datas.coyoteTimeCursorPos <= datas.timeAcc)
+        {
+            const GameData::DeltaCursosPosElem& elem = datas.deltasCursorPosBuffer.top();
+            datas.deltaCursorAcc -= elem.pos;
+            datas.deltasCursorPosBuffer.pop();
         }
     }
 };

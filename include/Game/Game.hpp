@@ -12,10 +12,10 @@
 #include "Engine/SpriteSheet.hpp"
 #include "Engine/Texture.hpp"
 #include "Engine/TimeManager.hpp"
+#include "Engine/Updater.hpp"
 #include "Engine/Utilities.hpp"
 #include "Engine/Vector2.hpp"
 #include "Engine/Window.hpp"
-#include "Engine/Updater.hpp"
 
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
@@ -50,16 +50,22 @@ protected:
 
         glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, !datas.showFrameBufferBackground);
         glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
-        glfwWindowHint(GLFW_FLOATING, datas.useFowardWindow);
+        glfwWindowHint(GLFW_FLOATING, datas.useForwardWindow);
 
         // Disable depth and stencil buffers
         glfwWindowHint(GLFW_DEPTH_BITS, 0);
         glfwWindowHint(GLFW_STENCIL_BITS, 0);
 
-        datas.monitors    = glfwGetMonitors(&datas.monitorCount);
-        datas.videoMode   = glfwGetVideoMode(datas.monitors[0]);
-        datas.petPosLimit = {datas.videoMode->width, datas.videoMode->height};
-        datas.windowSize  = {1, 1};
+        glfwSetMonitorCallback(setMonitorCallback);
+        datas.monitors.init();
+        Vec2i monitorSize    = datas.monitors.getMonitorsSize();
+        Vec2i monitorsSizeMM = datas.monitors.getMonitorPhysicalSize();
+
+        datas.windowSize = {1, 1};
+
+        // Evaluate pixel distance based on dpi and monitor size
+        datas.pixelPerMeter = {(float)monitorSize.x / (monitorsSizeMM.x * 0.001f),
+                               (float)monitorSize.y / (monitorsSizeMM.y * 0.001f)};
 
         datas.window = glfwCreateWindow(datas.windowSize.x, datas.windowSize.y, PROJECT_NAME, NULL, NULL);
         if (!datas.window)
@@ -72,7 +78,6 @@ protected:
 
         glfwSetWindowAttrib(datas.window, GLFW_DECORATED, datas.showWindow);
         glfwSetWindowAttrib(datas.window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
-        glfwSetWindowAttrib(datas.window, GLFW_MOUSE_PASSTHROUGH, datas.useMousePassThoughWindow);
         glfwDefaultWindowHints();
     }
 
@@ -116,17 +121,8 @@ public:
 
         createResources();
 
-        glfwGetMonitorPos(datas.monitors[0], &datas.monitorX, &datas.monitorY);
-
-        datas.windowPos =
-            Vec2{datas.monitorX + (datas.videoMode->width) / 2.f, datas.monitorY + (datas.videoMode->height) / 2.f};
-        datas.petPos = datas.windowPos;
-        glfwSetWindowPos(datas.window, datas.windowPos.x, datas.windowPos.y);
-
         glfwShowWindow(datas.window);
-
         glfwSetWindowUserPointer(datas.window, &datas);
-
         glfwSetMouseButtonCallback(datas.window, mousButtonCallBack);
         glfwSetCursorPosCallback(datas.window, cursorPositionCallback);
 
@@ -153,23 +149,76 @@ public:
         glfwTerminate();
     }
 
+    void runCollisionDetectionMode()
+    {
+        const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
+            // poll for and process events
+            glfwPollEvents();
+        }};
+
+        int frameCount = 0;
+        const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
+            ++frameCount;
+
+            // render
+            initDrawContext();
+           
+            if (!(frameCount & 1) && datas.pImageGreyScale && datas.pEdgeDetectionTexture && datas.pFullScreenQuad)
+            {
+                datas.pImageGreyScale->use();
+                datas.pImageGreyScale->setInt("uTexture", 0);
+                datas.pFullScreenQuad->use();
+                datas.pEdgeDetectionTexture->use();
+                datas.pFullScreenQuad->draw();
+            }
+
+            // swap front and back buffers
+            glfwSwapBuffers(datas.window);
+            
+            if (frameCount & 1)
+            {
+                Vec2 newPos;
+                physicSystem.CatpureScreenCollision(datas.windowSize, newPos);
+            }
+        }};
+
+        // fullscreen
+        Vec2i monitorSize;
+        datas.monitors.getMonitorSize(0, monitorSize);
+        datas.windowSize = monitorSize;
+        glfwSetWindowSize(datas.window, datas.windowSize.x, datas.windowSize.y);
+        glfwSetWindowPos(datas.window, 0, 0);
+        glfwSetWindowAttrib(datas.window, GLFW_MOUSE_PASSTHROUGH, true);
+        glfwSetWindowAttrib(datas.window, GLFW_TRANSPARENT_FRAMEBUFFER, true);
+        mainLoop.setFrameRate(1);
+
+        mainLoop.start();
+        while (!glfwWindowShouldClose(datas.window))
+        {
+            mainLoop.update(unlimitedUpdate, limitedUpdateDebugCollision);
+        }
+    }
+
     void run()
     {
+        if (datas.debugEdgeDetection)
+        {
+            runCollisionDetectionMode();
+            return;
+        }
+
         Pet pet(datas);
 
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
             processInput(datas.window);
 
-            // poll for and process events
-            glfwPollEvents();
-        }};
-
-        const std::function<void(double)> unlimitedUpdateDebugCollision{[&](double deltaTime) {
-            processInput(datas.window);
+            if (datas.useMousePassThoughWindow)
+                glfwSetWindowAttrib(datas.window, GLFW_MOUSE_PASSTHROUGH, !pet.isMouseOver());
 
             // poll for and process events
             glfwPollEvents();
         }};
+
         const std::function<void(double)> limitedUpdate{[&](double deltaTime) {
             pet.update(deltaTime);
 
@@ -186,29 +235,12 @@ public:
             }
         }};
 
-        const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
-            // fullscreen
-            datas.windowSize.x = datas.videoMode->width;
-            datas.windowSize.y = datas.videoMode->height;
-            datas.petPosLimit  = {datas.videoMode->width - datas.windowSize.x,
-                                 datas.videoMode->height - datas.windowSize.y};
-            glfwSetWindowSize(datas.window, datas.windowSize.x, datas.windowSize.y);
-
-            // render
-            initDrawContext();
-
-            if (datas.pImageGreyScale && datas.pEdgeDetectionTexture && datas.pFullScreenQuad)
-            {
-                datas.pImageGreyScale->use();
-                datas.pImageGreyScale->setInt("uTexture", 0);
-                datas.pFullScreenQuad->use();
-                datas.pEdgeDetectionTexture->use();
-                datas.pFullScreenQuad->draw();
-            }
-
-            // swap front and back buffers
-            glfwSwapBuffers(datas.window);
-        }};
+        Vec2i                             mainMonitorPosition;
+        Vec2i                             mainMonitorSize;
+        datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
+        datas.windowPos = mainMonitorPosition + mainMonitorSize / 2;
+        datas.petPos    = datas.windowPos;
+        glfwSetWindowPos(datas.window, datas.windowPos.x, datas.windowPos.y);
 
         mainLoop.emplaceTimer([&]() { physicSystem.update(1.f / datas.physicFrameRate); }, 1.f / datas.physicFrameRate,
                               true);
@@ -216,7 +248,7 @@ public:
         mainLoop.start();
         while (!glfwWindowShouldClose(datas.window))
         {
-            mainLoop.update(unlimitedUpdate, datas.debugEdgeDetection ? limitedUpdateDebugCollision : limitedUpdate);
+            mainLoop.update(unlimitedUpdate, limitedUpdate);
         }
     }
 };

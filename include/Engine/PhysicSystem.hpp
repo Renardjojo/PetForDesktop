@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Game/GameData.hpp"
-#include "Engine/Vector2.hpp"
 #include "Engine/ScreenShoot.hpp"
 #include "Engine/Texture.hpp"
+#include "Engine/Vector2.hpp"
+#include "Game/GameData.hpp"
 
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glad/glad.h>
 
 #include <cmath>
 
@@ -22,37 +22,102 @@ public:
 
     bool checkIsGrounded()
     {
-        return std::abs(data.gravityDir.dot(data.velocity)) < data.isGroundedDetection;
+        float velocityLength     = data.velocity.length();
+
+        if (velocityLength < FLT_EPSILON)
+            return true;
+
+        float dotGravityVelocity = (- data.gravityDir).dot(data.velocity / velocityLength);
+        return dotGravityVelocity > 0.8 && velocityLength < data.isGroundedDetection;
+    }
+
+    static bool isRectDisjointRectB(const Vec2i posA, const Vec2i sizeA, const Vec2i posB, const Vec2i sizeB)
+    {
+        // Check if the rectangles are disjoint (i.e. do not overlap)
+        return posA.x + sizeA.x < posB.x || posA.x > posB.x + sizeB.x || posA.y + sizeA.y < posB.y ||
+               posA.y > posB.y + sizeB.y;
+    }
+
+    static bool isRectAInsideRectB(const Vec2i posA, const Vec2i sizeA, const Vec2i posB, const Vec2i sizeB)
+    {
+        return posA.x > posB.x && posA.x + sizeA.x < posB.x + sizeB.x && posA.y > posB.y && posA.y + sizeA.y < posB.y + sizeB.y;
     }
 
     void computeMonitorCollisions()
     {
-        if (data.petPos.x < 0.f)
+        std::vector<Vec2i> monitorsPosition;
+        std::vector<Vec2i> monitorSize;
+        bool               isOutside          = true;
+        int                screenOverlapCount = 0;
+
+        // 1: Check if pet is outside of all monitors
+        for (int i = 0; i < data.monitors.getMonitorsCount(); ++i)
         {
-            data.petPos.x = 0.f;
-            data.velocity = data.velocity.reflect(Vec2::right()) * data.bounciness;
+            monitorsPosition.emplace_back();
+            monitorSize.emplace_back();
+            data.monitors.getMonitorPosition(i, monitorsPosition[i]);
+            data.monitors.getMonitorSize(i, monitorSize[i]);
+            bool isOutsideOfCurrentMonitor =
+                isRectDisjointRectB(data.petPos, data.petSize, monitorsPosition[i], monitorSize[i]);
+            bool iInsideOfCurrentMonitor =
+                isRectAInsideRectB(data.petPos, data.petSize, monitorsPosition[i], monitorSize[i]);
+            
+            screenOverlapCount += !iInsideOfCurrentMonitor && !isOutsideOfCurrentMonitor;
+
+            isOutside &= isOutsideOfCurrentMonitor;
         }
 
-        if (data.petPos.y < 0.f)
-        {
-            data.petPos.y = 0.f;
-            data.velocity = data.velocity.reflect(Vec2::down()) * data.bounciness;
-        }
+        // 2: If pet is outside need correction
+        float minSqrDistance = FLT_MAX;
+        data.isOnBottomOfWindow = false;
+        Vec2  reelPositionCorrection;
 
-        if (data.petPos.x > data.petPosLimit.x)
+        // Check if only one screen overlap is not perfect but cover the majority of cases
+        data.touchScreenEdge = isOutside || screenOverlapCount == 1;
+        if (data.touchScreenEdge)
         {
-            data.petPos.x = static_cast<float>(data.petPosLimit.x);
-            data.velocity = data.velocity.reflect(Vec2::left()) * data.bounciness;
-        }
+            for (int i = 0; i < data.monitors.getMonitorsCount(); ++i)
+            {
+                Vec2 positionCorrection = data.petPos;
+                bool isOnBottom = false;
 
-        if (data.petPos.y > data.petPosLimit.y)
-        {
-            data.petPos.y = static_cast<float>(data.petPosLimit.y);
-            data.velocity = data.velocity.reflect(Vec2::up()) * data.bounciness;
+                if (data.petPos.x <= monitorsPosition[i].x)
+                {
+                    positionCorrection.x = monitorsPosition[i].x;
+                }
+                else if (data.petPos.x + data.petSize.x >= monitorsPosition[i].x + monitorSize[i].x)
+                {
+                    positionCorrection.x = monitorsPosition[i].x + monitorSize[i].x - data.petSize.x;
+                }
 
-            // check if is grounded
-            data.isGrounded = checkIsGrounded();
+                if (data.petPos.y <= monitorsPosition[i].y)
+                {
+                    positionCorrection.y = monitorsPosition[i].y;
+                }
+                else if (data.petPos.y + data.petSize.y >= monitorsPosition[i].y + monitorSize[i].y)
+                {
+                    positionCorrection.y = monitorsPosition[i].y + monitorSize[i].y - data.petSize.y;
+                    isOnBottom           = true;
+                }
+                
+                float currentSqrDistance = (positionCorrection - data.petPos).sqrLength();
+                if (currentSqrDistance < minSqrDistance)
+                {
+                    data.isOnBottomOfWindow = isOnBottom;
+                    minSqrDistance         = currentSqrDistance;
+                    reelPositionCorrection = positionCorrection;
+                }
+            }
+
+            if (minSqrDistance > FLT_EPSILON)
+                data.velocity = data.velocity.reflect((reelPositionCorrection - data.petPos).normalized()) * data.bounciness;
+
+            data.isGrounded = (data.isOnBottomOfWindow &&
+                               data.velocity.sqrLength() < data.isGroundedDetection * data.isGroundedDetection) ||
+                checkIsGrounded();
             data.velocity *= !data.isGrounded; // reset velocity if is grounded
+
+            data.petPos = reelPositionCorrection;
         }
     }
 
@@ -71,10 +136,12 @@ public:
             const float xPadding = prevToNewWinPos.x < 0.f ? prevToNewWinPos.x : 0.f;
             const float yPadding = prevToNewWinPos.y < 0.f ? prevToNewWinPos.y : 0.f;
 
-            screenShootPosX  = static_cast<int>(data.petPos.x + data.petSize.x / 2.f + xPadding - data.footBasasementWidth / 2.f);
-            screenShootPosY  = static_cast<int>(data.petPos.y + data.petSize.y + 1 + yPadding - data.footBasasementHeight / 2.f);
-            screenShootSizeX = static_cast<int>(abs(prevToNewWinPos.x) + data.footBasasementWidth);
-            screenShootSizeY = static_cast<int>(abs(prevToNewWinPos.y) + data.footBasasementHeight);
+            screenShootPosX =
+                static_cast<int>(data.petPos.x + data.petSize.x / 2.f + xPadding - data.footBasementWidth / 2.f);
+            screenShootPosY =
+                static_cast<int>(data.petPos.y + data.petSize.y + 1 + yPadding - data.footBasementHeight / 2.f);
+            screenShootSizeX = static_cast<int>(abs(prevToNewWinPos.x) + data.footBasementWidth);
+            screenShootSizeY = static_cast<int>(abs(prevToNewWinPos.y) + data.footBasementHeight);
         }
 
         ScreenShoot              screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
@@ -93,7 +160,8 @@ public:
 
             data.edgeDetectionShaders[0].use();
             data.edgeDetectionShaders[0].setInt("uTexture", 0);
-            data.edgeDetectionShaders[0].setVec2("resolution", static_cast<float>(pxlData.width), static_cast<float>(pxlData.height));
+            data.edgeDetectionShaders[0].setVec2("resolution", static_cast<float>(pxlData.width),
+                                                 static_cast<float>(pxlData.height));
             data.pCollisionTexture->use();
             data.pFullScreenQuad->use();
             data.pFullScreenQuad->draw();
@@ -114,7 +182,8 @@ public:
 
             data.edgeDetectionShaders[1].use();
             data.edgeDetectionShaders[1].setInt("uTexture", 0);
-            data.edgeDetectionShaders[1].setVec2("resolution", static_cast<float>(pxlData.width), static_cast<float>(pxlData.height));
+            data.edgeDetectionShaders[1].setVec2("resolution", static_cast<float>(pxlData.width),
+                                                 static_cast<float>(pxlData.height));
             data.pCollisionTexture->use();
             data.pFullScreenQuad->use();
             data.pFullScreenQuad->draw();
@@ -155,17 +224,17 @@ public:
         int width  = data.pEdgeDetectionTexture->getWidth();
         int height = data.pEdgeDetectionTexture->getHeight();
 
-        float row    = prevToNewWinPosDir.y < 0.f ? height - data.footBasasementHeight : 0.f;
-        float column = prevToNewWinPosDir.x < 0.f ? width - data.footBasasementWidth : 0.f;
+        float row    = prevToNewWinPosDir.y < 0.f ? height - data.footBasementHeight : 0.f;
+        float column = prevToNewWinPosDir.x < 0.f ? width - data.footBasementWidth : 0.f;
 
-        int iterationCount = iterationOnX ? width - data.footBasasementWidth : height - data.footBasasementHeight;
+        int iterationCount = iterationOnX ? width - data.footBasementWidth : height - data.footBasementHeight;
         for (int i = 0; i < iterationCount + 1; i++)
         {
             float count = 0;
 
-            for (int y = 0; y < data.footBasasementHeight; y++)
+            for (int y = 0; y < data.footBasementHeight; y++)
             {
-                for (int x = 0; x < data.footBasasementWidth; x++)
+                for (int x = 0; x < data.footBasementWidth; x++)
                 {
                     // flip Y and find index
                     int rowFlipped = height - 1 - (int)row - y;
@@ -173,7 +242,7 @@ public:
                     count += pixels[index] == 255;
                 }
             }
-            count /= data.footBasasementWidth * data.footBasasementHeight;
+            count /= data.footBasementWidth * data.footBasementHeight;
 
             if (count > data.collisionPixelRatioStopMovement)
             {
@@ -198,25 +267,19 @@ public:
         {
             // Acc = Sum of force / Mass
             // G is already an acceleration
-            const Vec2 acc = data.gravity * !data.isGrounded;
+            const Vec2 acc = data.gravity * data.applyGravity * !data.isGrounded;
 
             // V = Acc * Time
             data.velocity += acc * (float)deltaTime;
 
-            // Evaluate pixel distance based on dpi and monitor size
-            // TODO: bake it
-            int width_mm, height_mm;
-            glfwGetMonitorPhysicalSize(data.monitors[0], &width_mm, &height_mm);
-
-            const vec2 pixelPerMeter{(float)data.videoMode->width / (width_mm * 0.001f),
-                                     (float)data.videoMode->height / (height_mm * 0.001f)};
-
             const Vec2 prevWinPos = data.petPos;
             // Pos = PrevPos + V * Time
-            const Vec2 newWinPos = data.petPos + ((data.continusVelocity + data.velocity) * (1.f - data.friction) *
-                                                  pixelPerMeter * (float)deltaTime);
+            const Vec2 newWinPos = data.petPos + ((data.continuousVelocity + data.velocity) * (1.f - data.friction) *
+                                                  data.pixelPerMeter * (float)deltaTime);
+            
             const Vec2 prevToNewWinPos = newWinPos - prevWinPos;
-            if ((prevToNewWinPos.sqrLength() <= data.continusCollisionMaxSqrVelocity && prevToNewWinPos.y > 0.f) ||
+            const float sqrDistMovement    = prevToNewWinPos.sqrLength();
+            if ((sqrDistMovement <= data.continuousCollisionMaxSqrVelocity && prevToNewWinPos.y > 0.f) ||
                 data.debugEdgeDetection)
             {
                 Vec2 newPos;
@@ -238,10 +301,10 @@ public:
             else
             {
                 // Update is grounded
-                if (data.isGrounded && data.petPos.y != data.petPosLimit.y)
+                if (data.isGrounded && !data.isOnBottomOfWindow)
                 {
                     Vec2 newPos;
-                    Vec2 footBasement((float)data.footBasasementWidth, (float)data.footBasasementHeight);
+                    Vec2 footBasement((float)data.footBasementWidth, (float)data.footBasementHeight);
                     data.isGrounded = CatpureScreenCollision(footBasement, newPos);
                 }
 
@@ -249,7 +312,8 @@ public:
             }
 
             // Apply monitor collision
-            computeMonitorCollisions();
+            if (sqrDistMovement > FLT_EPSILON)
+                computeMonitorCollisions();
         }
         else
         {

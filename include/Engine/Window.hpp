@@ -9,11 +9,13 @@
 void cursorPositionCallback(GLFWwindow* window, double x, double y)
 {
     GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
-
     if (datas.leftButtonEvent == GLFW_PRESS)
     {
         datas.deltaCursorPosX = static_cast<float>(x) - datas.prevCursorPosX;
         datas.deltaCursorPosY = static_cast<float>(y) - datas.prevCursorPosY;
+        Vec2 delta(datas.deltaCursorPosX, datas.deltaCursorPosY);
+        datas.deltasCursorPosBuffer.emplace(datas.timeAcc, delta);
+        datas.deltaCursorAcc += delta;
     }
 }
 
@@ -29,16 +31,14 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
         switch (action)
         {
         case GLFW_PRESS:
-            double x, y;
-            glfwGetCursorPos(window, &x, &y);
-            datas.prevCursorPosX  = static_cast<float>(floor(x));
-            datas.prevCursorPosY  = static_cast<float>(floor(y));
+            datas.prevCursorPosX  = static_cast<float>(datas.cursorPos.x);
+            datas.prevCursorPosY  = static_cast<float>(datas.cursorPos.y);
             datas.deltaCursorPosX = 0.f;
             datas.deltaCursorPosY = 0.f;
             datas.isGrounded      = false;
             break;
         case GLFW_RELEASE:
-            datas.velocity = Vec2{datas.deltaCursorPosX / datas.FPS, datas.deltaCursorPosY / datas.FPS};
+            datas.velocity = datas.deltaCursorAcc / datas.coyoteTimeCursorPos / datas.pixelPerMeter * datas.releaseImpulse;
             break;
         default:
             break;
@@ -49,25 +49,28 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
-void processMousePassTHoughWindow(GLFWwindow* window, GameData& datas)
+void setMonitorCallback(GLFWmonitor* monitor, int event)
 {
-    double xPos, yPos;
-    glfwGetCursorPos(window, &xPos, &yPos);
-    const Vec2 localWinPos             = datas.petPos - datas.windowPos;
-    const bool isCursorInsidePetWindow = xPos > localWinPos.x && yPos > localWinPos.y &&
-                                         xPos < localWinPos.x + (float)datas.petSize.x &&
-                                         yPos < localWinPos.y + (float)datas.petSize.y;
+    switch (event)
+    {
+    case GLFW_CONNECTED:
+        Monitors::getInstance().addMonitor(monitor);
+        break;
 
-    glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, !isCursorInsidePetWindow);
+    case GLFW_DISCONNECTED:
+        Monitors::getInstance().removeMonitor(monitor);
+        break;
+    }
 }
 
 void processInput(GLFWwindow* window)
 {
     GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
 
+    double cursPosX, cursPosY;
+    glfwGetCursorPos(window, &cursPosX, &cursPosY);
+    datas.cursorPos = {static_cast<int>(floor(cursPosX)), static_cast<int>(floor(cursPosY))};
+
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-
-    if (datas.useMousePassThoughWindow)
-        processMousePassTHoughWindow(window, datas);
 }

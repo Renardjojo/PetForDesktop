@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "PetForDesktop"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.2.1"
 #define MyAppPublisher "Foxland"
 #define MyAppURL "https://github.com/Renardjojo/PetForDesktop"
 #define MyAppExeName "PetForDesktop.exe"

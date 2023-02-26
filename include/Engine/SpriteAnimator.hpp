@@ -64,4 +64,15 @@ public:
     {
         return pSheet == nullptr || isEnd;
     }
+
+    float getSizeFactor() const
+    {
+        return pSheet->getSizeFactor();
+    }
+
+    bool isMouseOver(Vec2i cursorPos)
+    {
+        cursorPos.x += indexCurrentAnimSprite * pSheet->getWidth() / pSheet->getTileCount();
+        return pSheet != nullptr ? pSheet->isPixelOpaque(cursorPos) : false;
+    }
 };

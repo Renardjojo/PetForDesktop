@@ -1,22 +1,25 @@
 Game:
     FPS: 60  # min 1
-    Scale: 4 # min 1
+    Scale: 2 # min 1
     RandomSeed: -1 # -1: use random seed
 Physic:
     PhysicFrameRate: 60 # min 0
     Friction: 0.85 # [0, 1]  : 0 no friction, 1 max friction
     GravityX: 0
     GravityY: 9.81
-    Bounciness: 0.7 # [0, 1] : 0 no bounciness, 1 full energie restitution
-    ContinusCollisionMaxVelocity: 40 # min 0
-    FootBasasementWidth: 4 # min 2
-    FootBasasementHeight: 2 # min 2
+    Bounciness: 0.6 # [0, 1] : 0 no bounciness, 1 full energie restitution
+    ContinuousCollisionMaxVelocity: 40 # min 0
+    FootBasementWidth: 6 # min 2
+    FootBasementHeight: 2 # min 2
     CollisionPixelRatioStopMovement: 0.3 # min 0, max 1. Ratio of pixel with collision to detect a real collision 
     IsGroundedDetection: 1.0 # min 0
+    InputReleaseImpulse: 1.0 # min 0. Velocity factor after release the pet
+GamePlay:
+    CoyoteTimeCursorMovement: 0.05 # min 0. Record duration of the velocity before released the pet to preserve velocity with the mouse movement
 Window:
     ShowFrameBufferBackground: false
-    UseFowardWindow: true
-    ShowWindow: false
-    UseMousePassThoughWindow: true
+    UseForwardWindow: true # Define if the application should be displayed in forground 
+    ShowWindow: false # Display the window edge or not
+    UseMousePassThoughWindow: true # Define if user can selection pet only with selected pixel or with the entire windows 
 Debug:
-    ShowEdgeDetection: false
+    ShowEdgeDetection: false # Debug mode to display the result of the collision alogyrthm on the entire window
