@@ -58,6 +58,11 @@ public:
         m_timerQueue.emplace(functionToExecute, delay, delay + datas.timeAcc, isLooping);
     }
 
+    void setFrameRate(int FPS)
+    {
+        m_fixedDeltaTime = 1. / FPS;
+    }
+
     void update(std::function<void(double deltaTime)> unlimitedUpdateFunction,
                 std::function<void(double deltaTime)> limitedUpdateFunction)
     {

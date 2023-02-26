@@ -117,7 +117,7 @@ public:
     NeedUpdator(GameData& datas, DialoguePopUp& dialoguePopup, UtilitySystem& utilitySystem)
         : m_datas{datas}, m_dialoguePopup{dialoguePopup}, m_utilitySystem{utilitySystem}
     {
-        nexTimeDisplayPopup = randNum(5000, 10000) / 1000.f;
+        nexTimeDisplayPopup = randNum(10000, 30000) / 1000.f;
     }
 
     void update(float deltaTime)
@@ -131,7 +131,7 @@ public:
                 m_dialoguePopup.display(1.f, EPopupType::Dialogue, ENeed::Angry);
                 displayPopupCurrentTimer = 0;
                 lastNeed                 = currentNeedIndex;
-                nexTimeDisplayPopup      = randNum(5000, 10000) / 1000.f;
+                nexTimeDisplayPopup      = randNum(10000, 30000) / 1000.f;
             }
             else
             {
@@ -140,7 +140,7 @@ public:
                 if (displayPopupCurrentTimer > nexTimeDisplayPopup)
                 {
                     displayPopupCurrentTimer -= nexTimeDisplayPopup;
-                    nexTimeDisplayPopup = randNum(5000, 10000) / 1000.f;
+                    nexTimeDisplayPopup = randNum(10000, 30000) / 1000.f;
                     m_dialoguePopup.display(2.f, EPopupType::Dialogue, ENeed::Angry);
                 }
             }
@@ -152,7 +152,7 @@ public:
             if (displayPopupCurrentTimer > nexTimeDisplayPopup)
             {
                 displayPopupCurrentTimer -= nexTimeDisplayPopup;
-                nexTimeDisplayPopup = randNum(5000, 10000) / 1000.f;
+                nexTimeDisplayPopup = randNum(10000, 30000) / 1000.f;
                 m_dialoguePopup.display(2.f, EPopupType::Dialogue, ENeed::Love);
             }
         }
