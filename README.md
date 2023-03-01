@@ -15,6 +15,7 @@
 </p>
 
 ![image](https://user-images.githubusercontent.com/55276408/195999573-1e5f854b-230b-4e17-9920-6493975ed145.png)
+![PetForDesktopDemonstration](https://user-images.githubusercontent.com/55276408/222144931-3546cc40-3989-4a36-8e5c-bf43e239ee2a.gif)
  
 Welcome to PetForDesktop land!  
 PetForDesktop allows you to integrate and interact with your pet and customize it whenever you want!  
@@ -28,18 +29,18 @@ Just download the [lastest version](https://github.com/Renardjojo/PetDesktop//re
 - Customize settings : to play with the debugging function, configure your own gravity etc...
 - Customize animation
 - Replace the existing animation with your own horizontal sprite sheet.
-- Walk and jump but also edit and create your own animation !
+- Walk and jump but also edit and create your own animation!
 - Modify the code and contribute! (it's open source and under MIT license!)
 - Support development: Developing an app takes a lot of time for free and love is not enough to live on.
+- Use multiple monitors
 
 ## What is currently not possible with PetForDesktop:
 - Cook and make your own coffee...
-- Use multiple monitors (only the first monitor for now)
 - Save your pet's progress
-- Launch multiple pets (you can but it is not recommended)
+- Launch multiple pets (you can but it is not optimized)
 - Works on MacOs and Linux...
 
-## What in the future ?
+## What in the future?
 You can easily check out the [roadmap](https://github.com/Renardjojo/PetForDesktop/milestones) but remember that this software is open source.  
 That means you can fork it and modify or contribute to it for anyone! The MTI license allows you to do this, so take advantage of it.  
 
