@@ -45,6 +45,10 @@ You can easily check out the [roadmap](https://github.com/Renardjojo/PetForDeskt
 That means you can fork it and modify or contribute to it for anyone! The MTI license allows you to do this, so take advantage of it.  
 
 ## Disclamer:
-The concept of this application is inspired by another application called [Babafriend](https://hempuli.itch.io/baba-friend). This application is close source and does not allow me to customize the code base and features ... Now you can.  
-Fox's sprite sheet was shared by [elthen](https://elthen.itch.io/2d-pixel-art-fox-sprites) and modified to suit my needs.  
 PetForDesktop also takes small screenshots of your screen to process collision and edge detection. This application will **NEVER** save or send them! 
+
+## Contributor
+- *Hempuli* with its "[Babafriend](https://hempuli.itch.io/baba-friend)" application. The first inspiration for this concept was initiated through his program.  
+- *LeGitHubDeTai* with his tool "[github-to-discord](https://github.com/LeGitHubDeTai/github-to-discord)" to generate a notification on discord when new versions are released.  
+- *elthen* with his [fox sprite sheet](https://elthen.itch.io/2d-pixel-art-fox-sprites) which I used and modified to suit my needs.  
+- *cassala* with his [bubble sprite sheet](https://cassala.itch.io/bubble-sprites) which I used and modified to suit my needs.  
