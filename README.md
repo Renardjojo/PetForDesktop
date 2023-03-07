@@ -1,6 +1,9 @@
 <h1 align="center" style="border-bottom: none;">Pet for desktop 🦊</h1>
 <h3 align="center">A fox companion like you've never dreamed</h3>
 <p align="center">
+  <a href="LICENSE">
+    <img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg">
+  </a>
   <a href="https://github.com/Renardjojo/PetDesktop//releases/latest">
     <img alt="Version" src="https://img.shields.io/github/release/Renardjojo/PetForDesktop">
   </a>
@@ -9,8 +12,8 @@
   </a>
 </p>
 <p align="center">
-  <a href="LICENSE">
-    <img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg">
+  <a href="https://discord.gg/zuBup4N8">
+    <img alt="Join us on discord" src="https://img.shields.io/badge/join us-blue?logo=discord&logoColor=white">
   </a>
 </p>
 
