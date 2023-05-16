@@ -1,7 +1,7 @@
 ﻿{
   "configurations": [
     {
-      "name": "x64-Debug",
+      "name": "x64-Debug_ogl",
       "generator": "Ninja",
       "configurationType": "Debug",
       "inheritEnvironments": [ "msvc_x64" ],
@@ -9,10 +9,17 @@
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
-      "ctestCommandArgs": ""
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "USE_OPENGL_API",
+          "value": "True",
+          "type": "BOOL"
+        }
+      ]
     },
     {
-      "name": "x64-Release",
+      "name": "x64-Release_ogl",
       "generator": "Ninja",
       "configurationType": "Release",
       "inheritEnvironments": [ "msvc_x64" ],
@@ -20,7 +27,50 @@
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
-      "ctestCommandArgs": ""
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "USE_OPENGL_API",
+          "value": "True",
+          "type": "BOOL"
+        }
+      ]
+    },
+    {
+      "name": "x64-Debug_dx12",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\out\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64" ],
+      "variables": [
+        {
+          "name": "USE_DX12_API",
+          "value": "True",
+          "type": "BOOL"
+        }
+      ]
+    },
+    {
+      "name": "x64-Release_dx12",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\out\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64" ],
+      "variables": [
+        {
+          "name": "USE_DX12_API",
+          "value": "True",
+          "type": "BOOL"
+        }
+      ]
     }
   ]
 }

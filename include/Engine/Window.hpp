@@ -3,7 +3,6 @@
 #include "Game/GameData.hpp"
 #include "Engine/Vector2.hpp"
 
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 void cursorPositionCallback(GLFWwindow* window, double x, double y)

@@ -68,6 +68,10 @@ else ()
     add_definitions(-DDEBUG)
 endif (CMAKE_BUILD_TYPE MATCHES Release)
 
+# Graphic API
+option(USE_DX12_API "Use directX12 graphic api" FALSE)
+option(USE_OPENGL_API "Use OpenGL graphic api" FALSE)
+
 ########### Build ############
 file(GLOB_RECURSE project_source_files    LIST_DIRECTORIES false CONFIGURE_DEPENDS src/*.cpp src/*.c)
 file(GLOB_RECURSE project_headers  LIST_DIRECTORIES false CONFIGURE_DEPENDS include/*.hpp include/*.h)
@@ -103,8 +107,15 @@ set (GLFW_BUILD_DOCS OFF)
 set (GLFW_INSTALL OFF)
 add_subdirectory(${ABS_DEPS_DIR}/glfw)
 target_link_libraries(${PROJECT_NAME} glfw)
-find_package(OpenGL REQUIRED)
-target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} glfw )
+
+# Graphic API
+if (USE_DX12_API)
+    target_link_libraries(${PROJECT_NAME} d3d12)
+    target_link_libraries(${PROJECT_NAME} dxgi)
+elseif(USE_OPENGL_API)
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
+endif()
 
 # Boxer
 add_subdirectory(${ABS_DEPS_DIR}/Boxer)
@@ -122,6 +133,13 @@ target_link_libraries(${PROJECT_NAME} cpr)
 target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="${REL_RESOURCES_DIR}/")
 target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_NAME="${PROJECT_NAME}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
+
+# Graphic API
+if (USE_DX12_API)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DIRECTX12)
+elseif(USE_OPENGL_API)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE OPENGL)
+endif()
 
 ########### Build link ############
 # Set a symbolic link so exe can find the /Data folder
