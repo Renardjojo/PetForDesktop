@@ -5,9 +5,6 @@
 #include "Engine/Vector2.hpp"
 #include "Game/GameData.hpp"
 
-#include <GLFW/glfw3.h>
-#include <glad/glad.h>
-
 #include <cmath>
 
 class PhysicSystem
@@ -128,8 +125,8 @@ public:
         {
             screenShootPosX  = 0;
             screenShootPosY  = 0;
-            screenShootSizeX = data.windowSize.x;
-            screenShootSizeY = data.windowSize.y;
+            screenShootSizeX = data.window.getSize().x;
+            screenShootSizeY = data.window.getSize().y;
         }
         else
         {
@@ -322,8 +319,8 @@ public:
             data.deltaCursorPosY = 0;
         }
 
-        data.windowPos.x = static_cast<int>(data.petPos.x) - data.windowMinExt.x;
-        data.windowPos.y = static_cast<int>(data.petPos.y) - data.windowMinExt.y;
-        glfwSetWindowPos(data.window, data.windowPos.x, data.windowPos.y);
+        const Vec2i newWinPos{static_cast<int>(data.petPos.x) - data.windowMinExt.x,
+                              static_cast<int>(data.petPos.y) - data.windowMinExt.y};
+        data.window.setPos(newWinPos);
     }
 };

@@ -489,7 +489,7 @@ public:
 
     bool isMouseOver()
     {
-        const Vec2 localWinPos             = datas.petPos - datas.windowPos;
+        const Vec2 localWinPos             = datas.petPos - datas.window.getPos();
         const bool isCursorInsidePetWindow = datas.cursorPos.x > localWinPos.x && datas.cursorPos.y > localWinPos.y &&
                                              datas.cursorPos.x < localWinPos.x + (float)datas.petSize.x &&
                                              datas.cursorPos.y < localWinPos.y + (float)datas.petSize.y;

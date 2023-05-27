@@ -72,6 +72,9 @@ endif (CMAKE_BUILD_TYPE MATCHES Release)
 option(USE_DX12_API "Use directX12 graphic api" FALSE)
 option(USE_OPENGL_API "Use OpenGL graphic api" FALSE)
 
+message(STATUS "USE_DX12_API: ${USE_DX12_API}")
+message(STATUS "USE_OPENGL_API: ${USE_OPENGL_API}")
+
 ########### Build ############
 file(GLOB_RECURSE project_source_files    LIST_DIRECTORIES false CONFIGURE_DEPENDS src/*.cpp src/*.c)
 file(GLOB_RECURSE project_headers  LIST_DIRECTORIES false CONFIGURE_DEPENDS include/*.hpp include/*.h)
@@ -136,9 +139,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VE
 
 # Graphic API
 if (USE_DX12_API)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE DIRECTX12)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_DX12_API)
 elseif(USE_OPENGL_API)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE OPENGL)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE GLFW_INCLUDE_NONE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENGL_API)
 endif()
 
 ########### Build link ############

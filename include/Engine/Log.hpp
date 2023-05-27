@@ -6,7 +6,7 @@
 #include <cstdarg>
 #include <string>
 
-void log(const char* buffer)
+inline void log(const char* buffer)
 {
 #if _DEBUG
     // log into console
@@ -14,7 +14,7 @@ void log(const char* buffer)
 #endif
 }
 
-void logf(char const* const format, ...)
+inline void logf(char const* const format, ...)
 {
     va_list arglist;
     va_start(arglist, format);
@@ -25,14 +25,14 @@ void logf(char const* const format, ...)
     va_end(arglist);
 }
 
-void errorAndExit(const std::string& msg)
+inline void errorAndExit(const std::string& msg)
 {
     boxer::Selection selection =
         boxer::show(msg.c_str(), PROJECT_NAME " error", boxer::Style::Error, boxer::Buttons::OK);
     exit(-1);
 }
 
-void warning(const std::string& msg)
+inline void warning(const std::string& msg)
 {
     boxer::show(msg.c_str(), PROJECT_NAME " warning", boxer::Style::Warning, boxer::Buttons::OK);
     exit(-1);

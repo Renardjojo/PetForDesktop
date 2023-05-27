@@ -15,6 +15,11 @@
           "name": "USE_OPENGL_API",
           "value": "True",
           "type": "BOOL"
+        },
+        {
+          "name": "USE_DX12_API",
+          "value": "False",
+          "type": "BOOL"
         }
       ]
     },
@@ -33,6 +38,11 @@
           "name": "USE_OPENGL_API",
           "value": "True",
           "type": "BOOL"
+        },
+        {
+          "name": "USE_DX12_API",
+          "value": "False",
+          "type": "BOOL"
         }
       ]
     },
@@ -47,6 +57,11 @@
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64" ],
       "variables": [
+        {
+          "name": "USE_OPENGL_API",
+          "value": "False",
+          "type": "BOOL"
+        },
         {
           "name": "USE_DX12_API",
           "value": "True",
@@ -65,6 +80,11 @@
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64" ],
       "variables": [
+        {
+          "name": "USE_OPENGL_API",
+          "value": "False",
+          "type": "BOOL"
+        },
         {
           "name": "USE_DX12_API",
           "value": "True",
