@@ -1,17 +1,20 @@
 #pragma once
 
 #include "Engine/Monitors.hpp"
-#include "Engine/ScreenSpaceQuad.hpp"
-#include "Engine/Shader.hpp"
-#include "Engine/Texture.hpp"
 #include "Engine/Vector2.hpp"
 
 #ifdef USE_OPENGL_API
 #include "Engine/WindowOGL.hpp"
 #include "Engine/FramebufferOGL.hpp"
+#include "Engine/TextureOGL.hpp"
+#include "Engine/ScreenSpaceQuadOGL.hpp"
+#include "Engine/ShaderOGL.hpp"
 #elif USE_DX12_API
 #include "Engine/WindowDX12.hpp"
 #include "Engine/FramebufferDX12.hpp"
+#include "Engine/TextureDX12.hpp"
+#include "Engine/ScreenSpaceQuadDX12.hpp"
+#include "Engine/ShaderDX12.hpp"
 #endif // USE_OPENGL_API
 
 #include <memory>

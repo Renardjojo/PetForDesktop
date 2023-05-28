@@ -2,14 +2,23 @@
 
 #include "Game/GameData.hpp"
 #include "Game/Pet.hpp"
-
 #include "Engine/Log.hpp"
 #include "Engine/PhysicSystem.hpp"
-#include "Engine/ScreenSpaceQuad.hpp"
 #include "Engine/Settings.hpp"
-#include "Engine/Shader.hpp"
 #include "Engine/SpriteSheet.hpp"
-#include "Engine/Texture.hpp"
+
+#ifdef USE_OPENGL_API
+#include "Engine/TextureOGL.hpp"
+#include "Engine/ScreenSpaceQuadOGL.hpp"
+#include "Engine/ShaderOGL.hpp"
+
+#elif USE_DX12_API
+#include "Engine/TextureDX12.hpp"
+#include "Engine/ScreenSpaceQuadDX12.hpp"
+#include "Engine/ShaderDX12.hpp"
+
+#endif // USE_OPENGL_API
+
 #include "Engine/TimeManager.hpp"
 #include "Engine/Updater.hpp"
 #include "Engine/Utilities.hpp"

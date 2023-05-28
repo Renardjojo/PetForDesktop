@@ -1,7 +1,13 @@
 #pragma once
 
 #include "Engine/ScreenShoot.hpp"
-#include "Engine/Texture.hpp"
+
+#ifdef USE_OPENGL_API
+#include "Engine/TextureOGL.hpp"
+#elif USE_DX12_API
+#include "Engine/TextureDX12.hpp"
+#endif // USE_OPENGL_API
+
 #include "Engine/Vector2.hpp"
 #include "Game/GameData.hpp"
 

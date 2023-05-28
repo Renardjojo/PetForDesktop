@@ -1,10 +1,13 @@
 #pragma once
 
-#include "Engine/Shader.hpp"
+#ifdef USE_OPENGL_API
+#include "Engine/ShaderOGL.hpp"
+#elif USE_DX12_API
+#include "Engine/ShaderDX12.hpp"
+#endif // USE_OPENGL_API
+
 #include "Engine/Vector2.hpp"
 #include "Game/GameData.hpp"
-
-#include <glad/glad.h>
 
 class SpriteSheet : public Texture
 {
