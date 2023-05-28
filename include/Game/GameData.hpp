@@ -4,17 +4,17 @@
 #include "Engine/Vector2.hpp"
 
 #ifdef USE_OPENGL_API
-#include "Engine/WindowOGL.hpp"
-#include "Engine/FramebufferOGL.hpp"
-#include "Engine/TextureOGL.hpp"
-#include "Engine/ScreenSpaceQuadOGL.hpp"
-#include "Engine/ShaderOGL.hpp"
+#include "Engine/Graphics/WindowOGL.hpp"
+#include "Engine/Graphics/FramebufferOGL.hpp"
+#include "Engine/Graphics/TextureOGL.hpp"
+#include "Engine/Graphics/ScreenSpaceQuadOGL.hpp"
+#include "Engine/Graphics/ShaderOGL.hpp"
 #elif USE_DX12_API
-#include "Engine/WindowDX12.hpp"
-#include "Engine/FramebufferDX12.hpp"
-#include "Engine/TextureDX12.hpp"
-#include "Engine/ScreenSpaceQuadDX12.hpp"
-#include "Engine/ShaderDX12.hpp"
+#include "Engine/Graphics/WindowDX12.hpp"
+#include "Engine/Graphics/FramebufferDX12.hpp"
+#include "Engine/Graphics/TextureDX12.hpp"
+#include "Engine/Graphics/ScreenSpaceQuadDX12.hpp"
+#include "Engine/Graphics/ShaderDX12.hpp"
 #endif // USE_OPENGL_API
 
 #include <memory>

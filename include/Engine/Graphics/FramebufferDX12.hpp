@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/TextureDX12.hpp"
+#include "Engine/Graphics/TextureDX12.hpp"
 #include "Engine/Log.hpp"
 
 #include <glad/glad.h>

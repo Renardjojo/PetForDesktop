@@ -1,9 +1,9 @@
 #pragma once
 
 #ifdef USE_OPENGL_API
-#include "Engine/ShaderOGL.hpp"
+#include "Engine/Graphics/ShaderOGL.hpp"
 #elif USE_DX12_API
-#include "Engine/ShaderDX12.hpp"
+#include "Engine/Graphics/ShaderDX12.hpp"
 #endif // USE_OPENGL_API
 
 #include "Engine/Vector2.hpp"

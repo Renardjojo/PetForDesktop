@@ -8,14 +8,14 @@
 #include "Engine/SpriteSheet.hpp"
 
 #ifdef USE_OPENGL_API
-#include "Engine/TextureOGL.hpp"
-#include "Engine/ScreenSpaceQuadOGL.hpp"
-#include "Engine/ShaderOGL.hpp"
+#include "Engine/Graphics/TextureOGL.hpp"
+#include "Engine/Graphics/ScreenSpaceQuadOGL.hpp"
+#include "Engine/Graphics/ShaderOGL.hpp"
 
 #elif USE_DX12_API
-#include "Engine/TextureDX12.hpp"
-#include "Engine/ScreenSpaceQuadDX12.hpp"
-#include "Engine/ShaderDX12.hpp"
+#include "Engine/Graphics/TextureDX12.hpp"
+#include "Engine/Graphics/ScreenSpaceQuadDX12.hpp"
+#include "Engine/Graphics/ShaderDX12.hpp"
 
 #endif // USE_OPENGL_API
 
@@ -41,6 +41,7 @@ protected:
 
     void createResources()
     {
+#if USE_OPENGL_API
         datas.pFramebuffer = std::make_unique<Framebuffer>();
         datas.edgeDetectionShaders.emplace_back(RESOURCE_PATH "shader/image.vs",
                                                 RESOURCE_PATH "shader/dFdxEdgeDetection.fs");
@@ -56,6 +57,7 @@ protected:
 
         datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
         datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
+#endif
     }
 
 public:
@@ -81,6 +83,7 @@ public:
     void initDrawContext()
     {
         Framebuffer::bindScreen();
+#if USE_OPENGL_API
         glViewport(0, 0, datas.window.getSize().x, datas.window.getSize().y);
 
         glEnable(GL_BLEND);
@@ -91,6 +94,7 @@ public:
         glDepthMask(GL_TRUE);
         glClear(GL_COLOR_BUFFER_BIT);
         glDisable(GL_CULL_FACE);
+#endif
     }
 
     ~Game()
@@ -189,8 +193,10 @@ public:
         datas.window.setPos(mainMonitorPosition + mainMonitorSize / 2);
         datas.petPos    = datas.window.getPos();
 
+#if USE_OPENGL_API
         mainLoop.emplaceTimer([&]() { physicSystem.update(1.f / datas.physicFrameRate); }, 1.f / datas.physicFrameRate,
                               true);
+#endif
 
         mainLoop.start();
         while (!datas.window.shouldClose())

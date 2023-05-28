@@ -1,4 +1,4 @@
-#include "Engine/TextureOGL.hpp"
+#include "Engine/Graphics/TextureOGL.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"

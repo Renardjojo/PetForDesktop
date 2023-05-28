@@ -3,9 +3,9 @@
 #include "Engine/ScreenShoot.hpp"
 
 #ifdef USE_OPENGL_API
-#include "Engine/TextureOGL.hpp"
+#include "Engine/Graphics/TextureOGL.hpp"
 #elif USE_DX12_API
-#include "Engine/TextureDX12.hpp"
+#include "Engine/Graphics/TextureDX12.hpp"
 #endif // USE_OPENGL_API
 
 #include "Engine/Vector2.hpp"
@@ -153,8 +153,10 @@ public:
         data.pCollisionTexture     = std::make_unique<Texture>(pxlData.bits, pxlData.width, pxlData.height, 4);
         data.pEdgeDetectionTexture = std::make_unique<Texture>(pxlData.width, pxlData.height, 4);
 
+#if USE_OPENGL_API
         glDisable(GL_BLEND);
         glViewport(0, 0, pxlData.width, pxlData.height);
+#endif
 
         if (data.edgeDetectionShaders.size() == 1)
         {

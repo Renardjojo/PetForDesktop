@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/TextureOGL.hpp"
+#include "Engine/Graphics/TextureOGL.hpp"
 #include "Engine/Log.hpp"
 
 #include <glad/glad.h>
