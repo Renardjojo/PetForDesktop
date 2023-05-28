@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Engine/Framebuffer.hpp"
 #include "Engine/Monitors.hpp"
 #include "Engine/ScreenSpaceQuad.hpp"
 #include "Engine/Shader.hpp"
@@ -9,6 +8,10 @@
 
 #ifdef USE_OPENGL_API
 #include "Engine/WindowOGL.hpp"
+#include "Engine/FramebufferOGL.hpp"
+#elif USE_DX12_API
+#include "Engine/WindowDX12.hpp"
+#include "Engine/FramebufferDX12.hpp"
 #endif // USE_OPENGL_API
 
 #include <memory>

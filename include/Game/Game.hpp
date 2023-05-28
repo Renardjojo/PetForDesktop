@@ -3,7 +3,6 @@
 #include "Game/GameData.hpp"
 #include "Game/Pet.hpp"
 
-#include "Engine/Framebuffer.hpp"
 #include "Engine/Log.hpp"
 #include "Engine/PhysicSystem.hpp"
 #include "Engine/ScreenSpaceQuad.hpp"
@@ -48,11 +47,6 @@ protected:
 
         datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
         datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
-
-#ifdef _DEBUG
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageCallback(GLDebugMessageCallback, NULL);
-#endif
     }
 
 public:

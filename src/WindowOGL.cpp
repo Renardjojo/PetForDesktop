@@ -1,12 +1,18 @@
 #include "Engine/WindowOGL.hpp"
 
 #include "Engine/Log.hpp"
+#include "Game/GameData.hpp"
 
-void Window::initOpenGL()
+void Window::initGraphicAPI()
 {
     // glad: load all OpenGL function pointers
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         errorAndExit("Failed to initialize OpenGL (GLAD)");
+
+    #ifdef _DEBUG
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(GLDebugMessageCallback, NULL);
+#endif
 }
 
 void Window::init(GameData& datas)
@@ -25,7 +31,7 @@ void Window::init(GameData& datas)
 #endif
 
     initWindow(datas);
-    initOpenGL();
+    initGraphicAPI();
 }
 
 void GLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg,

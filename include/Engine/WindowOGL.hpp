@@ -10,7 +10,7 @@ void GLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severi
 class Window : public WindowGLFW
 {
 protected:
-    void initOpenGL();
+    void initGraphicAPI();
 
 public:
     void init(struct GameData& datas);

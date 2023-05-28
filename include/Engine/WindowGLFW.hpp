@@ -45,4 +45,9 @@ public:
     {
         return glfwWindowShouldClose(window);
     }
+
+    ~WindowGLFW()
+    {
+        glfwTerminate();
+    }
 };
