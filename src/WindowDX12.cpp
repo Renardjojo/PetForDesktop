@@ -230,7 +230,6 @@ HRESULT Window::resizeRenderedBuffers(int width, int height)
     // Release the previous resources we will be recreating.
     for (i = 0; i < s_iSwapChainBufferCount; ++i)
         m_pSwapChainBuffers[i] = nullptr;
-    m_pDepthStencilBuffer = nullptr;
 
     m_pSwapChain->GetDesc(&scDesc);
 
@@ -249,51 +248,6 @@ HRESULT Window::resizeRenderedBuffers(int width, int height)
 
         rtvHeapHandle.ptr += m_uRtvDescriptorSize;
     }
-
-    // Create depth-stencil buffer and the view.
-    D3D12_RESOURCE_DESC dsd;
-    dsd.Dimension        = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-    dsd.Alignment        = 0;
-    dsd.Width            = width;
-    dsd.Height           = height;
-    dsd.DepthOrArraySize = 1;
-    dsd.MipLevels        = 1;
-
-    dsd.Format             = DXGI_FORMAT_R24G8_TYPELESS;
-    dsd.SampleDesc.Count   = 1;
-    dsd.SampleDesc.Quality = 0;
-    dsd.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    dsd.Flags              = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-
-    D3D12_CLEAR_VALUE optValue;
-    optValue.Format               = s_depthStencilFormat;
-    optValue.DepthStencil.Depth   = 1.0f;
-    optValue.DepthStencil.Stencil = 0;
-
-    D3D12_HEAP_PROPERTIES heapProps = {D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-                                       D3D12_MEMORY_POOL_UNKNOWN, 0, 0};
-
-    V_RETURN(m_pd3dDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &dsd, D3D12_RESOURCE_STATE_COMMON,
-                                                   &optValue, IID_PPV_ARGS(&m_pDepthStencilBuffer)));
-
-    // Create descriptor to mip level 0 of entire resource using the format of the
-    // resource.
-    D3D12_DEPTH_STENCIL_VIEW_DESC ddsvd;
-    ddsvd.Flags              = D3D12_DSV_FLAG_NONE;
-    ddsvd.ViewDimension      = D3D12_DSV_DIMENSION_TEXTURE2D;
-    ddsvd.Format             = s_depthStencilFormat;
-    ddsvd.Texture2D.MipSlice = 0;
-    m_pd3dDevice->CreateDepthStencilView(m_pDepthStencilBuffer.Get(), &ddsvd,
-                                         m_pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-    // Transition the resource from its initial state to be used as a depth
-    // buffer.
-    D3D12_RESOURCE_BARRIER dsvBarrier = {D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE};
-    dsvBarrier.Transition.pResource   = m_pDepthStencilBuffer.Get();
-    dsvBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    dsvBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-    dsvBarrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-    m_pd3dCommandList->ResourceBarrier(1, &dsvBarrier);
 
     // Execute the resize commands.
     V_RETURN(m_pd3dCommandList->Close());
@@ -350,9 +304,6 @@ void Window::initDrawContext()
     const float clrColor[] = {0.0f, .0f, .0f, .0f};
 
     m_pd3dCommandList->ClearRenderTargetView(rtvHandle, clrColor, 0, nullptr);
-    // No need to clear depth, we don't use it
-    m_pd3dCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
     m_pd3dCommandList->OMSetRenderTargets(1, &rtvHandle, TRUE, &dsvHandle);
 
     // State transition
