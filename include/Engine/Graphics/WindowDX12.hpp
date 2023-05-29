@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Engine/WindowGLFW.hpp"
+#include "Engine/ClassUtility.hpp"
 
 #include <glfw/glfw3native.h>
 
 #include <DirectXMath.h> // For XMVector, XMFLOAT3, XMFLOAT4
-#include <comdef.h>      // for _com_error
 #include <d3d12.h>       // for D3D12 interface
 #include <dxgi1_6.h>     // for DXGI
 #include <wrl.h>         // for Microsoft::WRL::ComPtr
@@ -20,23 +20,6 @@
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
-
-void dxTrace(const wchar_t* file, unsigned long line, HRESULT hr, const wchar_t* proc);
-
-#define V_RETURN(op)                                                                                                   \
-    if (FAILED(hr = (op)))                                                                                             \
-    {                                                                                                                  \
-        dxTrace(__FILEW__, __LINE__, hr, L#op);                                                                        \
-        assert(0);                                                                                                     \
-        return hr;                                                                                                     \
-    }
-
-#define V(op)                                                                                                          \
-    if (FAILED(hr = (op)))                                                                                             \
-    {                                                                                                                  \
-        dxTrace(__FILEW__, __LINE__, hr, L#op);                                                                        \
-        assert(0);                                                                                                     \
-    }
 
 class Window : public WindowGLFW
 {
@@ -65,7 +48,6 @@ protected:
     ComPtr<ID3D12DescriptorHeap> m_pDSVDescriptorHeap;
 
     ComPtr<ID3D12Resource> m_pSwapChainBuffers[s_iSwapChainBufferCount];
-    ComPtr<ID3D12Resource> m_pDepthStencilBuffer;
 
     UINT m_iCurrentFrameIndex = 0;
 
@@ -83,6 +65,10 @@ protected:
     HRESULT resizeRenderedBuffers(int width, int height);
 
 public:
+
+    GETTER_BY_RAW_VALUE(Device, m_pd3dDevice.Get())
+    GETTER_BY_RAW_VALUE(CommandList, m_pd3dCommandList.Get())
+
     ~Window();
 
     void init(struct GameData& datas);

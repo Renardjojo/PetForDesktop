@@ -121,6 +121,7 @@ target_link_libraries(${PROJECT_NAME} glfw)
 # Graphic API
 if (USE_DX12_API)
     target_link_libraries(${PROJECT_NAME} d3d12)
+    target_link_libraries(${PROJECT_NAME} D3DCompiler)
     target_link_libraries(${PROJECT_NAME} dxgi)
 elseif(USE_OPENGL_API)
     find_package(OpenGL REQUIRED)

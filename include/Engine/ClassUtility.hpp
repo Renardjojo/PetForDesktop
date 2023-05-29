@@ -6,6 +6,12 @@
         return variable;                                                                                               \
     }
 
+#define GETTER_BY_RAW_VALUE(variableName, variable)                                                                    \
+    [[nodiscard]] inline decltype(variable) get##variableName() const noexcept                                         \
+    {                                                                                                                  \
+        return variable;                                                                                               \
+    }
+
 #define GETTER_BY_REF(variableName, variable)                                                                          \
     [[nodiscard]] inline constexpr decltype(variable)& get##variableName() noexcept                                    \
     {                                                                                                                  \

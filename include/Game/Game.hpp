@@ -57,6 +57,8 @@ protected:
 
         datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
         datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
+#elif defined(USE_DX12_API)
+        datas.pImageShader = std::make_unique<Shader>(datas.window, RESOURCE_PATH L"shader/imageDx12.hlsl", RESOURCE_PATH L"shader/imageDx12.hlsl");
 #endif
     }
 

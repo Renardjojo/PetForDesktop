@@ -59,6 +59,7 @@ HRESULT Window::initGraphicAPI()
     V_RETURN(createCommandObjects());
     V_RETURN(createSwapChain(hwnd, windowSize.x, windowSize.y, factory.Get()));
     V_RETURN(createRtvAndDsvDescriptorHeaps(0, 0));
+
     return 0;
 }
 
@@ -325,10 +326,4 @@ void Window::renderFrame()
     m_iCurrentFrameIndex = (m_iCurrentFrameIndex + 1) % s_iSwapChainBufferCount;
 
     flushCommandQueue();
-}
-
-void dxTrace(const wchar_t* file, unsigned long line, HRESULT hr, const wchar_t* proc)
-{
-    _com_error err(hr);
-    logf("file: %s line: %ul, %s Error: %s/n", file, line, proc, (const char*)err.Description());
 }
