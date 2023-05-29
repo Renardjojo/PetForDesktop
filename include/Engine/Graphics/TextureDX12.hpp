@@ -3,6 +3,7 @@
 #include <functional>
 #include <vector>
 
+#include "Engine/ClassUtility.hpp"
 #include "Engine/Log.hpp"
 #include "Engine/Vector2.hpp"
 
@@ -15,6 +16,11 @@ protected:
     unsigned char* data = nullptr;
 
 public:
+    GETTER_BY_VALUE(ID, ID)
+    GETTER_BY_VALUE(Width, width)
+    GETTER_BY_VALUE(Height, height)
+    GETTER_BY_VALUE(ChannelsCount, nbChannels)
+
     Texture(const char* srcPath, std::function<void()> setupCallback = defaultSetupCallBack);
 
     Texture(void* data, int pxlWidth, int pxlHeight, int channels = 3,
@@ -37,26 +43,6 @@ public:
 
     void use() const
     {
-    }
-
-    int getHeight() const
-    {
-        return height;
-    }
-
-    int getWidth() const
-    {
-        return width;
-    }
-
-    int getChannelCount() const
-    {
-        return nbChannels;
-    }
-
-    int getID() const
-    {
-        return ID;
     }
 
     //GLenum getChanelEnum()

@@ -1,4 +1,5 @@
 #include "Engine/Graphics/WindowOGL.hpp"
+#include "Engine/Graphics/FramebufferOGL.hpp"
 
 #include "Engine/Log.hpp"
 #include "Game/GameData.hpp"
@@ -32,6 +33,22 @@ void Window::init(GameData& datas)
 
     initWindow(datas);
     initGraphicAPI();
+}
+
+void Window::initDrawContext()
+{
+    Framebuffer::bindScreen();
+
+    glViewport(0, 0, windowSize.x, windowSize.y);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glActiveTexture(GL_TEXTURE0);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_CULL_FACE);
 }
 
 void GLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg,

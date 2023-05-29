@@ -80,23 +80,6 @@ public:
         srand(datas.randomSeed == -1 ? (unsigned)time(nullptr) : datas.randomSeed);
     }
 
-    void initDrawContext()
-    {
-        Framebuffer::bindScreen();
-#if USE_OPENGL_API
-        glViewport(0, 0, datas.window.getSize().x, datas.window.getSize().y);
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        glActiveTexture(GL_TEXTURE0);
-        glDisable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glDisable(GL_CULL_FACE);
-#endif
-    }
-
     ~Game()
     {
         glfwTerminate();
@@ -114,7 +97,7 @@ public:
             ++frameCount;
 
             // render
-            initDrawContext();
+            datas.window.initDrawContext();
 
             if (!(frameCount & 1) && datas.pImageGreyScale && datas.pEdgeDetectionTexture && datas.pFullScreenQuad)
             {
@@ -126,7 +109,7 @@ public:
             }
 
             // swap front and back buffers
-            glfwSwapBuffers(datas.window.getWindow());
+            datas.window.renderFrame();
 
             if (frameCount & 1)
             {
@@ -176,13 +159,13 @@ public:
 
             if (datas.shouldUpdateFrame)
             {
-                // render
-                initDrawContext();
+                datas.window.initDrawContext();
 
+                // render
                 pet.draw();
 
                 // swap front and back buffers
-                glfwSwapBuffers(datas.window.getWindow());
+                datas.window.renderFrame();
                 datas.shouldUpdateFrame = false;
             }
         }};

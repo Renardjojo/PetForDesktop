@@ -14,4 +14,14 @@ protected:
 
 public:
     void init(struct GameData& datas);
+
+    void initDrawContext();
+
+    void setSize(const Vec2i in_windowSize) noexcept
+    {
+        if (in_windowSize == windowSize)
+            return;
+
+        WindowGLFW::setSize(in_windowSize);
+    }
 };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/SpriteSheet.hpp"
+#include "Engine/ClassUtility.hpp"
 #include "Game/GameData.hpp"
 
 class SpriteAnimator
@@ -15,6 +16,8 @@ protected:
     int          indexCurrentAnimSprite = 0;
 
 public:
+    GETTER_BY_VALUE(Sheet, pSheet)
+
     void play(GameData& data, SpriteSheet& inSheet, bool inLoop, int inFrameRate)
     {
         pSheet                 = &inSheet;
@@ -63,11 +66,6 @@ public:
     bool isDone() const
     {
         return pSheet == nullptr || isEnd;
-    }
-
-    float getSizeFactor() const
-    {
-        return pSheet->getSizeFactor();
     }
 
     bool isMouseOver(Vec2i cursorPos)

@@ -9,7 +9,6 @@ void cursorPositionCallback(GLFWwindow* window, double x, double y);
 void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods);
 void processInput(GLFWwindow* window);
 
-
 class WindowGLFW
 {
 protected:
@@ -29,13 +28,13 @@ public:
     GETTER_BY_VALUE(Size, windowSize)
     GETTER_BY_VALUE(Pos, windowPos)
 
-    inline void setSize(const Vec2i in_windowSize) noexcept
-    {
+    void setSize(const Vec2i in_windowSize) noexcept
+    {       
         windowSize = in_windowSize;
         glfwSetWindowSize(window, windowSize.x, windowSize.y);
     }
 
-    inline void setPos(const Vec2i in_windowPos) noexcept
+    void setPos(const Vec2i in_windowPos) noexcept
     {
         windowPos = in_windowPos;
         glfwSetWindowPos(window, windowPos.x, windowPos.y);
@@ -49,5 +48,15 @@ public:
     ~WindowGLFW()
     {
         glfwTerminate();
+    }
+
+    void initDrawContext()
+    {
+
+    }
+
+    void renderFrame()
+    {
+        glfwSwapBuffers(window);
     }
 };

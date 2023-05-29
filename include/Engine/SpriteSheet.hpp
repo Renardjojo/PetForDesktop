@@ -6,6 +6,7 @@
 #include "Engine/Graphics/ShaderDX12.hpp"
 #endif // USE_OPENGL_API
 
+#include "Engine/ClassUtility.hpp"
 #include "Engine/Vector2.hpp"
 #include "Game/GameData.hpp"
 
@@ -21,14 +22,11 @@ public:
     {
     }
 
+    GETTER_BY_VALUE(TileCount, tileCount)
+    GETTER_BY_VALUE(SizeFactor, sizeFactor)
+
     void useSection(GameData& data, Shader& shader, int idSection, bool hFlip = false)
     {
-        data.petSize.x = width / tileCount * data.scale * sizeFactor;
-        data.petSize.y = height * data.scale * sizeFactor;
-        Vec2i windowSize{data.petSize.x + data.windowExt.x + data.windowMinExt.x,
-                         data.petSize.y + data.windowExt.y + data.windowMinExt.y};
-        data.window.setSize(windowSize);
-
         float       hScale  = 1.f / tileCount;
         const float vScale  = 1.f; // This field can be used
         float       hOffSet = idSection / (float)tileCount;
@@ -53,15 +51,5 @@ public:
         shader.setVec4("uScaleOffSet", hScale, vScale, hOffSet, vOffset);
         shader.setVec4("uClipSpacePosSize", clipSpacePos.x, clipSpacePos.y, clipSpaceSize.x, clipSpaceSize.y);
         use();
-    }
-
-    float getSizeFactor() const
-    {
-        return sizeFactor;
-    }
-
-    int getTileCount() const
-    {
-        return tileCount;
     }
 };

@@ -26,16 +26,16 @@ void dxTrace(const wchar_t* file, unsigned long line, HRESULT hr, const wchar_t*
 #define V_RETURN(op)                                                                                                   \
     if (FAILED(hr = (op)))                                                                                             \
     {                                                                                                                  \
-        assert(0);                                                                                                     \
         dxTrace(__FILEW__, __LINE__, hr, L#op);                                                                        \
+        assert(0);                                                                                                     \
         return hr;                                                                                                     \
     }
 
 #define V(op)                                                                                                          \
     if (FAILED(hr = (op)))                                                                                             \
     {                                                                                                                  \
-        assert(0);                                                                                                     \
         dxTrace(__FILEW__, __LINE__, hr, L#op);                                                                        \
+        assert(0);                                                                                                     \
     }
 
 class Window : public WindowGLFW
@@ -79,9 +79,23 @@ protected:
     HRESULT getHardwareAdpter(_In_ IDXGIFactory1* pFactory, _In_ BOOL bRequestHighPerformanceAdapter,
                               _In_ BOOL (*AdapterSelectionCallback)(IDXGIAdapter1*), _Out_ IDXGIAdapter1** ppAdapter);
     HRESULT createCommandObjects();
+    void    flushCommandQueue();
+    HRESULT resizeRenderedBuffers(int width, int height);
 
 public:
+    ~Window();
+
     void init(struct GameData& datas);
 
-    ~Window();
+    void initDrawContext();
+    void renderFrame();
+
+    void setSize(const Vec2i in_windowSize) noexcept
+    {
+        if (in_windowSize == windowSize)
+            return;
+
+        WindowGLFW::setSize(in_windowSize);
+        resizeRenderedBuffers(in_windowSize.x, in_windowSize.y);
+    }
 };

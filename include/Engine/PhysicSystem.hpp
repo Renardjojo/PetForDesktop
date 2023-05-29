@@ -212,7 +212,7 @@ public:
         data.pEdgeDetectionTexture->use();
         data.pEdgeDetectionTexture->getPixels(pixels);
 
-        int dataPerPixel = data.pEdgeDetectionTexture->getChannelCount();
+        int dataPerPixel = data.pEdgeDetectionTexture->getChannelsCount();
 
         bool iterationOnX = abs(prevToNewWinPos.x) > abs(prevToNewWinPos.y);
         Vec2 prevToNewWinPosDir;

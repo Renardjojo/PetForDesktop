@@ -159,7 +159,6 @@ HRESULT Window::getHardwareAdpter(_In_ IDXGIFactory1* pFactory, _In_ BOOL bReque
     return hr;
 }
 
-
 HRESULT Window::createCommandObjects()
 {
     HRESULT                  hr;
@@ -186,12 +185,195 @@ void Window::init(GameData& datas)
 
     initWindow(datas);
     initGraphicAPI();
+    resizeRenderedBuffers(windowSize.x, windowSize.y);
 }
 
 Window::~Window()
 {
     if (m_hFenceEvent)
         CloseHandle(m_hFenceEvent);
+}
+
+void Window::flushCommandQueue()
+{
+    HRESULT hr;
+    m_iFencePoint += 1;
+
+    V(m_pd3dCommandQueue->Signal(m_pd3dFence.Get(), m_iFencePoint));
+
+    if (m_pd3dFence->GetCompletedValue() != m_iFencePoint)
+    {
+        if (!m_hFenceEvent)
+            m_hFenceEvent = CreateEventEx(NULL, NULL, 0, EVENT_ALL_ACCESS);
+
+        m_pd3dFence->SetEventOnCompletion(m_iFencePoint, m_hFenceEvent);
+
+        WaitForSingleObject(m_hFenceEvent, INFINITE);
+    }
+}
+
+HRESULT Window::resizeRenderedBuffers(int width, int height)
+{
+    HRESULT              hr;
+    int                  i;
+    DXGI_SWAP_CHAIN_DESC scDesc;
+
+    assert(m_pd3dDevice && "Device must be available!");
+    assert(m_pd3dDirectCmdAlloc && "Command allocator must be available!");
+    assert(m_pSwapChain && "Swap chain must be available!");
+
+    // Flush before changing any resources.
+    flushCommandQueue();
+
+    V_RETURN(m_pd3dCommandList->Reset(m_pd3dDirectCmdAlloc.Get(), nullptr));
+
+    // Release the previous resources we will be recreating.
+    for (i = 0; i < s_iSwapChainBufferCount; ++i)
+        m_pSwapChainBuffers[i] = nullptr;
+    m_pDepthStencilBuffer = nullptr;
+
+    m_pSwapChain->GetDesc(&scDesc);
+
+    // Resize the swap chain.
+    V_RETURN(m_pSwapChain->ResizeBuffers(s_iSwapChainBufferCount, width, height, s_backBufferFormat, scDesc.Flags));
+
+    m_iCurrentFrameIndex = 0;
+
+    // RTVs
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle = {m_pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart()};
+    for (i = 0; i < s_iSwapChainBufferCount; ++i)
+    {
+        m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&m_pSwapChainBuffers[i]));
+
+        m_pd3dDevice->CreateRenderTargetView(m_pSwapChainBuffers[i].Get(), nullptr, rtvHeapHandle);
+
+        rtvHeapHandle.ptr += m_uRtvDescriptorSize;
+    }
+
+    // Create depth-stencil buffer and the view.
+    D3D12_RESOURCE_DESC dsd;
+    dsd.Dimension        = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    dsd.Alignment        = 0;
+    dsd.Width            = width;
+    dsd.Height           = height;
+    dsd.DepthOrArraySize = 1;
+    dsd.MipLevels        = 1;
+
+    dsd.Format             = DXGI_FORMAT_R24G8_TYPELESS;
+    dsd.SampleDesc.Count   = 1;
+    dsd.SampleDesc.Quality = 0;
+    dsd.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    dsd.Flags              = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+    D3D12_CLEAR_VALUE optValue;
+    optValue.Format               = s_depthStencilFormat;
+    optValue.DepthStencil.Depth   = 1.0f;
+    optValue.DepthStencil.Stencil = 0;
+
+    D3D12_HEAP_PROPERTIES heapProps = {D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+                                       D3D12_MEMORY_POOL_UNKNOWN, 0, 0};
+
+    V_RETURN(m_pd3dDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &dsd, D3D12_RESOURCE_STATE_COMMON,
+                                                   &optValue, IID_PPV_ARGS(&m_pDepthStencilBuffer)));
+
+    // Create descriptor to mip level 0 of entire resource using the format of the
+    // resource.
+    D3D12_DEPTH_STENCIL_VIEW_DESC ddsvd;
+    ddsvd.Flags              = D3D12_DSV_FLAG_NONE;
+    ddsvd.ViewDimension      = D3D12_DSV_DIMENSION_TEXTURE2D;
+    ddsvd.Format             = s_depthStencilFormat;
+    ddsvd.Texture2D.MipSlice = 0;
+    m_pd3dDevice->CreateDepthStencilView(m_pDepthStencilBuffer.Get(), &ddsvd,
+                                         m_pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+    // Transition the resource from its initial state to be used as a depth
+    // buffer.
+    D3D12_RESOURCE_BARRIER dsvBarrier = {D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE};
+    dsvBarrier.Transition.pResource   = m_pDepthStencilBuffer.Get();
+    dsvBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    dsvBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+    dsvBarrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    m_pd3dCommandList->ResourceBarrier(1, &dsvBarrier);
+
+    // Execute the resize commands.
+    V_RETURN(m_pd3dCommandList->Close());
+    ID3D12CommandList* cmdLists[] = {m_pd3dCommandList.Get()};
+    m_pd3dCommandQueue->ExecuteCommandLists(1, cmdLists);
+
+    // Wait until resize is complete.
+    flushCommandQueue();
+
+    // Update the viewport transform to cover the client area.
+    m_ScreenViewport.TopLeftX = 0.f;
+    m_ScreenViewport.TopLeftY = 0.f;
+    m_ScreenViewport.Width    = 1.f * width;
+    m_ScreenViewport.Height   = 1.f * height;
+    m_ScreenViewport.MinDepth = 0.f;
+    m_ScreenViewport.MaxDepth = 1.f;
+
+    m_ScreenScissorRect = {0, 0, (LONG)width, (LONG)height};
+
+    return hr;
+}
+
+void Window::initDrawContext()
+{
+    HRESULT hr;
+
+    // Reuse the memory associated with command recording.
+    // We can only reset when the associated command lists have finished execution
+    // on the GPU.
+    V(m_pd3dDirectCmdAlloc->Reset());
+    // A command list can be reset after it has been added to the command queue
+    // via ExecuteCommandList.
+    // Reusing the command list reuses memory.
+    V(m_pd3dCommandList->Reset(m_pd3dDirectCmdAlloc.Get(), nullptr));
+
+    // Prepare for the next frame
+    D3D12_RESOURCE_BARRIER rdBarrier = {
+        D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+        D3D12_RESOURCE_BARRIER_FLAG_NONE,
+    };
+    rdBarrier.Transition.pResource   = m_pSwapChainBuffers[m_iCurrentFrameIndex].Get();
+    rdBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+    rdBarrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    m_pd3dCommandList->ResourceBarrier(1, &rdBarrier);
+
+    // Render the next frame
+    m_pd3dCommandList->RSSetViewports(1, &m_ScreenViewport);
+    m_pd3dCommandList->RSSetScissorRects(1, &m_ScreenScissorRect);
+
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    rtvHandle.ptr += m_iCurrentFrameIndex * m_uRtvDescriptorSize;
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+    const float clrColor[] = {0.0f, .0f, .0f, .0f};
+
+    m_pd3dCommandList->ClearRenderTargetView(rtvHandle, clrColor, 0, nullptr);
+    // No need to clear depth, we don't use it
+    m_pd3dCommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+    m_pd3dCommandList->OMSetRenderTargets(1, &rtvHandle, TRUE, &dsvHandle);
+
+    // State transition
+    rdBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    rdBarrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_PRESENT;
+    m_pd3dCommandList->ResourceBarrier(1, &rdBarrier);
+}
+
+void Window::renderFrame()
+{
+    HRESULT hr;
+
+    // Done recording commands.
+    V(m_pd3dCommandList->Close());
+    ID3D12CommandList* cmdLists[] = {m_pd3dCommandList.Get()};
+    m_pd3dCommandQueue->ExecuteCommandLists(1, cmdLists);
+
+    m_pSwapChain->Present(0, 0);
+    m_iCurrentFrameIndex = (m_iCurrentFrameIndex + 1) % s_iSwapChainBufferCount;
+
+    flushCommandQueue();
 }
 
 void dxTrace(const wchar_t* file, unsigned long line, HRESULT hr, const wchar_t* proc)
