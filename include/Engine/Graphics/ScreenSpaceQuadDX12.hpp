@@ -93,7 +93,7 @@ public:
         return 0;
     }
 
-    HRESULT createIndexBuffer(Window& win, const unsigned int* iBuffer)
+    void createIndexBuffer(Window& win, const unsigned int* iBuffer)
     {
         HRESULT         hr;
         const const int iBufferSize = sizeof(iBuffer);
@@ -101,7 +101,7 @@ public:
         CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
         CD3DX12_RESOURCE_DESC   buffer = CD3DX12_RESOURCE_DESC::Buffer(iBufferSize);
         // create default heap to hold index buffer
-        V_RETURN(win.getDevice()->CreateCommittedResource(
+        V(win.getDevice()->CreateCommittedResource(
             &heapProperties, D3D12_HEAP_FLAG_NONE, &buffer,
             D3D12_RESOURCE_STATE_COPY_DEST, // start in the copy destination state
             nullptr,                        // optimized clear value must be null for this type of resource
@@ -109,7 +109,7 @@ public:
 
         // we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are
         // looking at
-        V_RETURN(m_indexBuffer->SetName(L"Index Buffer Resource Heap"))
+        V(m_indexBuffer->SetName(L"Index Buffer Resource Heap"))
 
         // create upload heap to upload index buffer
         ComPtr<ID3D12Resource> iBufferUploadHeap;
