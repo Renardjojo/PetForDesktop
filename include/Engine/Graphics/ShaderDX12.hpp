@@ -15,6 +15,7 @@
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
 
+// see https://github.com/septag/glslcc to convert glsl to hlsl with reflection
 struct ShaderData
 {
     struct ShaderInput

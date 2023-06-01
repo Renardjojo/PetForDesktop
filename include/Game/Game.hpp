@@ -43,9 +43,10 @@ protected:
     {
 #ifdef USE_OPENGL_API
         datas.pFramebuffer = std::make_unique<Framebuffer>();
-        datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
-        datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
 #endif
+        datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(datas.window, 0.f, 1.f);
+        datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(datas.window, -1.f, 1.f);
+
         datas.edgeDetectionShaders.emplace_back(datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
                                                 SHADER_RESOURCE_PATH "dFdxEdgeDetection" SHADER_FRAG_EXT);
 
