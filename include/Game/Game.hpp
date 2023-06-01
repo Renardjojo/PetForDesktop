@@ -41,25 +41,24 @@ protected:
 
     void createResources()
     {
-#if USE_OPENGL_API
+#ifdef USE_OPENGL_API
         datas.pFramebuffer = std::make_unique<Framebuffer>();
-        datas.edgeDetectionShaders.emplace_back(RESOURCE_PATH "shader/image.vs",
-                                                RESOURCE_PATH "shader/dFdxEdgeDetection.fs");
+        datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
+        datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
+#endif
+        datas.edgeDetectionShaders.emplace_back(datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
+                                                SHADER_RESOURCE_PATH "dFdxEdgeDetection" SHADER_FRAG_EXT);
 
-        datas.pImageShader = std::make_unique<Shader>(RESOURCE_PATH "shader/image.vs", RESOURCE_PATH "shader/image.fs");
+        datas.pImageShader = std::make_unique<Shader>(datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
+                                                        SHADER_RESOURCE_PATH "image" SHADER_FRAG_EXT);
 
         if (datas.debugEdgeDetection)
             datas.pImageGreyScale =
-                std::make_unique<Shader>(RESOURCE_PATH "shader/image.vs", RESOURCE_PATH "shader/imageGreyScale.fs");
+                std::make_unique<Shader>(datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
+                                                                SHADER_RESOURCE_PATH "imageGreyScale" SHADER_FRAG_EXT);
 
-        datas.pSpriteSheetShader =
-            std::make_unique<Shader>(RESOURCE_PATH "shader/spriteSheet.vs", RESOURCE_PATH "shader/image.fs");
-
-        datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
-        datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
-#elif defined(USE_DX12_API)
-        datas.pImageShader = std::make_unique<Shader>(datas.window, RESOURCE_PATH L"shader/imageDx12.hlsl", RESOURCE_PATH L"shader/imageDx12.hlsl");
-#endif
+        datas.pSpriteSheetShader = std::make_unique<Shader>(datas.window, SHADER_RESOURCE_PATH "spriteSheet" SHADER_VERTEX_EXT,
+                                                            SHADER_RESOURCE_PATH "image" SHADER_FRAG_EXT);
     }
 
 public:

@@ -1,0 +1,26 @@
+inputs:
+  - id: 17
+    name: TexCoord
+    location: 0
+outputs:
+  - id: 70
+    name: FragColor
+    location: 0
+textures:
+  - id: 13
+    name: uTexture
+    set: 0
+    binding: 0
+    dimension: 2d
+    format: unknown
+uniform_buffers:
+  - id: 35
+    name: TextureResolution
+    set: 0
+    binding: 1
+    block_size: 8
+    members:
+      - name: resolution
+        type: float2
+        offset: 0
+        size: 8

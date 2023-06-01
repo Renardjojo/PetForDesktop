@@ -147,10 +147,16 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VE
 
 # Graphic API
 if (USE_DX12_API)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_RESOURCE_PATH="${REL_RESOURCES_DIR}/shader/hlsl/")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_VERTEX_EXT="_vs.hlsl")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_FRAG_EXT="_fs.hlsl")
     target_compile_definitions(${PROJECT_NAME} PRIVATE GLFW_INCLUDE_NONE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE GLFW_EXPOSE_NATIVE_WIN32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE USE_DX12_API)
 elseif(USE_OPENGL_API)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_RESOURCE_PATH="${REL_RESOURCES_DIR}/shader/glsl/")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_VERTEX_EXT=".vs")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_FRAG_EXT=".fs")
     target_compile_definitions(${PROJECT_NAME} PRIVATE GLFW_INCLUDE_NONE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENGL_API)
 endif()

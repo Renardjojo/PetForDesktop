@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/FileReader.hpp"
+#include "Engine/Graphics/WindowOGL.hpp"
 
 #include <glad/glad.h>
 #include <stdlib.h>
@@ -12,7 +13,7 @@ public:
 
     // constructor generates the shader on the fly
     // ------------------------------------------------------------------------
-    Shader(const char* vertexPath, const char* fragmentPath)
+    Shader(Window& window, const char* vertexPath, const char* fragmentPath)
     {
         logf("Parse files: %s %s\n", vertexPath, fragmentPath);
         FileReader  vertexCodeFile(vertexPath);
@@ -89,7 +90,7 @@ private:
             if (!success)
             {
                 glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-                errorAndExit(std::string("Shader compilation errorof type") + type + '\n' + infoLog);
+                errorAndExit(std::string("Shader compilation error of type") + type + '\n' + infoLog);
             }
         }
         else
@@ -98,7 +99,7 @@ private:
             if (!success)
             {
                 glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-                errorAndExit(std::string("Program linking errorof type") + type + '\n' + infoLog);
+                errorAndExit(std::string("Program linking error of type") + type + '\n' + infoLog);
             }
         }
     }

@@ -2,8 +2,8 @@
 
 #include "boxer/boxer.h"
 
-#include <stdio.h> 
 #include <cstdarg>
+#include <stdio.h>
 #include <string>
 
 inline void log(const char* buffer)
@@ -44,7 +44,7 @@ inline void warning(const std::string& msg)
 #define V_RETURN(op)                                                                                                   \
     if (FAILED(hr = (op)))                                                                                             \
     {                                                                                                                  \
-        dxTrace(__FILEW__, __LINE__, hr, L#op);                                                                        \
+        dxTrace(hr);                                                                                                   \
         assert(0);                                                                                                     \
         return hr;                                                                                                     \
     }
@@ -52,22 +52,22 @@ inline void warning(const std::string& msg)
 #define V(op)                                                                                                          \
     if (FAILED(hr = (op)))                                                                                             \
     {                                                                                                                  \
-        dxTrace(__FILEW__, __LINE__, hr, L#op);                                                                        \
+        dxTrace(hr);                                                                                                   \
         assert(0);                                                                                                     \
     }
 
-inline void dxTrace(const wchar_t* file, unsigned long line, HRESULT hr, const wchar_t* proc)
+inline void dxTrace(HRESULT hr)
 {
     _com_error err(hr);
-    logf("file: %s line: %ul, %s Error: %s/n", file, line, proc, (const char*)err.Description());
+    logf("Error: %s\nDescription: %s\n", (const char*)err.ErrorMessage(), (const char*)err.Description());
 }
 
 #elif defined(USE_OPENGL_API)
 
 #include <glad/glad.h>
 
-inline void GLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg,
-                            const void* data)
+inline void GLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                                   const GLchar* msg, const void* data)
 {
     const char* _source;
     const char* _type;
