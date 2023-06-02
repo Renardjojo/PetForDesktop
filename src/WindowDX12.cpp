@@ -223,11 +223,6 @@ HRESULT Window::resizeRenderedBuffers(int width, int height)
     assert(m_pd3dDirectCmdAlloc && "Command allocator must be available!");
     assert(m_pSwapChain && "Swap chain must be available!");
 
-    // Flush before changing any resources.
-    flushCommandQueue();
-
-    V_RETURN(m_pd3dCommandList->Reset(m_pd3dDirectCmdAlloc.Get(), nullptr));
-
     // Release the previous resources we will be recreating.
     for (i = 0; i < s_iSwapChainBufferCount; ++i)
         m_pSwapChainBuffers[i] = nullptr;
@@ -249,14 +244,6 @@ HRESULT Window::resizeRenderedBuffers(int width, int height)
 
         rtvHeapHandle.ptr += m_uRtvDescriptorSize;
     }
-
-    // Execute the resize commands.
-    V_RETURN(m_pd3dCommandList->Close());
-    ID3D12CommandList* cmdLists[] = {m_pd3dCommandList.Get()};
-    m_pd3dCommandQueue->ExecuteCommandLists(1, cmdLists);
-
-    // Wait until resize is complete.
-    flushCommandQueue();
 
     // Update the viewport transform to cover the client area.
     m_ScreenViewport.TopLeftX = 0.f;
