@@ -10,3 +10,6 @@
 [submodule "deps/cpr"]
 	path = deps/cpr
 	url = https://github.com/libcpr/cpr.git
+[submodule "deps/screen_capture_lite"]
+	path = deps/screen_capture_lite
+	url = https://github.com/smasherprog/screen_capture_lite.git

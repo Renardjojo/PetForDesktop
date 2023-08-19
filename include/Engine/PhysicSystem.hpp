@@ -14,6 +14,7 @@ class PhysicSystem
 {
 protected:
     GameData& data;
+    ScreenCaptureLite liteCapture;
 
 public:
     PhysicSystem(GameData& data) : data{data}
@@ -197,6 +198,9 @@ public:
         // Thanks to this texture, we will iterate on pixel base on velocity vector to check collision
         // Screen shoot will be post processed with edge detection alogorythm to have only white and bblack values.
         // White will be the collision
+
+        liteCapture.StartCatpure();
+        return false;
 
         if (prevToNewWinPos.sqrLength() == 0.f)
             return false;

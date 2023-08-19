@@ -104,5 +104,115 @@ public:
         return data;
     }
 };
+
+#include "../../deps/screen_capture_lite/include/ScreenCapture.h" // Sorry for that shame
+#define TJE_IMPLEMENTATION
+#include "tiny_jpeg.h" // TODO: Remove me
+#include <thread>
+
+class ScreenCaptureLite
+{
+    bool canScreenCapture = false;
+    std::atomic<int> realcounter;
+    std::shared_ptr<SL::Screen_Capture::IScreenCaptureManager> framgrabber;
+
+public: 
+    ScreenCaptureLite()
+    {
+        InitScreenCaptureLite();
+        Capture();
+    }
+
+    
+    void InitScreenCaptureLite()
+    {
+        // Checking for Permission to capture the screen
+        if (SL::Screen_Capture::IsScreenCaptureEnabled())
+        {
+            // Application Allowed to Capture the screen!
+            canScreenCapture = true;
+        }
+        else if (SL::Screen_Capture::CanRequestScreenCapture())
+        {
+            // Application Not Allowed to Capture the screen. Waiting for permission
+            while (!SL::Screen_Capture::IsScreenCaptureEnabled())
+            {
+                SL::Screen_Capture::RequestScreenCapture();
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+            canScreenCapture = true;
+        }
+        else
+        {
+            canScreenCapture = false;
+        }
+    }
+
+    void Capture()
+    {
+        framgrabber =
+            SL::Screen_Capture::CreateCaptureConfiguration([]() {
+                auto mons    = SL::Screen_Capture::GetMonitors();
+                auto newmons = std::vector<SL::Screen_Capture::Monitor>();
+                // Request the list of monitors to capture!
+                for (auto& m : mons)
+                {
+                    if (SL::Screen_Capture::Height(m) >= 512 * 2 && SL::Screen_Capture::Width(m) >= 512 * 2)
+                    {
+                        SL::Screen_Capture::Height(m, 512);
+                        SL::Screen_Capture::Width(m, 512);
+                        newmons.push_back(m);
+                    }
+                }
+                return newmons;
+            })
+                ->onNewFrame([&](const SL::Screen_Capture::Image& img, const SL::Screen_Capture::Monitor& monitor) {
+                    // Uncomment the below code to write the image to disk for debugging
+
+                    auto r    = realcounter.fetch_add(1);
+                    auto s    = std::string("MONITORNEW_") + std::to_string(r) + std::string(".jpg");
+                    auto size = Width(img) * Height(img) * sizeof(SL::Screen_Capture::ImageBGRA);
+                    auto imgbuffer(std::make_unique<unsigned char[]>(size));
+                    ExtractAndConvertToRGBA(img, imgbuffer.get(), size);
+                    //tje_encode_to_file(s.c_str(), Width(img), Height(img), 4, (const unsigned char*)imgbuffer.get());
+                })
+                ->start_capturing();
+        framgrabber->pause();
+
+        framgrabber->setFrameChangeInterval(std::chrono::milliseconds(100));
+        framgrabber->setMouseChangeInterval(std::chrono::milliseconds(100));
+    }
+
+    void StartCatpure()
+    {
+        framgrabber->resume();
+    }
+
+    void StopCapture()
+    {
+        framgrabber->pause();
+    }
+
+    void ExtractAndConvertToRGBA(const SL::Screen_Capture::Image& img, unsigned char* dst, size_t dst_size)
+    {
+        assert(dst_size >= static_cast<size_t>(SL::Screen_Capture::Width(img) * SL::Screen_Capture::Height(img) *
+                                               sizeof(SL::Screen_Capture::ImageBGRA)));
+        auto imgsrc  = StartSrc(img);
+        auto imgdist = dst;
+        for (auto h = 0; h < Height(img); h++)
+        {
+            auto startimgsrc = imgsrc;
+            for (auto w = 0; w < Width(img); w++)
+            {
+                *imgdist++ = imgsrc->R;
+                *imgdist++ = imgsrc->G;
+                *imgdist++ = imgsrc->B;
+                *imgdist++ = 0; // alpha should be zero
+                imgsrc++;
+            }
+            imgsrc = SL::Screen_Capture::GotoNextRow(img, startimgsrc);
+        }
+    }
+};
 #else
 #endif
