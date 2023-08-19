@@ -510,7 +510,7 @@ public:
                     floor(datas.cursorPos.x / (float)(datas.scale * spriteAnimator.getSheet()->getSizeFactor()))),
                 static_cast<int>(
                     floor(datas.cursorPos.y / (float)(datas.scale * spriteAnimator.getSheet()->getSizeFactor())))};
-            return spriteAnimator.isMouseOver(localCursoPos);
+            return spriteAnimator.isMouseOver(localCursoPos, !datas.side);
         }
         else
         {
