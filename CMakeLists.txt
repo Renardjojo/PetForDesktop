@@ -130,7 +130,9 @@ add_subdirectory(${ABS_DEPS_DIR}/cpr)
 target_link_libraries(${PROJECT_NAME} cpr)
 
 # imgui
-option(IMGUI_IMPL_OPENGL3 ON)
+set(IMGUI_IMPL_OPENGL3 ON)
+set(IMGUI_IMPL_GLFW ON)
+
 set(IMGUI_EXAMPLES OFF)
 set(IMGUI_DEMO OFF)
 set(IMGUI_ENABLE_FREETYPE OFF)
@@ -138,7 +140,6 @@ set(IMGUI_IMPL_SDL OFF)
 set(IMGUI_IMPL_METAL OFF)
 set(IMGUI_IMPL_OSX OFF)
 set(IMGUI_IMPL_WIN32 OFF)
-set(IMGUI_IMPL_GLFW OFF)
 set(IMGUI_IMPL_GLUT OFF)
 set(IMGUI_IMPL_OPENGL2 OFF)
 set(IMGUI_IMPL_DX9 OFF)
@@ -147,7 +148,7 @@ set(IMGUI_IMPL_DX11 OFF)
 set(IMGUI_IMPL_DX12 OFF)
 set(IMGUI_IMPL_VULKAN OFF)
 add_subdirectory(${ABS_DEPS_DIR}/imgui)
-target_link_libraries(${PROJECT_NAME} imgui)
+target_link_libraries(${PROJECT_NAME} imgui imgui-glfw imgui-opengl3)
 
 ########### Define ############
 target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="${REL_RESOURCES_DIR}/")

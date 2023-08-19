@@ -123,9 +123,9 @@ if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/imgui.h)
 elseif(EXISTS ${CMAKE_CURRENT_LIST_DIR}/imgui/imgui.h)
     # CMakeLists.txt is in the examples directory.
     set (IMGUI_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/imgui)
-    set (IMGUI_EXAMPLES_DIR ${IMGUI_ROOT_DIR}/imgui/examples)
-    set (IMGUI_BACKENDS_DIR ${IMGUI_ROOT_DIR}/imgui/backends)
-    set (IMGUI_MISC_DIR ${IMGUI_ROOT_DIR}/imgui/misc)
+    set (IMGUI_EXAMPLES_DIR ${IMGUI_ROOT_DIR}/examples)
+    set (IMGUI_BACKENDS_DIR ${IMGUI_ROOT_DIR}/backends)
+    set (IMGUI_MISC_DIR ${IMGUI_ROOT_DIR}/misc)
 else ()
     # CMakeLists.txt is in examples directory.
     set (IMGUI_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/..)

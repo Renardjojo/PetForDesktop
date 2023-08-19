@@ -18,6 +18,10 @@
 #include "Engine/Utilities.hpp"
 #include "Engine/Vector2.hpp"
 
+#include "imgui.h"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
+
 #include <GLFW/glfw3.h>
 
 #include <functional>
@@ -70,14 +74,32 @@ public:
         // Evaluate pixel distance based on dpi and monitor size
         datas.pixelPerMeter = {(float)monitorSize.x / (monitorsSizeMM.x * 0.001f),
                                (float)monitorSize.y / (monitorsSizeMM.y * 0.001f)};
+        initUI(datas);
 
         createResources();
 
         srand(datas.randomSeed == -1 ? (unsigned)time(nullptr) : datas.randomSeed);
     }
 
+    void initUI(GameData& datas)
+    {
+        // Setup Dear ImGui context
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+
+        // Setup Dear ImGui style
+        ImGui::StyleColorsDark();
+        // ImGui::StyleColorsLight();
+
+        // Setup Platform/Renderer backends
+        ImGui_ImplGlfw_InitForOpenGL(datas.window.getWindow(), true);
+        ImGui_ImplOpenGL3_Init("#version 460");
+    }
+
     ~Game()
     {
+        cleanUI();
         glfwTerminate();
     }
 
@@ -130,6 +152,29 @@ public:
         }
     }
 
+    void updateUI()
+    {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        
+        //bool show_demo_window = true;
+        //ImGui::ShowDemoWindow(&show_demo_window);
+    }
+
+    void renderUI()
+    {
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    }
+
+    void cleanUI()
+    {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+    }
+
     void run()
     {
         if (datas.debugEdgeDetection)
@@ -155,10 +200,13 @@ public:
 
             if (datas.shouldUpdateFrame)
             {
+                updateUI();
                 datas.window.initDrawContext();
 
                 // render
                 pet.draw();
+
+                renderUI();
 
                 // swap front and back buffers
                 datas.window.renderFrame();
