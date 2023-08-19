@@ -117,7 +117,7 @@ private:
         {
             if (matches[1] != "v" PROJECT_VERSION)
             {
-                pattern = "\"body\":\\s*\"(.*?)\"";
+                pattern = R"("body"\s*:\s*"([^"]*)\")";
                 std::string content =
                     std::string(PROJECT_NAME " ") + matches[1].str() + " is available. Do you want download it ?";
                 // Looking for changelog

@@ -1,0 +1,27 @@
+name: Discord notification on push
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  sending:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Discord notification
+      uses: LeGitHubDeTai/github-to-discord@main
+      env:
+        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        DISCORD_USERNAME: Renardjojo
+        DISCORD_AVATAR: https://github.com/Renardjojo.png
+        MESSAGE_TITLE: "New Version available 🎉"
+        MESSAGE_DESCRIPTION: "PetForDesktop"
+        MESSAGE_URL: 'https://github.com/Renardjojo/PetForDesktop/releases/latest'
+        MESSAGE_COLOR: 5814783
+        SECTION_NAME: "ChangeLog"
+        AUTHOR_NAME: "Renardjojo"
+        AUTHOR_URL: "https://renardjojo.github.io/"
+        AUTHOR_AVATAR: "https://github.com/Renardjojo.png"
+        FOOTER_TEXT: ""
+        FOOTER_URL: ""
+        IMAGE: null;
