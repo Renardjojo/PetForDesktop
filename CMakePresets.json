@@ -1,0 +1,30 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 19,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "x64-Debug_ogl",
+      "hidden": false,
+      "description": "Debug configuration with OpenGL API",
+      "binaryDir": "${sourceDir}/out/x64-Debug_ogl",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "USE_OPENGL_API": "True"
+      }
+    },
+    {
+      "name": "x64-Release_ogl",
+      "hidden": false,
+      "description": "Release configuration with OpenGL API",
+      "binaryDir": "${sourceDir}/out/x64-Release_ogl",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "USE_OPENGL_API": "True"
+      }
+    }
+  ]
+}

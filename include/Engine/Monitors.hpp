@@ -102,3 +102,17 @@ public:
         return monitors.size();
     }
 };
+
+inline void setMonitorCallback(GLFWmonitor* monitor, int event)
+{
+    switch (event)
+    {
+    case GLFW_CONNECTED:
+        Monitors::getInstance().addMonitor(monitor);
+        break;
+
+    case GLFW_DISCONNECTED:
+        Monitors::getInstance().removeMonitor(monitor);
+        break;
+    }
+}

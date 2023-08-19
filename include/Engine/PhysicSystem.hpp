@@ -1,12 +1,13 @@
 #pragma once
 
 #include "Engine/ScreenShoot.hpp"
-#include "Engine/Texture.hpp"
+
+#ifdef USE_OPENGL_API
+#include "Engine/Graphics/TextureOGL.hpp"
+#endif // USE_OPENGL_API
+
 #include "Engine/Vector2.hpp"
 #include "Game/GameData.hpp"
-
-#include <GLFW/glfw3.h>
-#include <glad/glad.h>
 
 #include <cmath>
 
@@ -128,8 +129,8 @@ public:
         {
             screenShootPosX  = 0;
             screenShootPosY  = 0;
-            screenShootSizeX = data.windowSize.x;
-            screenShootSizeY = data.windowSize.y;
+            screenShootSizeX = data.window.getSize().x;
+            screenShootSizeY = data.window.getSize().y;
         }
         else
         {
@@ -150,8 +151,10 @@ public:
         data.pCollisionTexture     = std::make_unique<Texture>(pxlData.bits, pxlData.width, pxlData.height, 4);
         data.pEdgeDetectionTexture = std::make_unique<Texture>(pxlData.width, pxlData.height, 4);
 
+#if USE_OPENGL_API
         glDisable(GL_BLEND);
         glViewport(0, 0, pxlData.width, pxlData.height);
+#endif
 
         if (data.edgeDetectionShaders.size() == 1)
         {
@@ -207,7 +210,7 @@ public:
         data.pEdgeDetectionTexture->use();
         data.pEdgeDetectionTexture->getPixels(pixels);
 
-        int dataPerPixel = data.pEdgeDetectionTexture->getChannelCount();
+        int dataPerPixel = data.pEdgeDetectionTexture->getChannelsCount();
 
         bool iterationOnX = abs(prevToNewWinPos.x) > abs(prevToNewWinPos.y);
         Vec2 prevToNewWinPosDir;
@@ -322,8 +325,8 @@ public:
             data.deltaCursorPosY = 0;
         }
 
-        data.windowPos.x = static_cast<int>(data.petPos.x) - data.windowMinExt.x;
-        data.windowPos.y = static_cast<int>(data.petPos.y) - data.windowMinExt.y;
-        glfwSetWindowPos(data.window, data.windowPos.x, data.windowPos.y);
+        const Vec2i newWinPos{static_cast<int>(data.petPos.x) - data.windowMinExt.x,
+                              static_cast<int>(data.petPos.y) - data.windowMinExt.y};
+        data.window.setPos(newWinPos);
     }
 };

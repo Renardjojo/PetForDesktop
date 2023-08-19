@@ -118,6 +118,9 @@ Transitions:
         from: jump
         to: grab
     StartLeftClicTransition:
+        from: air
+        to: grab
+    StartLeftClicTransition:
         from: sleep
         to: grab
     AnimationEndTransition:

@@ -1,10 +1,54 @@
-#pragma once
+#include "Engine/WindowGLFW.hpp"
 
 #include "Game/GameData.hpp"
-#include "Engine/Vector2.hpp"
+#include "Engine/Log.hpp"
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+void WindowGLFW::initGLFW()
+{
+    // initialize the library
+    if (!glfwInit())
+        errorAndExit("glfw initialization error");
+}
+
+void WindowGLFW::preSetupWindow(const GameData& datas)
+{
+    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, !datas.showFrameBufferBackground);
+    glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
+    glfwWindowHint(GLFW_FLOATING, datas.useForwardWindow);
+
+    // Disable depth and stencil buffers
+    glfwWindowHint(GLFW_DEPTH_BITS, 0);
+    glfwWindowHint(GLFW_STENCIL_BITS, 0);
+}
+
+void WindowGLFW::postSetupWindow(GameData& datas)
+{
+    glfwSetWindowAttrib(window, GLFW_DECORATED, datas.showWindow);
+    glfwSetWindowAttrib(window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+    glfwSetWindowUserPointer(window, &datas);
+    glfwSetMouseButtonCallback(window, mousButtonCallBack);
+    glfwSetCursorPosCallback(window, cursorPositionCallback);
+
+    glfwDefaultWindowHints();
+}
+
+void WindowGLFW::initWindow(GameData& datas)
+{
+    preSetupWindow(datas);
+
+    windowSize = {1, 1};
+    window     = glfwCreateWindow(windowSize.x, windowSize.y, PROJECT_NAME, NULL, NULL);
+    if (!window)
+    {
+        glfwTerminate();
+        errorAndExit("Create Window error");
+    }
+
+    glfwMakeContextCurrent(window);
+    postSetupWindow(datas);
+
+    glfwShowWindow(window);
+}
 
 void cursorPositionCallback(GLFWwindow* window, double x, double y)
 {
@@ -22,12 +66,12 @@ void cursorPositionCallback(GLFWwindow* window, double x, double y)
 void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
 {
     GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
-
+   
     switch (button)
     {
     case GLFW_MOUSE_BUTTON_LEFT:
         datas.leftButtonEvent = action;
-
+   
         switch (action)
         {
         case GLFW_PRESS:
@@ -38,7 +82,8 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
             datas.isGrounded      = false;
             break;
         case GLFW_RELEASE:
-            datas.velocity = datas.deltaCursorAcc / datas.coyoteTimeCursorPos / datas.pixelPerMeter * datas.releaseImpulse;
+            datas.velocity =
+                datas.deltaCursorAcc / datas.coyoteTimeCursorPos / datas.pixelPerMeter * datas.releaseImpulse;
             break;
         default:
             break;
@@ -49,28 +94,14 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
-void setMonitorCallback(GLFWmonitor* monitor, int event)
-{
-    switch (event)
-    {
-    case GLFW_CONNECTED:
-        Monitors::getInstance().addMonitor(monitor);
-        break;
-
-    case GLFW_DISCONNECTED:
-        Monitors::getInstance().removeMonitor(monitor);
-        break;
-    }
-}
-
 void processInput(GLFWwindow* window)
 {
     GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
-
+    
     double cursPosX, cursPosY;
     glfwGetCursorPos(window, &cursPosX, &cursPosY);
     datas.cursorPos = {static_cast<int>(floor(cursPosX)), static_cast<int>(floor(cursPosY))};
-
+    
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }

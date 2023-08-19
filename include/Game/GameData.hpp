@@ -1,29 +1,30 @@
 #pragma once
 
-#include "Engine/Framebuffer.hpp"
 #include "Engine/Monitors.hpp"
-#include "Engine/ScreenSpaceQuad.hpp"
-#include "Engine/Shader.hpp"
 #include "Engine/Vector2.hpp"
 
-#include <GLFW/glfw3.h>
+#ifdef USE_OPENGL_API
+#include "Engine/Graphics/WindowOGL.hpp"
+#include "Engine/Graphics/FramebufferOGL.hpp"
+#include "Engine/Graphics/TextureOGL.hpp"
+#include "Engine/Graphics/ScreenSpaceQuadOGL.hpp"
+#include "Engine/Graphics/ShaderOGL.hpp"
+#endif // USE_OPENGL_API
+
 #include <memory>
 #include <queue>
 #include <vector>
 
 struct GameData
 {
-    // Window and monitor
-    GLFWwindow* window = nullptr;
-    Monitors    monitors;
-    Vec2        petPos  = {0.f, 0.f};
-    Vec2i       petSize = {0, 0};
+    Window   window;
+    Monitors monitors;
+
+    Vec2  petPos  = {0.f, 0.f};
+    Vec2i petSize = {0, 0};
 
     Vec2i windowExt    = {0, 0};
     Vec2i windowMinExt = {0, 0};
-
-    Vec2i windowSize  = {0, 0};
-    Vec2i windowPos   = {0, 0};
 
     bool shouldUpdateFrame = true;
 
@@ -72,12 +73,11 @@ struct GameData
     int randomSeed = 0;
 
     // Physic
-    int  physicFrameRate = 60;
-    Vec2 velocity        = {0.f, 0.f};
-    bool applyGravity    = true;
-    bool touchScreenEdge = false;
+    int  physicFrameRate    = 60;
+    Vec2 velocity           = {0.f, 0.f};
+    bool applyGravity       = true;
+    bool touchScreenEdge    = false;
     bool isOnBottomOfWindow = false;
-
 
     // This value is not changed by the physic system. Usefull for movement. Friction is applied to this value
     Vec2  continuousVelocity                = {0.f, 0.f};

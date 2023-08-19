@@ -69,8 +69,14 @@ else ()
     add_definitions(-DDEBUG)
 endif (CMAKE_BUILD_TYPE MATCHES Release)
 
+# Graphic API
+option(USE_OPENGL_API "Use OpenGL graphic api" FALSE)
+
+message(STATUS "USE_OPENGL_API: ${USE_OPENGL_API}")
+
 ########### Build ############
-file(GLOB_RECURSE project_source_files    LIST_DIRECTORIES false CONFIGURE_DEPENDS src/*.cpp src/*.c)
+file(GLOB_RECURSE project_source_files LIST_DIRECTORIES false CONFIGURE_DEPENDS src/*.cpp src/*.c)
+
 file(GLOB_RECURSE project_headers  LIST_DIRECTORIES false CONFIGURE_DEPENDS include/*.hpp include/*.h)
 message(STATUS "Headers: ${project_headers}")
 message(STATUS "Sources : ${project_source_files}")
@@ -104,8 +110,12 @@ set (GLFW_BUILD_DOCS OFF)
 set (GLFW_INSTALL OFF)
 add_subdirectory(${ABS_DEPS_DIR}/glfw)
 target_link_libraries(${PROJECT_NAME} glfw)
-find_package(OpenGL REQUIRED)
-target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} glfw )
+
+# Graphic API
+if(USE_OPENGL_API)
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
+endif()
 
 # Boxer
 add_subdirectory(${ABS_DEPS_DIR}/Boxer)
@@ -143,6 +153,15 @@ target_link_libraries(${PROJECT_NAME} imgui)
 target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="${REL_RESOURCES_DIR}/")
 target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_NAME="${PROJECT_NAME}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
+
+# Graphic API
+if(USE_OPENGL_API)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_RESOURCE_PATH="${REL_RESOURCES_DIR}/shader/glsl/")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_VERTEX_EXT=".vs")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_FRAG_EXT=".fs")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE GLFW_INCLUDE_NONE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENGL_API)
+endif()
 
 ########### Build link ############
 # Set a symbolic link so exe can find the /Data folder

@@ -474,6 +474,15 @@ public:
         needUpdator.update(deltaTime);
         animator.update(deltaTime);
         dialoguePopup.update(deltaTime);
+
+        // Change screen size
+        datas.petSize.x = spriteAnimator.getSheet()->getWidth() / spriteAnimator.getSheet()->getTileCount() *
+                          datas.scale * spriteAnimator.getSheet()->getSizeFactor();
+        datas.petSize.y =
+            spriteAnimator.getSheet()->getHeight() * datas.scale * spriteAnimator.getSheet()->getSizeFactor();
+        Vec2i windowSize{datas.petSize.x + datas.windowExt.x + datas.windowMinExt.x,
+                         datas.petSize.y + datas.windowExt.y + datas.windowMinExt.y};
+        datas.window.setSize(windowSize);
     }
 
     void draw()
@@ -489,7 +498,7 @@ public:
 
     bool isMouseOver()
     {
-        const Vec2 localWinPos             = datas.petPos - datas.windowPos;
+        const Vec2 localWinPos             = datas.petPos - datas.window.getPos();
         const bool isCursorInsidePetWindow = datas.cursorPos.x > localWinPos.x && datas.cursorPos.y > localWinPos.y &&
                                              datas.cursorPos.x < localWinPos.x + (float)datas.petSize.x &&
                                              datas.cursorPos.y < localWinPos.y + (float)datas.petSize.y;
@@ -497,9 +506,11 @@ public:
         if (isCursorInsidePetWindow)
         {
             Vec2i localCursoPos{
-                static_cast<int>(floor(datas.cursorPos.x / (float)(datas.scale * spriteAnimator.getSizeFactor()))),
-                static_cast<int>(floor(datas.cursorPos.y / (float)(datas.scale * spriteAnimator.getSizeFactor())))};
-            return spriteAnimator.isMouseOver(localCursoPos);
+                static_cast<int>(
+                    floor(datas.cursorPos.x / (float)(datas.scale * spriteAnimator.getSheet()->getSizeFactor()))),
+                static_cast<int>(
+                    floor(datas.cursorPos.y / (float)(datas.scale * spriteAnimator.getSheet()->getSizeFactor())))};
+            return spriteAnimator.isMouseOver(localCursoPos, !datas.side);
         }
         else
         {
