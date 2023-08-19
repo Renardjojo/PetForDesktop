@@ -87,6 +87,11 @@ protected:
     bool leftWasPressed = false;
 
 public:
+    void onEnter(GameData& blackBoard) final
+    {
+        leftWasPressed = blackBoard.leftButtonEvent == GLFW_PRESS;
+    };
+
     bool canTransition(GameData& blackBoard) final
     {
         if (blackBoard.leftButtonEvent == GLFW_PRESS)
