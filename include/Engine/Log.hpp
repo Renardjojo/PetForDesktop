@@ -38,31 +38,7 @@ inline void warning(const std::string& msg)
     exit(-1);
 }
 
-#if defined(USE_DX12_API)
-#include <comdef.h> // for _com_error
-
-#define V_RETURN(op)                                                                                                   \
-    if (FAILED(hr = (op)))                                                                                             \
-    {                                                                                                                  \
-        dxTrace(hr);                                                                                                   \
-        assert(0);                                                                                                     \
-        return hr;                                                                                                     \
-    }
-
-#define V(op)                                                                                                          \
-    if (FAILED(hr = (op)))                                                                                             \
-    {                                                                                                                  \
-        dxTrace(hr);                                                                                                   \
-        assert(0);                                                                                                     \
-    }
-
-inline void dxTrace(HRESULT hr)
-{
-    _com_error err(hr);
-    logf("Error: %s\nDescription: %s\n", (const char*)err.ErrorMessage(), (const char*)err.Description());
-}
-
-#elif defined(USE_OPENGL_API)
+#if defined(USE_OPENGL_API)
 
 #include <glad/glad.h>
 

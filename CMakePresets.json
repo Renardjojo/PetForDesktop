@@ -13,8 +13,7 @@
       "binaryDir": "${sourceDir}/out/x64-Debug_ogl",
       "generator": "Ninja",
       "cacheVariables": {
-        "USE_OPENGL_API": "True",
-        "USE_DX12_API": "False"
+        "USE_OPENGL_API": "True"
       }
     },
     {
@@ -24,30 +23,7 @@
       "binaryDir": "${sourceDir}/out/x64-Release_ogl",
       "generator": "Ninja",
       "cacheVariables": {
-        "USE_OPENGL_API": "True",
-        "USE_DX12_API": "False"
-      }
-    },
-    {
-      "name": "x64-Debug_dx12",
-      "hidden": false,
-      "description": "Debug configuration with DirectX 12 API",
-      "binaryDir": "${sourceDir}/out/x64-Debug_dx12",
-      "generator": "Ninja",
-      "cacheVariables": {
-        "USE_OPENGL_API": "False",
-        "USE_DX12_API": "True"
-      }
-    },
-    {
-      "name": "x64-Release_dx12",
-      "hidden": false,
-      "description": "Release configuration with DirectX 12 API",
-      "binaryDir": "${sourceDir}/out/x64-Release_dx12",
-      "generator": "Ninja",
-      "cacheVariables": {
-        "USE_OPENGL_API": "False",
-        "USE_DX12_API": "True"
+        "USE_OPENGL_API": "True"
       }
     }
   ]

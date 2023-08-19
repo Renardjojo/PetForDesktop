@@ -69,20 +69,12 @@ else ()
 endif (CMAKE_BUILD_TYPE MATCHES Release)
 
 # Graphic API
-option(USE_DX12_API "Use directX12 graphic api" FALSE)
 option(USE_OPENGL_API "Use OpenGL graphic api" FALSE)
 
-message(STATUS "USE_DX12_API: ${USE_DX12_API}")
 message(STATUS "USE_OPENGL_API: ${USE_OPENGL_API}")
 
 ########### Build ############
 file(GLOB_RECURSE project_source_files LIST_DIRECTORIES false CONFIGURE_DEPENDS src/*.cpp src/*.c)
-
-if (USE_DX12_API)
-list(FILTER project_source_files EXCLUDE REGEX "[^;]*OGL\\.c[^;]*")
-elseif(USE_OPENGL_API)
-list(FILTER project_source_files EXCLUDE REGEX "[^;]*DX12\\.c[^;]*")
-endif()
 
 file(GLOB_RECURSE project_headers  LIST_DIRECTORIES false CONFIGURE_DEPENDS include/*.hpp include/*.h)
 message(STATUS "Headers: ${project_headers}")
@@ -119,11 +111,7 @@ add_subdirectory(${ABS_DEPS_DIR}/glfw)
 target_link_libraries(${PROJECT_NAME} glfw)
 
 # Graphic API
-if (USE_DX12_API)
-    target_link_libraries(${PROJECT_NAME} d3d12)
-    target_link_libraries(${PROJECT_NAME} D3DCompiler)
-    target_link_libraries(${PROJECT_NAME} dxgi)
-elseif(USE_OPENGL_API)
+if(USE_OPENGL_API)
     find_package(OpenGL REQUIRED)
     target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
 endif()
@@ -146,14 +134,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_NAME="${PROJECT_NAME}
 target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
 
 # Graphic API
-if (USE_DX12_API)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_RESOURCE_PATH="${REL_RESOURCES_DIR}/shader/hlsl/")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_VERTEX_EXT="_vs.hlsl")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_FRAG_EXT="_fs.hlsl")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE GLFW_INCLUDE_NONE)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE GLFW_EXPOSE_NATIVE_WIN32)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_DX12_API)
-elseif(USE_OPENGL_API)
+if(USE_OPENGL_API)
     target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_RESOURCE_PATH="${REL_RESOURCES_DIR}/shader/glsl/")
     target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_VERTEX_EXT=".vs")
     target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_FRAG_EXT=".fs")

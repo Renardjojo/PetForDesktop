@@ -9,12 +9,6 @@
 #include "Engine/Graphics/TextureOGL.hpp"
 #include "Engine/Graphics/ScreenSpaceQuadOGL.hpp"
 #include "Engine/Graphics/ShaderOGL.hpp"
-#elif USE_DX12_API
-#include "Engine/Graphics/WindowDX12.hpp"
-#include "Engine/Graphics/FramebufferDX12.hpp"
-#include "Engine/Graphics/TextureDX12.hpp"
-#include "Engine/Graphics/ScreenSpaceQuadDX12.hpp"
-#include "Engine/Graphics/ShaderDX12.hpp"
 #endif // USE_OPENGL_API
 
 #include <memory>

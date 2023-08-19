@@ -4,8 +4,6 @@
 
 #ifdef USE_OPENGL_API
 #include "Engine/Graphics/TextureOGL.hpp"
-#elif USE_DX12_API
-#include "Engine/Graphics/TextureDX12.hpp"
 #endif // USE_OPENGL_API
 
 #include "Engine/Vector2.hpp"
