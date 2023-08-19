@@ -206,6 +206,18 @@ union Vector2 {
     }
 
     // Operator overloads
+    constexpr bool operator==(const Vector2& v) noexcept
+    {
+        return x == v.x && y == v.y;
+    }
+
+    // TODO:
+    //constexpr bool operator==(const Vector2<float>& v) noexcept
+    //{
+    //    return std::fabs(x - v.x) <= std::numeric_limits<double>::epsilon() &&
+    //           std::fabs(y - v.y) <= std::numeric_limits<double>::epsilon();
+    //}
+
     constexpr Vector2& operator+=(const Vector2& v) noexcept
     {
         x += v.x;

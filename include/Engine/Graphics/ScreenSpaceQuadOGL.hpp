@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Graphics/WindowOGL.hpp"
 #include <glad/glad.h>
 
 // TODO full screen Triangle
@@ -11,7 +12,7 @@ protected:
     unsigned int EBO;
 
 public:
-    ScreenSpaceQuad(float minPos = -1.f, float maxPos = 1.f)
+    ScreenSpaceQuad(Window& win, float minPos = -1.f, float maxPos = 1.f)
     {
         // TODO: Pos vec2 ?
         float vertices[] = {

@@ -6,26 +6,27 @@
 
 #include <cpr/cpr.h>
 
-#include <thread>
 #include <regex>
+#include <thread>
 
 class Updater
 {
     std::thread m_thread;
 
-    public:
-    
-    Updater() 
-    : m_thread(Updater::checkForUpdate)
-    {}
+public:
+    Updater()
+#if _NDEBUG // Do not run the update program in debug mode to avoid spamming web requests
+        : m_thread(Updater::checkForUpdate)
+#endif
+    {
+    }
 
     ~Updater()
     {
         m_thread.join();
     }
 
-    private:
-
+private:
     static void startup(LPCTSTR lpApplicationName)
     {
         // additional information
@@ -100,7 +101,8 @@ class Updater
 
     static void checkForUpdate()
     {
-        cpr::Response response = cpr::Get(cpr::Url{"https://api.github.com/repos/Renardjojo/PetDesktop/releases/latest"});
+        cpr::Response response =
+            cpr::Get(cpr::Url{"https://api.github.com/repos/Renardjojo/PetDesktop/releases/latest"});
         if (response.error)
         {
             log((response.error.message + "\n").c_str());
@@ -116,7 +118,8 @@ class Updater
             if (matches[1] != "v" PROJECT_VERSION)
             {
                 pattern = R"("body"\s*:\s*"([^"]*)\")";
-                std::string content = std::string(PROJECT_NAME " ") + matches[1].str() + " is available. Do you want download it ?";
+                std::string content =
+                    std::string(PROJECT_NAME " ") + matches[1].str() + " is available. Do you want download it ?";
                 // Looking for changelog
                 if (std::regex_search(json, matches, pattern))
                 {
@@ -124,8 +127,8 @@ class Updater
                     content += markdownToPlainText(matches[1].str());
                 }
 
-                boxer::Selection selection = boxer::show(content.c_str(),
-                    PROJECT_NAME " " PROJECT_VERSION " updater", boxer::Style::Question, boxer::Buttons::YesNo);
+                boxer::Selection selection = boxer::show(content.c_str(), PROJECT_NAME " " PROJECT_VERSION " updater",
+                                                         boxer::Style::Question, boxer::Buttons::YesNo);
 
                 // TODO: Dialog pop up ?
                 if (selection == boxer::Selection::Yes)
@@ -154,7 +157,7 @@ class Updater
     {
         // Replace '\\r' and '\\n' with '\n'
         std::string lineBreakSearch  = "\\\\n|\\\\r";
-        std::string lineBreakReplace = "\n";  
+        std::string lineBreakReplace = "\n";
         std::regex  lineBreakRegex(lineBreakSearch);
         std::string plainText = std::regex_replace(markdown, lineBreakRegex, lineBreakReplace);
 
