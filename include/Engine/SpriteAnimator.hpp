@@ -68,8 +68,11 @@ public:
         return pSheet == nullptr || isEnd;
     }
 
-    bool isMouseOver(Vec2i cursorPos)
+    bool isMouseOver(Vec2i cursorPos, bool flip)
     {
+        if (flip)
+            cursorPos.x = (pSheet->getWidth() / pSheet->getTileCount()) - cursorPos.x - 1;
+
         cursorPos.x += indexCurrentAnimSprite * pSheet->getWidth() / pSheet->getTileCount();
         return pSheet != nullptr ? pSheet->isPixelOpaque(cursorPos) : false;
     }
