@@ -126,6 +126,7 @@ add_subdirectory(${ABS_DEPS_DIR}/yaml-cpp)
 target_link_libraries(${PROJECT_NAME} yaml-cpp)
 
 # cpr
+set(CURL_ZLIB OFF CACHE STRING "" FORCE)
 add_subdirectory(${ABS_DEPS_DIR}/cpr)
 target_link_libraries(${PROJECT_NAME} cpr)
 
