@@ -58,10 +58,10 @@ public:
             monitorSize.emplace_back();
             data.monitors.getMonitorPosition(i, monitorsPosition[i]);
             data.monitors.getMonitorSize(i, monitorSize[i]);
-            bool isOutsideOfCurrentMonitor =
-                isRectDisjointRectB(data.petPos, data.petSize, monitorsPosition[i], monitorSize[i]);
-            bool iInsideOfCurrentMonitor =
-                isRectAInsideRectB(data.petPos, data.petSize, monitorsPosition[i], monitorSize[i]);
+            bool isOutsideOfCurrentMonitor = isRectDisjointRectB(data.petRect->getPosition(), data.petRect->getSize(),
+                                                                 monitorsPosition[i], monitorSize[i]);
+            bool iInsideOfCurrentMonitor = isRectAInsideRectB(data.petRect->getPosition(), data.petRect->getSize(),
+                                                                monitorsPosition[i], monitorSize[i]);
             
             screenOverlapCount += !iInsideOfCurrentMonitor && !isOutsideOfCurrentMonitor;
 
@@ -79,29 +79,29 @@ public:
         {
             for (int i = 0; i < data.monitors.getMonitorsCount(); ++i)
             {
-                Vec2 positionCorrection = data.petPos;
+                Vec2 positionCorrection = data.petRect->getPosition();
                 bool isOnBottom = false;
 
-                if (data.petPos.x <= monitorsPosition[i].x)
+                if (data.petRect->getCornerMin().x <= monitorsPosition[i].x)
                 {
                     positionCorrection.x = monitorsPosition[i].x;
                 }
-                else if (data.petPos.x + data.petSize.x >= monitorsPosition[i].x + monitorSize[i].x)
+                else if (data.petRect->getCornerMax().x >= monitorsPosition[i].x + monitorSize[i].x)
                 {
-                    positionCorrection.x = monitorsPosition[i].x + monitorSize[i].x - data.petSize.x;
+                    positionCorrection.x = monitorsPosition[i].x + monitorSize[i].x - data.petRect->getSize().x;
                 }
 
-                if (data.petPos.y <= monitorsPosition[i].y)
+                if (data.petRect->getCornerMin().y <= monitorsPosition[i].y)
                 {
                     positionCorrection.y = monitorsPosition[i].y;
                 }
-                else if (data.petPos.y + data.petSize.y >= monitorsPosition[i].y + monitorSize[i].y)
+                else if (data.petRect->getCornerMax().y >= monitorsPosition[i].y + monitorSize[i].y)
                 {
-                    positionCorrection.y = monitorsPosition[i].y + monitorSize[i].y - data.petSize.y;
+                    positionCorrection.y = monitorsPosition[i].y + monitorSize[i].y - data.petRect->getSize().y;
                     isOnBottom           = true;
                 }
                 
-                float currentSqrDistance = (positionCorrection - data.petPos).sqrLength();
+                float currentSqrDistance = (positionCorrection - data.petRect->getPosition()).sqrLength();
                 if (currentSqrDistance < minSqrDistance)
                 {
                     data.isOnBottomOfWindow = isOnBottom;
@@ -111,14 +111,14 @@ public:
             }
 
             if (minSqrDistance > FLT_EPSILON)
-                data.velocity = data.velocity.reflect((reelPositionCorrection - data.petPos).normalized()) * data.bounciness;
+                data.velocity = data.velocity.reflect((reelPositionCorrection - data.petRect->getPosition()).normalized()) * data.bounciness;
 
             data.isGrounded = (data.isOnBottomOfWindow &&
                                data.velocity.sqrLength() < data.isGroundedDetection * data.isGroundedDetection) ||
                 checkIsGrounded();
             data.velocity *= !data.isGrounded; // reset velocity if is grounded
 
-            data.petPos = reelPositionCorrection;
+            data.petRect->setPosition(reelPositionCorrection);
         }
     }
 
@@ -138,9 +138,9 @@ public:
             const float yPadding = prevToNewWinPos.y < 0.f ? prevToNewWinPos.y : 0.f;
 
             screenShootPosX =
-                static_cast<int>(data.petPos.x + data.petSize.x / 2.f + xPadding - data.footBasementWidth / 2.f);
+                static_cast<int>(data.petRect->getPosition().x + data.petRect->getSize().x / 2.f + xPadding - data.footBasementWidth / 2.f);
             screenShootPosY =
-                static_cast<int>(data.petPos.y + data.petSize.y + 1 + yPadding - data.footBasementHeight / 2.f);
+                static_cast<int>(data.petRect->getPosition().y + data.petRect->getSize().y + 1 + yPadding - data.footBasementHeight / 2.f);
             screenShootSizeX = static_cast<int>(abs(prevToNewWinPos.x) + data.footBasementWidth);
             screenShootSizeY = static_cast<int>(abs(prevToNewWinPos.y) + data.footBasementHeight);
         }
@@ -249,7 +249,7 @@ public:
 
             if (count > data.collisionPixelRatioStopMovement)
             {
-                newPos = data.petPos + Vec2(column, row);
+                newPos = data.petRect->getPosition() + Vec2(column, row);
                 return true;
             }
             row += prevToNewWinPosDir.y;
@@ -275,9 +275,9 @@ public:
             // V = Acc * Time
             data.velocity += acc * (float)deltaTime;
 
-            const Vec2 prevWinPos = data.petPos;
+            const Vec2 prevWinPos = data.petRect->getPosition();
             // Pos = PrevPos + V * Time
-            const Vec2 newWinPos = data.petPos + ((data.continuousVelocity + data.velocity) * (1.f - data.friction) *
+            const Vec2 newWinPos = data.petRect->getPosition() + ((data.continuousVelocity + data.velocity) * (1.f - data.friction) *
                                                   data.pixelPerMeter * (float)deltaTime);
             
             const Vec2 prevToNewWinPos = newWinPos - prevWinPos;
@@ -289,7 +289,7 @@ public:
                 if (CatpureScreenCollision(prevToNewWinPos, newPos))
                 {
                     Vec2 collisionPos = newPos;
-                    data.petPos       = collisionPos;
+                    data.petRect->setPosition(collisionPos);
                     data.velocity     = data.velocity.reflect(Vec2::up()) * data.bounciness;
 
                     // check if is grounded
@@ -298,7 +298,7 @@ public:
                 }
                 else
                 {
-                    data.petPos = newWinPos;
+                    data.petRect->setPosition(newWinPos);
                 }
             }
             else
@@ -311,7 +311,7 @@ public:
                     data.isGrounded = CatpureScreenCollision(footBasement, newPos);
                 }
 
-                data.petPos = newWinPos;
+                data.petRect->setPosition(newWinPos);
             }
 
             // Apply monitor collision
@@ -320,13 +320,12 @@ public:
         }
         else
         {
-            data.petPos += Vec2{data.deltaCursorPosX, data.deltaCursorPosY};
+            data.petRect->setPosition(data.petRect->getPosition() + Vec2{data.deltaCursorPosX, data.deltaCursorPosY});
             data.deltaCursorPosX = 0;
             data.deltaCursorPosY = 0;
         }
 
-        const Vec2i newWinPos{static_cast<int>(data.petPos.x) - data.windowMinExt.x,
-                              static_cast<int>(data.petPos.y) - data.windowMinExt.y};
+        const Vec2i newWinPos{static_cast<int>(data.petRect->getPosition().x), static_cast<int>(data.petRect->getPosition().y)};
         data.window.setPos(newWinPos);
     }
 };

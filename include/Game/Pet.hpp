@@ -202,6 +202,9 @@ public:
     Pet(GameData& data)
         : datas{data}, animator{data}, dialoguePopup{data}, needUpdator(data, dialoguePopup, utilitySystem)
     {
+        data.petRect = std::make_shared<Rect>();
+        data.canvas.addElement(*data.petRect);
+
         parseAnimationGraph();
         setupUtilitySystem();
     }
@@ -476,12 +479,12 @@ public:
         dialoguePopup.update(deltaTime);
 
         // Change screen size
-        datas.petSize.x = spriteAnimator.getSheet()->getWidth() / spriteAnimator.getSheet()->getTileCount() *
+        Vec2  size;
+        size.x = spriteAnimator.getSheet()->getWidth() / spriteAnimator.getSheet()->getTileCount() *
                           datas.scale * spriteAnimator.getSheet()->getSizeFactor();
-        datas.petSize.y =
-            spriteAnimator.getSheet()->getHeight() * datas.scale * spriteAnimator.getSheet()->getSizeFactor();
-        Vec2i windowSize{datas.petSize.x + datas.windowExt.x + datas.windowMinExt.x,
-                         datas.petSize.y + datas.windowExt.y + datas.windowMinExt.y};
+        size.y = spriteAnimator.getSheet()->getHeight() * datas.scale * spriteAnimator.getSheet()->getSizeFactor();
+        datas.petRect->setSize(size);
+        Vec2i windowSize{(int)std::floor(datas.petRect->getSize().x), (int)std::floor(datas.petRect->getSize().y)};
         datas.window.setSize(windowSize);
     }
 
@@ -498,10 +501,10 @@ public:
 
     bool isMouseOver()
     {
-        const Vec2 localWinPos             = datas.petPos - datas.window.getPos();
+        const Vec2 localWinPos             = datas.petRect->getPosition() - datas.window.getPos();
         const bool isCursorInsidePetWindow = datas.cursorPos.x > localWinPos.x && datas.cursorPos.y > localWinPos.y &&
-                                             datas.cursorPos.x < localWinPos.x + (float)datas.petSize.x &&
-                                             datas.cursorPos.y < localWinPos.y + (float)datas.petSize.y;
+                                             datas.cursorPos.x < localWinPos.x + (float)datas.petRect->getSize().x &&
+                                             datas.cursorPos.y < localWinPos.y + (float)datas.petRect->getSize().y;
 
         if (isCursorInsidePetWindow)
         {

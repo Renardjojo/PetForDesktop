@@ -2,6 +2,7 @@
 
 #include "Engine/Monitors.hpp"
 #include "Engine/Vector2.hpp"
+#include "Engine/Canvas.hpp"
 
 #ifdef USE_OPENGL_API
 #include "Engine/Graphics/WindowOGL.hpp"
@@ -20,11 +21,9 @@ struct GameData
     Window   window;
     Monitors monitors;
 
-    Vec2  petPos  = {0.f, 0.f};
-    Vec2i petSize = {0, 0};
-
-    Vec2i windowExt    = {0, 0};
-    Vec2i windowMinExt = {0, 0};
+    // Represente the window with all sub windows
+    Canvas canvas;
+    std::shared_ptr<Rect>   petRect;
 
     bool shouldUpdateFrame = true;
 
