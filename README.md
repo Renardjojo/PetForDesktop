@@ -12,7 +12,7 @@
   </a>
 </p>
 <p align="center">
-  <a href="https://discord.gg/zuBup4N8">
+  <a href="https://discord.gg/gjdQmHAp7e">
     <img alt="Join us on discord" height="26" width="91" src="https://img.shields.io/badge/join us-blue?logo=discord&logoColor=white">
   </a>
   <a href="https://www.patreon.com/PetForDesktop">
