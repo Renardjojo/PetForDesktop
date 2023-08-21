@@ -8,6 +8,7 @@
 
 class Rect
 {
+protected:
     Vec2 m_position = {0, 0}; // Left up corner
     Vec2 m_size     = {0, 0}; // right bottom corner
 
@@ -30,19 +31,22 @@ public:
     {
         m_size += m_position - cornerMin;
         m_position = cornerMin;
-        m_onChange(*this);
+        if (m_onChange)
+            m_onChange(*this);
     }
 
     inline void setCornerMax(Vec2 cornerMax) noexcept
     {
         m_size = m_position - cornerMax;
-        m_onChange(*this);
+        if (m_onChange)
+            m_onChange(*this);
     }
 
-    inline void setPosition(Vec2 position) noexcept
+    inline void setPosition(const Vec2 position) noexcept
     {
         m_position = position;
-        m_onChange(*this);
+        if (m_onChange)
+            m_onChange(*this);
     }
 
     inline Vec2 getPosition() const noexcept
@@ -53,7 +57,8 @@ public:
     inline void setSize(Vec2 size) noexcept
     {
         m_size = size;
-        m_onChange(*this);
+        if (m_onChange)
+            m_onChange(*this);
     }
 
     inline Vec2 getSize() const noexcept

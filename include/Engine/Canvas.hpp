@@ -7,7 +7,7 @@
 #include "Engine/Rect.hpp"
 #include "Engine/Vector2.hpp"
 
-class Canvas : Rect
+class Canvas : public Rect
 {
 protected:
     std::vector<std::shared_ptr<Rect>> m_elements;

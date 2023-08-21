@@ -203,7 +203,7 @@ public:
         : datas{data}, animator{data}, dialoguePopup{data}, needUpdator(data, dialoguePopup, utilitySystem)
     {
         data.petRect = std::make_shared<Rect>();
-        data.canvas.addElement(*data.petRect);
+        data.window.addElement(*data.petRect);
 
         parseAnimationGraph();
         setupUtilitySystem();
@@ -501,7 +501,7 @@ public:
 
     bool isMouseOver()
     {
-        const Vec2 localWinPos             = datas.petRect->getPosition() - datas.window.getPos();
+        const Vec2 localWinPos             = datas.petRect->getPosition() - datas.window.getPosition();
         const bool isCursorInsidePetWindow = datas.cursorPos.x > localWinPos.x && datas.cursorPos.y > localWinPos.y &&
                                              datas.cursorPos.x < localWinPos.x + (float)datas.petRect->getSize().x &&
                                              datas.cursorPos.y < localWinPos.y + (float)datas.petRect->getSize().y;

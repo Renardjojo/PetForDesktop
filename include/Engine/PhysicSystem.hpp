@@ -325,7 +325,6 @@ public:
             data.deltaCursorPosY = 0;
         }
 
-        const Vec2i newWinPos{static_cast<int>(data.petRect->getPosition().x), static_cast<int>(data.petRect->getPosition().y)};
-        data.window.setPos(newWinPos);
+        data.window.setPosition(data.petRect->getPosition());
     }
 };

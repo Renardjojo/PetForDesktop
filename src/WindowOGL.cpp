@@ -39,7 +39,7 @@ void Window::initDrawContext()
 {
     Framebuffer::bindScreen();
 
-    glViewport(0, 0, windowSize.x, windowSize.y);
+    glViewport(0, 0, m_size.x, m_size.y);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

@@ -36,8 +36,8 @@ void WindowGLFW::initWindow(GameData& datas)
 {
     preSetupWindow(datas);
 
-    windowSize = {1, 1};
-    window     = glfwCreateWindow(windowSize.x, windowSize.y, PROJECT_NAME, NULL, NULL);
+    m_size = {1.f, 1.f};
+    window = glfwCreateWindow(m_size.x, m_size.y, PROJECT_NAME, NULL, NULL);
     if (!window)
     {
         glfwTerminate();

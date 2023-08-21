@@ -2,6 +2,7 @@
 
 #include "Engine/ClassUtility.hpp"
 #include "Engine/Vector2.hpp"
+#include "Engine/Canvas.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -9,13 +10,10 @@ void cursorPositionCallback(GLFWwindow* window, double x, double y);
 void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods);
 void processInput(GLFWwindow* window);
 
-class WindowGLFW
+class WindowGLFW : public Canvas
 {
 protected:
     GLFWwindow* window = nullptr;
-
-    Vec2i windowSize = {0, 0};
-    Vec2i windowPos  = {0, 0};
 
 protected:
     void initGLFW();
@@ -25,18 +23,16 @@ protected:
 
 public:
     GETTER_BY_VALUE(Window, window)
-    GETTER_BY_VALUE(Size, windowSize)
-    GETTER_BY_VALUE(Pos, windowPos)
 
-    void setSize(const Vec2i in_windowSize) noexcept
+    void setSize(const Vec2 windowSize) noexcept
     {       
-        windowSize = in_windowSize;
+        Canvas::setSize(windowSize);
         glfwSetWindowSize(window, windowSize.x, windowSize.y);
     }
 
-    void setPos(const Vec2i in_windowPos) noexcept
+    void setPosition(const Vec2 windowPos) noexcept
     {
-        windowPos = in_windowPos;
+        Canvas::setPosition(windowPos);
         glfwSetWindowPos(window, windowPos.x, windowPos.y);
     }
 

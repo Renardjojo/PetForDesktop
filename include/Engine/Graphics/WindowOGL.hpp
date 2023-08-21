@@ -14,11 +14,11 @@ public:
 
     void initDrawContext();
 
-    void setSize(const Vec2i in_windowSize) noexcept
+    void setSize(const Vec2 windowSize) noexcept
     {
-        if (in_windowSize == windowSize)
+        if (m_size == windowSize)
             return;
 
-        WindowGLFW::setSize(in_windowSize);
+        WindowGLFW::setSize(windowSize);
     }
 };

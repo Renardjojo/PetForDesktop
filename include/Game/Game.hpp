@@ -140,7 +140,7 @@ public:
         Vec2i monitorSize;
         datas.monitors.getMonitorSize(0, monitorSize);
         datas.window.setSize(monitorSize);
-        datas.window.setPos(Vec2i::zero());
+        datas.window.setPosition(Vec2::zero());
         glfwSetWindowAttrib(datas.window.getWindow(), GLFW_MOUSE_PASSTHROUGH, true); //TODO: in window
         glfwSetWindowAttrib(datas.window.getWindow(), GLFW_TRANSPARENT_FRAMEBUFFER, true); //TODO: in window
         mainLoop.setFrameRate(1);
@@ -237,8 +237,8 @@ public:
         Vec2i mainMonitorPosition;
         Vec2i mainMonitorSize;
         datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
-        datas.window.setPos(mainMonitorPosition + mainMonitorSize / 2);
-        datas.petRect->setPosition(datas.window.getPos());
+        datas.window.setPosition(mainMonitorPosition + mainMonitorSize / 2);
+        datas.petRect->setPosition(datas.window.getPosition());
 
 #if USE_OPENGL_API
         mainLoop.emplaceTimer([&]() { physicSystem.update(1.f / datas.physicFrameRate); }, 1.f / datas.physicFrameRate,

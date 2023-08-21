@@ -22,7 +22,6 @@ struct GameData
     Monitors monitors;
 
     // Represente the window with all sub windows
-    Canvas canvas;
     std::shared_ptr<Rect>   petRect;
 
     bool shouldUpdateFrame = true;
