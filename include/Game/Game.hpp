@@ -39,25 +39,25 @@ protected:
 
     void createResources()
     {
-#ifdef USE_OPENGL_API
-        datas.pFramebuffer = std::make_unique<Framebuffer>();
-#endif
-        datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(datas.window, 0.f, 1.f);
-        datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(datas.window, -1.f, 1.f);
-
-        datas.edgeDetectionShaders.emplace_back(datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
-                                                SHADER_RESOURCE_PATH "dFdxEdgeDetection" SHADER_FRAG_EXT);
-
-        datas.pImageShader = std::make_unique<Shader>(datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
-                                                        SHADER_RESOURCE_PATH "image" SHADER_FRAG_EXT);
-
-        if (datas.debugEdgeDetection)
-            datas.pImageGreyScale =
-                std::make_unique<Shader>(datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
-                                                                SHADER_RESOURCE_PATH "imageGreyScale" SHADER_FRAG_EXT);
-
-        datas.pSpriteSheetShader = std::make_unique<Shader>(datas.window, SHADER_RESOURCE_PATH "spriteSheet" SHADER_VERTEX_EXT,
-                                                            SHADER_RESOURCE_PATH "image" SHADER_FRAG_EXT);
+       datas.pFramebuffer = std::make_unique<Framebuffer>();
+       
+       datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(*datas.window, 0.f, 1.f);
+       datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(*datas.window, -1.f, 1.f);
+       
+       datas.edgeDetectionShaders.emplace_back(std::make_unique<Shader>(*datas.window,
+                                               SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
+                                               SHADER_RESOURCE_PATH "dFdxEdgeDetection" SHADER_FRAG_EXT));
+       
+       datas.pImageShader = std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
+                                                       SHADER_RESOURCE_PATH "image" SHADER_FRAG_EXT);
+       
+       if (datas.debugEdgeDetection)
+           datas.pImageGreyScale =
+               std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
+                                                               SHADER_RESOURCE_PATH "imageGreyScale" SHADER_FRAG_EXT);
+       
+       datas.pSpriteSheetShader = std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "spriteSheet" SHADER_VERTEX_EXT,
+                                                           SHADER_RESOURCE_PATH "image" SHADER_FRAG_EXT);
     }
 
 public:
@@ -66,7 +66,8 @@ public:
         logf("%s %s\n", PROJECT_NAME, PROJECT_VERSION);
 
         glfwSetMonitorCallback(setMonitorCallback);
-        datas.window.init(datas);
+        datas.window = std::make_unique<Window>();
+        datas.window->init(datas);
         datas.monitors.init();
         Vec2i monitorSize    = datas.monitors.getMonitorsSize();
         Vec2i monitorsSizeMM = datas.monitors.getMonitorPhysicalSize();
@@ -79,6 +80,8 @@ public:
         createResources();
 
         srand(datas.randomSeed == -1 ? (unsigned)time(nullptr) : datas.randomSeed);
+
+        datas.pets.emplace_back(std::make_shared<Pet>(datas));
     }
 
     void initUI(GameData& datas)
@@ -93,7 +96,7 @@ public:
         // ImGui::StyleColorsLight();
 
         // Setup Platform/Renderer backends
-        ImGui_ImplGlfw_InitForOpenGL(datas.window.getWindow(), true);
+        ImGui_ImplGlfw_InitForOpenGL(datas.window->getWindow(), true);
         ImGui_ImplOpenGL3_Init("#version 460");
     }
 
@@ -115,7 +118,7 @@ public:
             ++frameCount;
 
             // render
-            datas.window.initDrawContext();
+            datas.window->initDrawContext();
 
             if (!(frameCount & 1) && datas.pImageGreyScale && datas.pEdgeDetectionTexture && datas.pFullScreenQuad)
             {
@@ -127,26 +130,26 @@ public:
             }
 
             // swap front and back buffers
-            datas.window.renderFrame();
+            datas.window->renderFrame();
 
             if (frameCount & 1)
             {
                 Vec2 newPos;
-                physicSystem.CatpureScreenCollision(datas.window.getSize(), newPos);
+                physicSystem.CatpureScreenCollision(datas.window->getSize(), newPos);
             }
         }};
 
         // fullscreen
         Vec2i monitorSize;
         datas.monitors.getMonitorSize(0, monitorSize);
-        datas.window.setSize(monitorSize);
-        datas.window.setPosition(Vec2::zero());
-        glfwSetWindowAttrib(datas.window.getWindow(), GLFW_MOUSE_PASSTHROUGH, true); //TODO: in window
-        glfwSetWindowAttrib(datas.window.getWindow(), GLFW_TRANSPARENT_FRAMEBUFFER, true); //TODO: in window
+        datas.window->setSize(monitorSize);
+        datas.window->setPosition(Vec2::zero());
+        glfwSetWindowAttrib(datas.window->getWindow(), GLFW_MOUSE_PASSTHROUGH, true); //TODO: in window
+        glfwSetWindowAttrib(datas.window->getWindow(), GLFW_TRANSPARENT_FRAMEBUFFER, true); //TODO: in window
         mainLoop.setFrameRate(1);
 
         mainLoop.start();
-        while (!datas.window.shouldClose())
+        while (!datas.window->shouldClose())
         {
             mainLoop.update(unlimitedUpdate, limitedUpdateDebugCollision);
         }
@@ -203,33 +206,44 @@ public:
             return;
         }
 
-        Pet pet(datas);
-
-        const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
-            processInput(datas.window.getWindow());
+        const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) 
+        {
+            processInput(datas.window->getWindow());
 
             if (datas.useMousePassThoughWindow)
-                glfwSetWindowAttrib(datas.window.getWindow(), GLFW_MOUSE_PASSTHROUGH, !pet.isMouseOver());
+            {
+                for (const std::shared_ptr<Pet>& pet : datas.pets)
+                {
+                    glfwSetWindowAttrib(datas.window->getWindow(), GLFW_MOUSE_PASSTHROUGH, !pet->isMouseOver());
+                }
+            }
 
             // poll for and process events
             glfwPollEvents();
         }};
 
-        const std::function<void(double)> limitedUpdate{[&](double deltaTime) {
-            pet.update(deltaTime);
+        const std::function<void(double)> limitedUpdate{[&](double deltaTime) 
+        {
+            for (const std::shared_ptr<Pet>& pet : datas.pets)
+            {
+                pet->update(deltaTime);
+            }
 
             if (datas.shouldUpdateFrame)
             {
                 updateUI();
-                datas.window.initDrawContext();
+                datas.window->initDrawContext();
 
                 // render
-                pet.draw();
+                for (const std::shared_ptr<Pet>& pet : datas.pets)
+                {
+                    pet->draw();
+                }
 
                 renderUI();
 
                 // swap front and back buffers
-                datas.window.renderFrame();
+                datas.window->renderFrame();
                 datas.shouldUpdateFrame = false;
             }
         }};
@@ -237,8 +251,8 @@ public:
         Vec2i mainMonitorPosition;
         Vec2i mainMonitorSize;
         datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
-        datas.window.setPosition(mainMonitorPosition + mainMonitorSize / 2);
-        datas.petRect->setPosition(datas.window.getPosition());
+        datas.window->setPosition(mainMonitorPosition + mainMonitorSize / 2);
+        datas.petRect->setPosition(datas.window->getPosition());
 
 #if USE_OPENGL_API
         mainLoop.emplaceTimer([&]() { physicSystem.update(1.f / datas.physicFrameRate); }, 1.f / datas.physicFrameRate,
@@ -246,7 +260,7 @@ public:
 #endif
 
         mainLoop.start();
-        while (!datas.window.shouldClose())
+        while (!datas.window->shouldClose())
         {
             mainLoop.update(unlimitedUpdate, limitedUpdate);
         }

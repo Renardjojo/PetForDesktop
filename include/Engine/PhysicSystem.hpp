@@ -4,6 +4,9 @@
 
 #ifdef USE_OPENGL_API
 #include "Engine/Graphics/TextureOGL.hpp"
+#include "Engine/Graphics/FramebufferOGL.hpp"
+#include "Engine/Graphics/ShaderOGL.hpp"
+#include "Engine/Graphics/ScreenSpaceQuadOGL.hpp"
 #endif // USE_OPENGL_API
 
 #include "Engine/Vector2.hpp"
@@ -129,8 +132,8 @@ public:
         {
             screenShootPosX  = 0;
             screenShootPosY  = 0;
-            screenShootSizeX = data.window.getSize().x;
-            screenShootSizeY = data.window.getSize().y;
+            screenShootSizeX = data.window->getSize().x;
+            screenShootSizeY = data.window->getSize().y;
         }
         else
         {
@@ -161,9 +164,9 @@ public:
             data.pFramebuffer->bind();
             data.pFramebuffer->attachTexture(*data.pEdgeDetectionTexture);
 
-            data.edgeDetectionShaders[0].use();
-            data.edgeDetectionShaders[0].setInt("uTexture", 0);
-            data.edgeDetectionShaders[0].setVec2("resolution", static_cast<float>(pxlData.width),
+            data.edgeDetectionShaders[0]->use();
+            data.edgeDetectionShaders[0]->setInt("uTexture", 0);
+            data.edgeDetectionShaders[0]->setVec2("resolution", static_cast<float>(pxlData.width),
                                                  static_cast<float>(pxlData.height));
             data.pCollisionTexture->use();
             data.pFullScreenQuad->use();
@@ -174,8 +177,8 @@ public:
             data.pFramebuffer->bind();
             data.pFramebuffer->attachTexture(*data.pCollisionTexture);
 
-            data.edgeDetectionShaders[0].use();
-            data.edgeDetectionShaders[0].setInt("uTexture", 0);
+            data.edgeDetectionShaders[0]->use();
+            data.edgeDetectionShaders[0]->setInt("uTexture", 0);
             data.pCollisionTexture->use();
             data.pFullScreenQuad->use();
             data.pFullScreenQuad->draw();
@@ -183,9 +186,9 @@ public:
             data.pFramebuffer->bind();
             data.pFramebuffer->attachTexture(*data.pEdgeDetectionTexture);
 
-            data.edgeDetectionShaders[1].use();
-            data.edgeDetectionShaders[1].setInt("uTexture", 0);
-            data.edgeDetectionShaders[1].setVec2("resolution", static_cast<float>(pxlData.width),
+            data.edgeDetectionShaders[1]->use();
+            data.edgeDetectionShaders[1]->setInt("uTexture", 0);
+            data.edgeDetectionShaders[1]->setVec2("resolution", static_cast<float>(pxlData.width),
                                                  static_cast<float>(pxlData.height));
             data.pCollisionTexture->use();
             data.pFullScreenQuad->use();
@@ -325,6 +328,6 @@ public:
             data.deltaCursorPosY = 0;
         }
 
-        data.window.setPosition(data.petRect->getPosition());
+        data.window->setPosition(data.petRect->getPosition());
     }
 };

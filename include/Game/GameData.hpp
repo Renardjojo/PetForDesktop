@@ -2,15 +2,6 @@
 
 #include "Engine/Monitors.hpp"
 #include "Engine/Vector2.hpp"
-#include "Engine/Canvas.hpp"
-
-#ifdef USE_OPENGL_API
-#include "Engine/Graphics/WindowOGL.hpp"
-#include "Engine/Graphics/FramebufferOGL.hpp"
-#include "Engine/Graphics/TextureOGL.hpp"
-#include "Engine/Graphics/ScreenSpaceQuadOGL.hpp"
-#include "Engine/Graphics/ShaderOGL.hpp"
-#endif // USE_OPENGL_API
 
 #include <memory>
 #include <queue>
@@ -18,27 +9,28 @@
 
 struct GameData
 {
-    Window   window;
+    std::unique_ptr<class Window>   window;
     Monitors monitors;
 
     // Represente the window with all sub windows
-    std::shared_ptr<Rect>   petRect;
+    std::shared_ptr<class Rect>   petRect;
+    std::vector<std::shared_ptr<class Pet>> pets;
 
     bool shouldUpdateFrame = true;
 
     // Resources
-    std::unique_ptr<Framebuffer> pFramebuffer = nullptr;
+    std::unique_ptr<class Framebuffer> pFramebuffer = nullptr;
 
-    std::unique_ptr<Shader> pImageShader       = nullptr;
-    std::unique_ptr<Shader> pImageGreyScale    = nullptr;
-    std::unique_ptr<Shader> pSpriteSheetShader = nullptr;
-    std::vector<Shader>     edgeDetectionShaders; // Sorted by pass
+    std::unique_ptr<class Shader> pImageShader       = nullptr;
+    std::unique_ptr<class Shader> pImageGreyScale    = nullptr;
+    std::unique_ptr<class Shader> pSpriteSheetShader = nullptr;
+    std::vector<std::unique_ptr<class Shader>> edgeDetectionShaders; // Sorted by pass
 
-    std::unique_ptr<Texture> pCollisionTexture     = nullptr;
-    std::unique_ptr<Texture> pEdgeDetectionTexture = nullptr;
+    std::unique_ptr<class Texture> pCollisionTexture     = nullptr;
+    std::unique_ptr<class Texture> pEdgeDetectionTexture = nullptr;
 
-    std::unique_ptr<ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
-    std::unique_ptr<ScreenSpaceQuad> pFullScreenQuad     = nullptr;
+    std::unique_ptr<class ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
+    std::unique_ptr<class ScreenSpaceQuad> pFullScreenQuad     = nullptr;
 
     Vec2i cursorPos;
     float prevCursorPosX  = 0;
