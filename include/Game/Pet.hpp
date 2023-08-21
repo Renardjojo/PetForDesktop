@@ -178,7 +178,7 @@ public:
     }
 };
 
-class Pet
+class Pet : public Rect
 {
 protected:
     enum class ESide
@@ -206,8 +206,7 @@ public:
     Pet(GameData& data)
         : datas{data}, animator{data}, dialoguePopup{data}, needUpdator(data, dialoguePopup, utilitySystem)
     {
-        data.petRect = std::make_shared<Rect>();
-        data.window->addElement(*data.petRect);
+        data.window->addElement(*this);
 
         parseAnimationGraph();
         setupUtilitySystem();
@@ -487,9 +486,8 @@ public:
         size.x = spriteAnimator.getSheet()->getWidth() / spriteAnimator.getSheet()->getTileCount() *
                           datas.scale * spriteAnimator.getSheet()->getSizeFactor();
         size.y = spriteAnimator.getSheet()->getHeight() * datas.scale * spriteAnimator.getSheet()->getSizeFactor();
-        datas.petRect->setSize(size);
-        Vec2i windowSize{(int)std::floor(datas.petRect->getSize().x), (int)std::floor(datas.petRect->getSize().y)};
-        datas.window->setSize(windowSize);
+        setSize(size);
+        datas.window->setSize(m_size);
     }
 
     void draw()
@@ -498,17 +496,17 @@ public:
         dialoguePopup.drawIfActive();
 
         // Draw pet
-        spriteAnimator.draw(datas, *datas.pSpriteSheetShader, datas.side);
+        spriteAnimator.draw(*this, datas, *datas.pSpriteSheetShader, datas.side);
         datas.pUnitFullScreenQuad->use();
         datas.pUnitFullScreenQuad->draw();
     }
 
     bool isMouseOver()
     {
-        const Vec2 localWinPos             = datas.petRect->getPosition() - datas.window->getPosition();
+        const Vec2 localWinPos             = m_position - datas.window->getPosition();
         const bool isCursorInsidePetWindow = datas.cursorPos.x > localWinPos.x && datas.cursorPos.y > localWinPos.y &&
-                                             datas.cursorPos.x < localWinPos.x + (float)datas.petRect->getSize().x &&
-                                             datas.cursorPos.y < localWinPos.y + (float)datas.petRect->getSize().y;
+                                             datas.cursorPos.x < localWinPos.x + m_size.x &&
+                                             datas.cursorPos.y < localWinPos.y + m_size.y;
 
         if (isCursorInsidePetWindow)
         {

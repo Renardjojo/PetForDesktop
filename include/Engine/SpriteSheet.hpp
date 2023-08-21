@@ -7,6 +7,7 @@
 
 #include "Engine/ClassUtility.hpp"
 #include "Engine/Vector2.hpp"
+#include "Engine/Rect.hpp"
 #include "Game/GameData.hpp"
 
 class SpriteSheet : public Texture
@@ -24,7 +25,7 @@ public:
     GETTER_BY_VALUE(TileCount, tileCount)
     GETTER_BY_VALUE(SizeFactor, sizeFactor)
 
-    void useSection(GameData& data, Shader& shader, int idSection, bool hFlip = false)
+    void useSection(const Rect& rect, GameData& data, Shader& shader, int idSection, bool hFlip = false)
     {
         float       hScale  = 1.f / tileCount;
         const float vScale  = 1.f; // This field can be used
@@ -32,10 +33,10 @@ public:
         const float vOffset = 0.f; // This field can be used
 
         Vec2 clipSpacePos =
-            Vec2::remap(static_cast<Vec2i>(data.petRect->getPosition()), data.window->getPosition(),
+            Vec2::remap(static_cast<Vec2i>(rect.getPosition()), data.window->getPosition(),
                         data.window->getPosition() + data.window->getSize(), Vec2{0, 1}, Vec2{1, 0}); // [-1, 1]
         Vec2 clipSpaceSize =
-            Vec2::remap(data.petRect->getSize(), Vec2{0, 0}, data.window->getSize(), Vec2{0, 0}, Vec2{1, 1}); // [0, 1]
+            Vec2::remap(rect.getSize(), Vec2{0, 0}, data.window->getSize(), Vec2{0, 0}, Vec2{1, 1}); // [0, 1]
 
         // In shader, based on bottom left instead of upper left
         clipSpacePos.y -= clipSpaceSize.y;

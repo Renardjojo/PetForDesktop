@@ -135,7 +135,10 @@ public:
             if (frameCount & 1)
             {
                 Vec2 newPos;
-                physicSystem.CatpureScreenCollision(datas.window->getSize(), newPos);
+                for (const std::shared_ptr<Pet>& pet : datas.pets)
+                {
+                    physicSystem.CatpureScreenCollision(*pet, datas.window->getSize(), newPos);
+                }
             }
         }};
 
@@ -252,10 +255,22 @@ public:
         Vec2i mainMonitorSize;
         datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
         datas.window->setPosition(mainMonitorPosition + mainMonitorSize / 2);
-        datas.petRect->setPosition(datas.window->getPosition());
+        for (size_t i = 0; i < datas.pets.size(); i++)
+        {
+            Vec2 petPosition = mainMonitorPosition;
+            petPosition.y += mainMonitorSize.y / 2.f;
+            petPosition.x += mainMonitorSize.x / (datas.pets.size() + 1) * (i + 1);
+            datas.pets[i]->setPosition(petPosition); 
+        }
 
 #if USE_OPENGL_API
-        mainLoop.emplaceTimer([&]() { physicSystem.update(1.f / datas.physicFrameRate); }, 1.f / datas.physicFrameRate,
+        mainLoop.emplaceTimer([&]() { 
+                for (const std::shared_ptr<Pet>& pet : datas.pets)
+                {
+                    physicSystem.update(*pet, 1.f / datas.physicFrameRate); 
+                }
+            
+            }, 1.f / datas.physicFrameRate,
                               true);
 #endif
 

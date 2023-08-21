@@ -13,7 +13,6 @@ struct GameData
     Monitors monitors;
 
     // Represente the window with all sub windows
-    std::shared_ptr<class Rect>   petRect;
     std::vector<std::shared_ptr<class Pet>> pets;
 
     bool shouldUpdateFrame = true;

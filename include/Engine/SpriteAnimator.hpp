@@ -2,6 +2,7 @@
 
 #include "Engine/SpriteSheet.hpp"
 #include "Engine/ClassUtility.hpp"
+#include "Engine/Rect.hpp"
 #include "Game/GameData.hpp"
 
 class SpriteAnimator
@@ -57,10 +58,10 @@ public:
         }
     }
 
-    void draw(GameData& datas, Shader& shader, bool donthFlip)
+    void draw(const Rect& rect, GameData& datas, Shader& shader, bool donthFlip)
     {
         if (pSheet != nullptr)
-            pSheet->useSection(datas, shader, indexCurrentAnimSprite, !donthFlip);
+            pSheet->useSection(rect, datas, shader, indexCurrentAnimSprite, !donthFlip);
     }
 
     bool isDone() const
