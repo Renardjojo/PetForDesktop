@@ -68,8 +68,17 @@ public:
 
     void encapsulate(const Rect& other)
     {
-        m_position.x = std::min(m_position.x, other.getPosition().x);
-        m_position.y = std::min(m_position.y, other.getPosition().y);
+        if (other.getPosition().x < m_position.x)
+        {
+            m_size.x += m_position.x - other.getPosition().x;
+            m_position.x = other.getPosition().x;
+        }
+
+        if (other.getPosition().y < m_position.y)
+        {
+            m_size.y += m_position.y - other.getPosition().y;
+            m_position.y = other.getPosition().y;
+        }
 
         m_size.x = std::max(getCornerMax().x, other.getCornerMax().x) - m_position.x;
         m_size.y = std::max(getCornerMax().y, other.getCornerMax().y) - m_position.y;
