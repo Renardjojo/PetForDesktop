@@ -36,17 +36,17 @@ public:
     inline void setCornerMin(Vec2 cornerMin) noexcept
     {
         m_size += m_position - cornerMin;
-        m_position = cornerMin;
+        setPosition(cornerMin);
         onChange();
     }
 
     inline void setCornerMax(Vec2 cornerMax) noexcept
     {
-        m_size = m_position - cornerMax;
+        setSize(m_position - cornerMax);
         onChange();
     }
 
-    inline void setPosition(const Vec2 position) noexcept
+    virtual void setPosition(const Vec2 position)
     {
         m_position = position;
         onChange();

@@ -254,7 +254,6 @@ public:
         Vec2i mainMonitorPosition;
         Vec2i mainMonitorSize;
         datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
-        datas.window->setPosition(mainMonitorPosition + mainMonitorSize / 2);
         for (size_t i = 0; i < datas.pets.size(); i++)
         {
             Vec2 petPosition = mainMonitorPosition;
