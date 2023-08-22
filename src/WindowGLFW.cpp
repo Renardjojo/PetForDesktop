@@ -57,6 +57,8 @@ void cursorPositionCallback(GLFWwindow* window, double x, double y)
     {
         datas.deltaCursorPosX = static_cast<float>(x) - datas.prevCursorPosX;
         datas.deltaCursorPosY = static_cast<float>(y) - datas.prevCursorPosY;
+        datas.prevCursorPosX  = static_cast<float>(x);
+        datas.prevCursorPosY  = static_cast<float>(y);
         Vec2 delta(datas.deltaCursorPosX, datas.deltaCursorPosY);
         datas.deltasCursorPosBuffer.emplace(datas.timeAcc, delta);
         datas.deltaCursorAcc += delta;

@@ -21,6 +21,13 @@ protected:
     void postSetupWindow(struct GameData& datas);
     void initWindow(struct GameData& datas);
 
+    void UpdatePositionSize(const Rect& other)
+    {
+        encapsulate(other);
+        glfwSetWindowSize(window, m_size.x, m_size.y);
+        glfwSetWindowPos(window, m_position.x, m_position.y);
+    }
+
 public:
     GETTER_BY_VALUE(Window, window)
 
@@ -54,5 +61,12 @@ public:
     void renderFrame()
     {
         glfwSwapBuffers(window);
+    }
+
+    void addElement(Rect& element)
+    {
+        m_elements.emplace_back(&element);
+        element.setOnChange([&](const Rect& other) 
+            { UpdatePositionSize(other); });
     }
 };

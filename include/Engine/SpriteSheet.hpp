@@ -32,9 +32,8 @@ public:
         float       hOffSet = idSection / (float)tileCount;
         const float vOffset = 0.f; // This field can be used
 
-        Vec2 clipSpacePos =
-            Vec2::remap(static_cast<Vec2i>(rect.getPosition()), data.window->getPosition(),
-                        data.window->getPosition() + data.window->getSize(), Vec2{0, 1}, Vec2{1, 0}); // [-1, 1]
+        Vec2 clipSpacePos = Vec2::remap(rect.getCornerMin(), data.window->getCornerMin(),
+                        data.window->getCornerMax(), Vec2{0, 1}, Vec2{1, 0}); // [-1, 1]
         Vec2 clipSpaceSize =
             Vec2::remap(rect.getSize(), Vec2{0, 0}, data.window->getSize(), Vec2{0, 0}, Vec2{1, 1}); // [0, 1]
 

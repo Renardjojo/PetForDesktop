@@ -202,6 +202,13 @@ protected:
     UtilitySystem utilitySystem;
     NeedUpdator   needUpdator;
 
+protected:
+    void onChange() final
+    {
+        Rect::onChange();
+        datas.shouldUpdateFrame = true;
+    }
+
 public:
     Pet(GameData& data)
         : datas{data}, animator{data}, dialoguePopup{data}, needUpdator(data, dialoguePopup, utilitySystem)
@@ -487,7 +494,6 @@ public:
                           datas.scale * spriteAnimator.getSheet()->getSizeFactor();
         size.y = spriteAnimator.getSheet()->getHeight() * datas.scale * spriteAnimator.getSheet()->getSizeFactor();
         setSize(size);
-        datas.window->setSize(m_size);
     }
 
     void draw()

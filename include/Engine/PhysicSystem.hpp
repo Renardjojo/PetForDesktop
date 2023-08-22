@@ -325,11 +325,11 @@ public:
         }
         else
         {
-            rect.setPosition(rect.getPosition() + Vec2{data.deltaCursorPosX, data.deltaCursorPosY});
+            Vec2 movement = {data.deltaCursorPosX, data.deltaCursorPosY};
+            rect.setPosition(rect.getPosition() + movement);
+        
             data.deltaCursorPosX = 0;
             data.deltaCursorPosY = 0;
         }
-
-        data.window->setPosition(rect.getPosition());
     }
 };
