@@ -76,4 +76,9 @@ public:
         element.setOnChange([&](const Rect& other) 
             { UpdatePositionSize(other); });
     }
+
+    void removeElement(Rect& element)
+    {
+        m_elements.remove_if([&](auto rect) { return rect.get() == &element; });
+    }
 };

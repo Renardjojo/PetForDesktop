@@ -63,6 +63,11 @@ public:
         setSize({25.f * data.scale, 25.f * data.scale});
     }
 
+    ~DialoguePopUp()
+    {
+        datas.window->removeElement(*this);
+    }
+
     void update(double deltaTime)
     {
         if (m_isActive)

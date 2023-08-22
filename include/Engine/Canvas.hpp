@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include <list>
 #include <memory>
 
 #include "Engine/ClassUtility.hpp"
@@ -10,7 +10,7 @@
 class Canvas : public Rect
 {
 protected:
-    std::vector<std::shared_ptr<Rect>> m_elements;
+    std::list<std::shared_ptr<Rect>> m_elements;
 
 public:
     void addElement(Rect& element)

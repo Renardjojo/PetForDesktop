@@ -69,6 +69,11 @@ public:
         setupUtilitySystem();
     }
 
+    ~Pet()
+    {
+        datas.window->removeElement(*this);
+    }
+
     void setPosition(const Vec2 position) override
     {
         Rect::setPosition(position);
