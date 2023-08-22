@@ -71,6 +71,7 @@ public:
         datas.monitors.init();
         Vec2i monitorSize    = datas.monitors.getMonitorsSize();
         Vec2i monitorsSizeMM = datas.monitors.getMonitorPhysicalSize();
+        datas.window->setSize(monitorSize);
 
         // Evaluate pixel distance based on dpi and monitor size
         datas.pixelPerMeter = {(float)monitorSize.x / (monitorsSizeMM.x * 0.001f),

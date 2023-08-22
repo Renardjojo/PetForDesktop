@@ -49,6 +49,8 @@ void WindowGLFW::initWindow(GameData& datas)
     postSetupWindow(datas);
 
     glfwShowWindow(window);
+
+    glfwSetWindowPos(window, m_position.x, m_position.y);
 }
 
 void cursorPositionCallback(GLFWwindow* window, double x, double y)
