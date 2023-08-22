@@ -85,10 +85,10 @@ public:
         /*Fixed update*/
         m_timeAccLoop += m_deltaTime;
 
-        while (m_timeAccLoop >= m_fixedDeltaTime)
+        if (m_timeAccLoop >= m_fixedDeltaTime)
         {
-            limitedUpdateFunction(m_fixedDeltaTime);
-            m_timeAccLoop -= m_fixedDeltaTime;
+            limitedUpdateFunction(m_timeAccLoop);
+            m_timeAccLoop = 0.f;
         }
 
         while (!m_timerQueue.empty() && m_timerQueue.top().globalTimer <= datas.timeAcc)
