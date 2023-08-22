@@ -23,22 +23,29 @@ protected:
 
     void UpdatePositionSize(const Rect& other)
     {
-        encapsulate(other);
-        glfwSetWindowSize(window, m_size.x, m_size.y);
-        glfwSetWindowPos(window, m_position.x, m_position.y);
+        if (encapsulate(other))
+        {
+            glfwSetWindowSize(window, m_size.x, m_size.y);
+            glfwSetWindowPos(window, m_position.x, m_position.y);
+        }
     }
 
 public:
     GETTER_BY_VALUE(Window, window)
 
     void setSize(const Vec2 windowSize) noexcept
-    {       
+    {
+        if (windowSize == m_size)
+            return;
         Canvas::setSize(windowSize);
         glfwSetWindowSize(window, windowSize.x, windowSize.y);
     }
 
     void setPosition(const Vec2 windowPos) noexcept
     {
+        if (windowPos == m_position)
+            return;
+
         Canvas::setPosition(windowPos);
         glfwSetWindowPos(window, windowPos.x, windowPos.y);
     }
