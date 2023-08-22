@@ -2,6 +2,7 @@
 
 #include "Game/GameData.hpp"
 #include "Game/Pet.hpp"
+#include "Game/ContextualMenu.hpp"
 #include "Engine/Log.hpp"
 #include "Engine/PhysicSystem.hpp"
 #include "Engine/Settings.hpp"
@@ -193,10 +194,34 @@ public:
 
             if (datas.useMousePassThoughWindow)
             {
+                bool shouldPassThrought = true;
                 for (const std::shared_ptr<Pet>& pet : datas.pets)
                 {
-                    glfwSetWindowAttrib(datas.window->getWindow(), GLFW_MOUSE_PASSTHROUGH, !pet->isMouseOver());
+                    if (pet->isMouseOver())
+                    {
+                        shouldPassThrought = false;
+
+                        if (datas.rightButtonEvent == GLFW_PRESS)
+                        {
+                            if (datas.contextualMenu == nullptr)
+                            {
+                                datas.contextualMenu = std::make_unique<ContextualMenu>(datas);
+                                datas.window->addElement(*datas.contextualMenu);
+                            }
+                            datas.contextualMenu->setPosition(pet->getPosition());
+                        }
+                    }
                 }
+
+                if (datas.contextualMenu != nullptr)
+                {
+                    if (datas.contextualMenu->isPointInside(datas.window->getPosition(), datas.cursorPos))
+                    {
+                        shouldPassThrought = false;
+                    }
+                }
+
+                glfwSetWindowAttrib(datas.window->getWindow(), GLFW_MOUSE_PASSTHROUGH, shouldPassThrought);
             }
 
             // poll for and process events
@@ -213,6 +238,14 @@ public:
             if (datas.shouldUpdateFrame)
             {
                 updateUI();
+                if (datas.contextualMenu != nullptr)
+                {
+                    datas.contextualMenu->update(deltaTime);
+
+                    if (datas.contextualMenu->getShouldClose())
+                        datas.contextualMenu = nullptr;
+                }
+
                 datas.window->initDrawContext();
 
                 // render

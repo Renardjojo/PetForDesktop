@@ -375,12 +375,7 @@ public:
     bool isMouseOver()
     {  
         const Vec2 localCursorPos           = datas.cursorPos - (m_position - datas.window->getPosition());
-        const bool isCursorInsidePetWindow = localCursorPos.x > 0 &&
-                                             localCursorPos.y > 0 &&
-                                             localCursorPos.x < m_size.x &&
-                                             localCursorPos.y < m_size.y;
-
-        if (isCursorInsidePetWindow)
+        if (Rect::isPointInside(localCursorPos))
         {
             float scale = datas.scale * spriteAnimator.getSheet()->getSizeFactor();
             Vec2i localCursoPos{

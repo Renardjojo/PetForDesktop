@@ -97,6 +97,9 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
             break;
         }
         break;
+    case GLFW_MOUSE_BUTTON_RIGHT:
+        datas.rightButtonEvent = action;
+        break;
     default:
         break;
     }

@@ -101,4 +101,16 @@ public:
 
         return hasChanged;
     }
+
+    bool isPointInside(Vec2 pointPos)
+    {
+        return pointPos.x > 0 && pointPos.y > 0 && pointPos.x < m_size.x && pointPos.y < m_size.y;
+    }
+
+    bool isPointInside(Vec2 worldPosition, Vec2 pointPos)
+    {
+        const Vec2 localPos = pointPos - (m_position - worldPosition);
+        return isPointInside(localPos);
+        ;
+    }
 };

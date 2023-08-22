@@ -14,6 +14,7 @@ struct GameData
 
     // Represente the window with all sub windows
     std::vector<std::shared_ptr<class Pet>> pets;
+    std::unique_ptr<class ContextualMenu>   contextualMenu;
 
     bool shouldUpdateFrame = true;
 
@@ -37,6 +38,7 @@ struct GameData
     float deltaCursorPosX = 0;
     float deltaCursorPosY = 0;
     int   leftButtonEvent = 0;
+    int   rightButtonEvent = 0;
 
     struct DeltaCursosPosElem
     {
