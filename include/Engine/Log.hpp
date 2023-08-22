@@ -131,7 +131,7 @@ inline void GLDebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum
 
     case GL_DEBUG_SEVERITY_NOTIFICATION:
         _severity = "NOTIFICATION";
-        break;
+        return; // skip notifications
 
     default:
         _severity = "UNKNOWN";
