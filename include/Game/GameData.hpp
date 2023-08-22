@@ -81,10 +81,6 @@ struct GameData
     int   footBasementHeight                = 1;
     bool  isGrounded                        = false;
 
-    // Animation
-    bool side   = true; // false left / true right
-    bool isGrab = false;
-
     // Time
     double timeAcc = 0.0;
 

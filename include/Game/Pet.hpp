@@ -5,6 +5,7 @@
 #include "Engine/SpriteSheet.hpp"
 #include "Engine/StateMachine.hpp"
 #include "Engine/UtilitySystem.hpp"
+#include "Engine/ClassUtility.hpp"
 #include "Game/AnimationTransitions.hpp"
 #include "Game/Animations.hpp"
 #include "Game/GameData.hpp"
@@ -180,12 +181,14 @@ public:
 
 class Pet : public Rect
 {
-protected:
+public:
     enum class ESide
     {
-        left,
-        right
+        left  = 0,
+        right = 0
     };
+
+protected:
 
     std::map<std::string, SpriteSheet> spriteSheets;
     ESide                              side{ESide::left};
@@ -202,6 +205,9 @@ protected:
     UtilitySystem utilitySystem;
     NeedUpdator   needUpdator;
 
+    // Animation
+    bool isGrab = false;
+
 protected:
     void onChange() final
     {
@@ -210,6 +216,9 @@ protected:
     }
 
 public:
+    DEFAULT_GETTER_SETTER_VALUE(Side, side)
+    DEFAULT_GETTER_SETTER_VALUE(IsGrab, isGrab)
+
     Pet(GameData& data)
         : datas{data}, animator{data}, dialoguePopup{data}, needUpdator(data, dialoguePopup, utilitySystem)
     {
@@ -370,7 +379,7 @@ public:
         std::string        nodeName    = node["name"].as<std::string>();
         SpriteSheet&       spriteSheet = parseAnimation(node);
         std::shared_ptr<T> p_node =
-            std::make_shared<T>(spriteAnimator, spriteSheet, node["framerate"].as<int>(), node["loop"].as<bool>());
+            std::make_shared<T>(*this, spriteAnimator, spriteSheet, node["framerate"].as<int>(), node["loop"].as<bool>());
         nodes.emplace(nodeName, std::static_pointer_cast<StateMachine::Node>(p_node));
         return true;
     }
@@ -403,7 +412,7 @@ public:
         }
 
         std::shared_ptr<MovementDirectionNode> p_node = std::make_shared<MovementDirectionNode>(
-            spriteAnimator, spriteSheet, framerate, directions, applyGravity, loop);
+            *this, spriteAnimator, spriteSheet, framerate, directions, applyGravity, loop);
         nodes.emplace(nodeName, std::static_pointer_cast<StateMachine::Node>(p_node));
         return true;
     }
@@ -418,7 +427,7 @@ public:
         std::string                  nodeName    = node["name"].as<std::string>();
         SpriteSheet&                 spriteSheet = parseAnimation(node);
         std::shared_ptr<PetJumpNode> p_node      = std::make_shared<PetJumpNode>(
-            spriteAnimator, spriteSheet, node["framerate"].as<int>(), node["direction"].as<Vec2>(),
+            *this, spriteAnimator, spriteSheet, node["framerate"].as<int>(), node["direction"].as<Vec2>(),
             node["verticalThrust"].as<float>(), node["horizontalThrust"].as<float>());
         nodes.emplace(nodeName, std::static_pointer_cast<StateMachine::Node>(p_node));
         return true;
@@ -502,7 +511,7 @@ public:
         dialoguePopup.drawIfActive();
 
         // Draw pet
-        spriteAnimator.draw(*this, datas, *datas.pSpriteSheetShader, datas.side);
+        spriteAnimator.draw(*this, datas, *datas.pSpriteSheetShader, (bool)side);
         datas.pUnitFullScreenQuad->use();
         datas.pUnitFullScreenQuad->draw();
     }
@@ -521,7 +530,7 @@ public:
             Vec2i localCursoPos{
                 static_cast<int>(floor(localCursorPos.x / scale)),
                 static_cast<int>(floor(localCursorPos.y / scale))};
-            return spriteAnimator.isMouseOver(localCursoPos, !datas.side);
+            return spriteAnimator.isMouseOver(localCursoPos, !(bool)side);
         }
         else
         {
