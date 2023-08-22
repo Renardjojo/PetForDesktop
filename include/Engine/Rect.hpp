@@ -68,21 +68,37 @@ public:
         return m_size;
     }
 
-    void encapsulate(const Rect& other)
+    // return true if change;
+    bool encapsulate(const Rect& other)
     {
+        bool hasChanged = false;
+
         if (other.getPosition().x < m_position.x)
         {
             m_size.x += m_position.x - other.getPosition().x;
             m_position.x = other.getPosition().x;
+            hasChanged   = true;
         }
 
         if (other.getPosition().y < m_position.y)
         {
             m_size.y += m_position.y - other.getPosition().y;
             m_position.y = other.getPosition().y;
+            hasChanged   = true;
         }
 
-        m_size.x = std::max(getCornerMax().x, other.getCornerMax().x) - m_position.x;
-        m_size.y = std::max(getCornerMax().y, other.getCornerMax().y) - m_position.y;
+        if (other.getCornerMax().x > getCornerMax().x)
+        {
+            m_size.x = other.getCornerMax().x - m_position.x;
+            hasChanged = true;
+        }
+
+        if (other.getCornerMax().y > getCornerMax().y)
+        {
+            m_size.y   = other.getCornerMax().y - m_position.y;
+            hasChanged = true;
+        }
+
+        return hasChanged;
     }
 };
