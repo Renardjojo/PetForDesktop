@@ -508,19 +508,19 @@ public:
     }
 
     bool isMouseOver()
-    {
-        const Vec2 localWinPos             = m_position - datas.window->getPosition();
-        const bool isCursorInsidePetWindow = datas.cursorPos.x > localWinPos.x && datas.cursorPos.y > localWinPos.y &&
-                                             datas.cursorPos.x < localWinPos.x + m_size.x &&
-                                             datas.cursorPos.y < localWinPos.y + m_size.y;
+    {  
+        const Vec2 localCursorPos           = datas.cursorPos - (m_position - datas.window->getPosition());
+        const bool isCursorInsidePetWindow = localCursorPos.x > 0 &&
+                                             localCursorPos.y > 0 &&
+                                             localCursorPos.x < m_size.x &&
+                                             localCursorPos.y < m_size.y;
 
         if (isCursorInsidePetWindow)
         {
+            float scale = datas.scale * spriteAnimator.getSheet()->getSizeFactor();
             Vec2i localCursoPos{
-                static_cast<int>(
-                    floor(datas.cursorPos.x / (float)(datas.scale * spriteAnimator.getSheet()->getSizeFactor()))),
-                static_cast<int>(
-                    floor(datas.cursorPos.y / (float)(datas.scale * spriteAnimator.getSheet()->getSizeFactor())))};
+                static_cast<int>(floor(localCursorPos.x / scale)),
+                static_cast<int>(floor(localCursorPos.y / scale))};
             return spriteAnimator.isMouseOver(localCursoPos, !datas.side);
         }
         else
