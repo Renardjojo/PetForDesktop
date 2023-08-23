@@ -7,23 +7,35 @@
 
 struct AnimationEndTransition : public StateMachine::Node::Transition
 {
+    class Pet& pet;
+
+    AnimationEndTransition(class Pet& inPet) : pet{inPet}
+    {
+    }
+
     bool canTransition(GameData& blackBoard) final;
 };
 
 struct IsGroundedTransition : public StateMachine::Node::Transition
 {
-    bool canTransition(GameData& blackBoard) final
+    class Pet& pet;
+
+    IsGroundedTransition(class Pet& inPet) : pet{inPet}
     {
-        return blackBoard.isGrounded;
-    };
+    }
+
+    bool canTransition(GameData& blackBoard) final;
 };
 
 struct IsNotGroundedTransition : public StateMachine::Node::Transition
 {
-    bool canTransition(GameData& blackBoard) final
+    class Pet& pet;
+
+    IsNotGroundedTransition(class Pet& inPet) : pet{inPet}
     {
-        return !blackBoard.isGrounded;
-    };
+    }
+
+    bool canTransition(GameData& blackBoard) final;
 };
 
 struct RandomDelayTransition : public StateMachine::Node::Transition
@@ -56,6 +68,12 @@ public:
 
 struct StartLeftClicTransition : public StateMachine::Node::Transition
 {
+    class Pet& pet;
+
+    StartLeftClicTransition(class Pet& inPet) : pet{inPet}
+    {
+    }
+
     bool canTransition(GameData& blackBoard) final
     {
         return blackBoard.leftButtonEvent == GLFW_PRESS;
@@ -64,18 +82,27 @@ struct StartLeftClicTransition : public StateMachine::Node::Transition
 
 struct TouchScreenEdgeTransition : public StateMachine::Node::Transition
 {
-    bool canTransition(GameData& blackBoard) final
+    class Pet& pet;
+
+    TouchScreenEdgeTransition(class Pet& inPet) : pet{inPet}
     {
-        return blackBoard.touchScreenEdge;
-    };
+    }
+
+    bool canTransition(GameData& blackBoard) final;
 };
 
 struct EndLeftClicTransition : public StateMachine::Node::Transition
 {
 protected:
     bool leftWasPressed = false;
+    class Pet& pet;
 
 public:
+
+    EndLeftClicTransition(class Pet& inPet) : pet{inPet}
+    {
+    }
+
     void onEnter(GameData& blackBoard) final
     {
         leftWasPressed = blackBoard.leftButtonEvent == GLFW_PRESS;

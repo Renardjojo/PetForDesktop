@@ -24,7 +24,7 @@ public:
         setSize({50.f * data.scale, 100.f * data.scale});
     }
 
-    ~ContextualMenu()
+    virtual ~ContextualMenu()
     {
         datas.window->removeElement(*this);
     }

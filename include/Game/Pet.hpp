@@ -6,6 +6,7 @@
 #include "Engine/StateMachine.hpp"
 #include "Engine/UtilitySystem.hpp"
 #include "Engine/ClassUtility.hpp"
+#include "Engine/PhysicComponent.hpp"
 #include "Game/AnimationTransitions.hpp"
 #include "Game/Animations.hpp"
 #include "Game/GameData.hpp"
@@ -49,6 +50,9 @@ protected:
     // Animation
     bool isGrab = false;
 
+    // Physic
+    PhysicComponent physicComponent;
+
 protected:
     void onChange() final
     {
@@ -60,8 +64,11 @@ public:
     DEFAULT_GETTER_SETTER_VALUE(Side, side)
     DEFAULT_GETTER_SETTER_VALUE(IsGrab, isGrab)
 
+    GETTER_BY_REF(PhysicComponent, physicComponent)
+
     Pet(GameData& data)
-        : datas{data}, animator{data}, dialoguePopup{data}, needUpdator(data, dialoguePopup, utilitySystem)
+        : datas{data}, animator{data}, dialoguePopup{data}, needUpdator(data, dialoguePopup, utilitySystem),
+          physicComponent(*this)
     {
         data.window->addElement(*this);
 
@@ -301,7 +308,7 @@ public:
         std::string nodeFromName = node["from"].as<std::string>();
         YAML::Node  toNodes      = node["to"];
 
-        std::shared_ptr<T> transition = std::make_shared<T>();
+        std::shared_ptr<T> transition = std::make_shared<T>(*this);
         if (toNodes.IsSequence())
         {
             for (YAML::const_iterator it = toNodes.begin(); it != toNodes.end(); ++it)

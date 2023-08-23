@@ -65,13 +65,8 @@ struct GameData
 
     // Physic
     int  physicFrameRate    = 60;
-    Vec2 velocity           = {0.f, 0.f};
-    bool applyGravity       = true;
-    bool touchScreenEdge    = false;
-    bool isOnBottomOfWindow = false;
 
     // This value is not changed by the physic system. Usefull for movement. Friction is applied to this value
-    Vec2  continuousVelocity                = {0.f, 0.f};
     Vec2  gravity                           = {0.f, 0.f};
     Vec2  gravityDir                        = {0.f, 0.f};
     float bounciness                        = 0.f;
@@ -81,7 +76,6 @@ struct GameData
     float isGroundedDetection               = 0.f;
     int   footBasementWidth                 = 1;
     int   footBasementHeight                = 1;
-    bool  isGrounded                        = false;
 
     // Time
     double timeAcc = 0.0;

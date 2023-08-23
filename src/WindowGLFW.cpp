@@ -3,6 +3,7 @@
 #include "Game/GameData.hpp"
 #include "Engine/Log.hpp"
 #include "Engine/Graphics/WindowOGL.hpp"
+#include "Game/Pet.hpp"
 
 void WindowGLFW::initGLFW()
 {
@@ -86,12 +87,21 @@ void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
             datas.prevCursorPosY  = static_cast<float>(datas.window->getPosition().y + datas.cursorPos.y);
             datas.deltaCursorPosX = 0.f;
             datas.deltaCursorPosY = 0.f;
-            datas.isGrounded      = false;
+
+            //TODO interaction component
+            for (auto pet : datas.pets)
+            {
+                pet->getPhysicComponent().isGrounded = false;
+            }
             break;
         }
         case GLFW_RELEASE:
-            datas.velocity =
-                datas.deltaCursorAcc / datas.coyoteTimeCursorPos / datas.pixelPerMeter * datas.releaseImpulse;
+            // TODO interaction component
+            for (auto pet : datas.pets)
+            {
+                pet->getPhysicComponent().velocity =
+                    datas.deltaCursorAcc / datas.coyoteTimeCursorPos / datas.pixelPerMeter * datas.releaseImpulse;
+            }
             break;
         default:
             break;

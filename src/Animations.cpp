@@ -7,8 +7,8 @@ void PetJumpNode::onUpdate(GameData& blackBoard, double dt)
 
     if (spriteAnimator.isDone()) // Enter only for jump begin because don't loop.
     {
-        blackBoard.velocity += baseDir * ((int)pet.getSide() * 2.f - 1.f) * hThrust - blackBoard.gravity * vThrust;
-        blackBoard.isGrounded = false;
+        pet.getPhysicComponent().velocity += baseDir * ((int)pet.getSide() * 2.f - 1.f) * hThrust - blackBoard.gravity * vThrust;
+        pet.getPhysicComponent().isGrounded = false;
     }
 }
 
@@ -29,13 +29,13 @@ void MovementDirectionNode::onEnter(GameData& blackBoard)
     AnimationNode::onEnter(blackBoard);
     baseDir = directions[randNum(0, directions.size() - 1)];
     pet.setSide((Pet::ESide)(baseDir.dot(Vec2::right()) > 0.f));
-    blackBoard.applyGravity = applyGravity;
-    blackBoard.continuousVelocity += baseDir;
+    pet.getPhysicComponent().applyGravity = applyGravity;
+    pet.getPhysicComponent().continuousVelocity += baseDir;
 }
 
 void MovementDirectionNode::onExit(GameData& blackBoard)
 {
     AnimationNode::onExit(blackBoard);
-    blackBoard.applyGravity = true;
-    blackBoard.continuousVelocity -= baseDir;
+    pet.getPhysicComponent().applyGravity = true;
+    pet.getPhysicComponent().continuousVelocity -= baseDir;
 }

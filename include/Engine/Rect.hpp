@@ -23,6 +23,9 @@ protected:
 public:
     SETTER_BY_CONST_REF(OnChange, m_onChange)
 
+    virtual ~Rect()
+    {}
+
     inline Vec2 getCornerMin() const noexcept
     {
         return m_position;

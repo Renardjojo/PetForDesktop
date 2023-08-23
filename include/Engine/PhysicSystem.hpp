@@ -10,6 +10,7 @@
 #endif // USE_OPENGL_API
 
 #include "Engine/Vector2.hpp"
+#include "Engine/PhysicComponent.hpp"
 #include "Engine/Rect.hpp"
 #include "Game/GameData.hpp"
 
@@ -25,14 +26,14 @@ public:
     {
     }
 
-    bool checkIsGrounded()
+    bool checkIsGrounded(const PhysicComponent& comp)
     {
-        float velocityLength     = data.velocity.length();
+        float velocityLength     = comp.velocity.length();
 
         if (velocityLength < FLT_EPSILON)
             return true;
 
-        float dotGravityVelocity = (- data.gravityDir).dot(data.velocity / velocityLength);
+        float dotGravityVelocity = (- data.gravityDir).dot(comp.velocity / velocityLength);
         return dotGravityVelocity > 0.8 && velocityLength < data.isGroundedDetection;
     }
 
@@ -48,7 +49,7 @@ public:
         return posA.x > posB.x && posA.x + sizeA.x < posB.x + sizeB.x && posA.y > posB.y && posA.y + sizeA.y < posB.y + sizeB.y;
     }
 
-    void computeMonitorCollisions(Rect& rect)
+    void computeMonitorCollisions(PhysicComponent& comp)
     {
         std::vector<Vec2i> monitorsPosition;
         std::vector<Vec2i> monitorSize;
@@ -63,9 +64,9 @@ public:
             data.monitors.getMonitorPosition(i, monitorsPosition[i]);
             data.monitors.getMonitorSize(i, monitorSize[i]);
             bool isOutsideOfCurrentMonitor =
-                isRectDisjointRectB(rect.getPosition(), rect.getSize(), monitorsPosition[i], monitorSize[i]);
+                isRectDisjointRectB(comp.getRect().getPosition(), comp.getRect().getSize(), monitorsPosition[i], monitorSize[i]);
             bool iInsideOfCurrentMonitor =
-                isRectAInsideRectB(rect.getPosition(), rect.getSize(), monitorsPosition[i], monitorSize[i]);
+                isRectAInsideRectB(comp.getRect().getPosition(), comp.getRect().getSize(), monitorsPosition[i], monitorSize[i]);
 
             screenOverlapCount += !iInsideOfCurrentMonitor && !isOutsideOfCurrentMonitor;
 
@@ -74,60 +75,60 @@ public:
 
         // 2: If pet is outside need correction
         float minSqrDistance    = FLT_MAX;
-        data.isOnBottomOfWindow = false;
+        comp.isOnBottomOfWindow = false;
         Vec2 reelPositionCorrection;
 
         // Check if only one screen overlap is not perfect but cover the majority of cases
-        data.touchScreenEdge = isOutside || screenOverlapCount == 1;
-        if (data.touchScreenEdge)
+        comp.touchScreenEdge = isOutside || screenOverlapCount == 1;
+        if (comp.touchScreenEdge)
         {
             for (int i = 0; i < data.monitors.getMonitorsCount(); ++i)
             {
-                Vec2 positionCorrection = rect.getPosition();
+                Vec2 positionCorrection = comp.getRect().getPosition();
                 bool isOnBottom         = false;
 
-                if (rect.getCornerMin().x <= monitorsPosition[i].x)
+                if (comp.getRect().getCornerMin().x <= monitorsPosition[i].x)
                 {
                     positionCorrection.x = monitorsPosition[i].x;
                 }
-                else if (rect.getCornerMax().x >= monitorsPosition[i].x + monitorSize[i].x)
+                else if (comp.getRect().getCornerMax().x >= monitorsPosition[i].x + monitorSize[i].x)
                 {
-                    positionCorrection.x = monitorsPosition[i].x + monitorSize[i].x - rect.getSize().x;
+                    positionCorrection.x = monitorsPosition[i].x + monitorSize[i].x - comp.getRect().getSize().x;
                 }
 
-                if (rect.getCornerMin().y <= monitorsPosition[i].y)
+                if (comp.getRect().getCornerMin().y <= monitorsPosition[i].y)
                 {
                     positionCorrection.y = monitorsPosition[i].y;
                 }
-                else if (rect.getCornerMax().y >= monitorsPosition[i].y + monitorSize[i].y)
+                else if (comp.getRect().getCornerMax().y >= monitorsPosition[i].y + monitorSize[i].y)
                 {
-                    positionCorrection.y = monitorsPosition[i].y + monitorSize[i].y - rect.getSize().y;
+                    positionCorrection.y = monitorsPosition[i].y + monitorSize[i].y - comp.getRect().getSize().y;
                     isOnBottom           = true;
                 }
 
-                float currentSqrDistance = (positionCorrection - rect.getPosition()).sqrLength();
+                float currentSqrDistance = (positionCorrection - comp.getRect().getPosition()).sqrLength();
                 if (currentSqrDistance < minSqrDistance)
                 {
-                    data.isOnBottomOfWindow = isOnBottom;
+                    comp.isOnBottomOfWindow = isOnBottom;
                     minSqrDistance          = currentSqrDistance;
                     reelPositionCorrection  = positionCorrection;
                 }
             }
 
             if (minSqrDistance > FLT_EPSILON)
-                data.velocity =
-                    data.velocity.reflect((reelPositionCorrection - rect.getPosition()).normalized()) * data.bounciness;
+                comp.velocity =
+                    comp.velocity.reflect((reelPositionCorrection - comp.getRect().getPosition()).normalized()) * data.bounciness;
 
-            data.isGrounded = (data.isOnBottomOfWindow &&
-                               data.velocity.sqrLength() < data.isGroundedDetection * data.isGroundedDetection) ||
-                              checkIsGrounded();
-            data.velocity *= !data.isGrounded; // reset velocity if is grounded
+            comp.isGrounded = (comp.isOnBottomOfWindow &&
+                               comp.velocity.sqrLength() < data.isGroundedDetection * data.isGroundedDetection) ||
+                              checkIsGrounded(comp);
+            comp.velocity *= !comp.isGrounded; // reset velocity if is grounded
 
-            rect.setPosition(reelPositionCorrection);
+            comp.getRect().setPosition(reelPositionCorrection);
         }
     }
 
-    void updateCollisionTexture(const Rect& rect, const Vec2 prevToNewWinPos)
+    void updateCollisionTexture(const PhysicComponent& comp, const Vec2 prevToNewWinPos)
     {
         int screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY;
         if (data.debugEdgeDetection)
@@ -142,9 +143,9 @@ public:
             const float xPadding = prevToNewWinPos.x < 0.f ? prevToNewWinPos.x : 0.f;
             const float yPadding = prevToNewWinPos.y < 0.f ? prevToNewWinPos.y : 0.f;
 
-            screenShootPosX  = static_cast<int>(rect.getPosition().x + rect.getSize().x / 2.f + xPadding -
+            screenShootPosX  = static_cast<int>(comp.getRect().getPosition().x + comp.getRect().getSize().x / 2.f + xPadding -
                                                data.footBasementWidth / 2.f);
-            screenShootPosY  = static_cast<int>(rect.getPosition().y + rect.getSize().y + 1 + yPadding -
+            screenShootPosY  = static_cast<int>(comp.getRect().getPosition().y + comp.getRect().getSize().y + 1 + yPadding -
                                                data.footBasementHeight / 2.f);
             screenShootSizeX = static_cast<int>(abs(prevToNewWinPos.x) + data.footBasementWidth);
             screenShootSizeY = static_cast<int>(abs(prevToNewWinPos.y) + data.footBasementHeight);
@@ -198,7 +199,7 @@ public:
         }
     }
 
-    bool processContinuousCollision(const Rect& rect, const Vec2 prevToNewWinPos, Vec2& newPos)
+    bool processContinuousCollision(const PhysicComponent& comp, const Vec2 prevToNewWinPos, Vec2& newPos)
     {
         // Main idear is the we will take a screen shoot of the dimension of the velocity vector (depending on it's
         // magnitude)
@@ -209,7 +210,7 @@ public:
         if (prevToNewWinPos.sqrLength() == 0.f)
             return false;
 
-        updateCollisionTexture(rect, prevToNewWinPos);
+        updateCollisionTexture(comp, prevToNewWinPos);
 
         std::vector<unsigned char> pixels;
         data.pEdgeDetectionTexture->use();
@@ -254,7 +255,7 @@ public:
 
             if (count > data.collisionPixelRatioStopMovement)
             {
-                newPos = rect.getPosition() + Vec2(column, row);
+                newPos = comp.getRect().getPosition() + Vec2(column, row);
                 return true;
             }
             row += prevToNewWinPosDir.y;
@@ -263,26 +264,26 @@ public:
         return false;
     }
 
-    bool CatpureScreenCollision(const Rect& rect, const Vec2 prevToNewWinPos, Vec2& newPos)
+    bool CatpureScreenCollision(const PhysicComponent& comp, const Vec2 prevToNewWinPos, Vec2& newPos)
     {
-        return processContinuousCollision(rect, prevToNewWinPos, newPos);
+        return processContinuousCollision(comp, prevToNewWinPos, newPos);
     }
 
-    void update(Rect& rect, double deltaTime)
+    void update(PhysicComponent& comp, double deltaTime)
     {
         // Apply gravity if not selected
         if (data.leftButtonEvent != GLFW_PRESS)
         {
             // Acc = Sum of force / Mass
             // G is already an acceleration
-            const Vec2 acc = data.gravity * data.applyGravity * !data.isGrounded;
+            const Vec2 acc = data.gravity * comp.applyGravity * !comp.isGrounded;
 
             // V = Acc * Time
-            data.velocity += acc * (float)deltaTime;
+            comp.velocity += acc * (float)deltaTime;
 
-            const Vec2 prevWinPos = rect.getPosition();
+            const Vec2 prevWinPos = comp.getRect().getPosition();
             // Pos = PrevPos + V * Time
-            const Vec2 newWinPos = rect.getPosition() + ((data.continuousVelocity + data.velocity) * (1.f - data.friction) *
+            const Vec2 newWinPos = comp.getRect().getPosition() + ((comp.continuousVelocity + comp.velocity) * (1.f - data.friction) *
                                                   data.pixelPerMeter * (float)deltaTime);
             
             const Vec2 prevToNewWinPos = newWinPos - prevWinPos;
@@ -291,42 +292,42 @@ public:
                 data.debugEdgeDetection)
             {
                 Vec2 newPos;
-                if (CatpureScreenCollision(rect, prevToNewWinPos, newPos))
+                if (CatpureScreenCollision(comp, prevToNewWinPos, newPos))
                 {
                     Vec2 collisionPos = newPos;
-                    rect.setPosition(collisionPos);
-                    data.velocity     = data.velocity.reflect(Vec2::up()) * data.bounciness;
+                    comp.getRect().setPosition(collisionPos);
+                    comp.velocity     = comp.velocity.reflect(Vec2::up()) * data.bounciness;
 
                     // check if is grounded
-                    data.isGrounded = checkIsGrounded();
-                    data.velocity *= !data.isGrounded; // reset velocity if is grounded
+                    comp.isGrounded = checkIsGrounded(comp);
+                    comp.velocity *= !comp.isGrounded; // reset velocity if is grounded
                 }
                 else
                 {
-                    rect.setPosition(newWinPos);
+                    comp.getRect().setPosition(newWinPos);
                 }
             }
             else
             {
                 // Update is grounded
-                if (data.isGrounded && !data.isOnBottomOfWindow)
+                if (comp.isGrounded && !comp.isOnBottomOfWindow)
                 {
                     Vec2 newPos;
                     Vec2 footBasement((float)data.footBasementWidth, (float)data.footBasementHeight);
-                    data.isGrounded = CatpureScreenCollision(rect, footBasement, newPos);
+                    comp.isGrounded = CatpureScreenCollision(comp, footBasement, newPos);
                 }
 
-                rect.setPosition(newWinPos);
+                comp.getRect().setPosition(newWinPos);
             }
 
             // Apply monitor collision
             if (sqrDistMovement > FLT_EPSILON)
-                computeMonitorCollisions(rect);
+                computeMonitorCollisions(comp);
         }
         else
         {
             Vec2 movement = {data.deltaCursorPosX, data.deltaCursorPosY};
-            rect.setPosition(rect.getPosition() + movement);
+            comp.getRect().setPosition(comp.getRect().getPosition() + movement);
         
             data.deltaCursorPosX = 0;
             data.deltaCursorPosY = 0;

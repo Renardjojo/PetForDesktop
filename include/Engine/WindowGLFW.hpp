@@ -79,6 +79,6 @@ public:
 
     void removeElement(Rect& element)
     {
-        m_elements.remove_if([&](auto rect) { return rect.get() == &element; });
+        m_elements.remove_if([&](auto rect) { return rect == &element; });
     }
 };

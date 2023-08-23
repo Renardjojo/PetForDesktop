@@ -277,7 +277,7 @@ public:
         mainLoop.emplaceTimer([&]() { 
                 for (const std::shared_ptr<Pet>& pet : datas.pets)
                 {
-                    physicSystem.update(*pet, 1.f / datas.physicFrameRate); 
+                    physicSystem.update(pet->getPhysicComponent(), 1.f / datas.physicFrameRate); 
                 }
             
             }, 1.f / datas.physicFrameRate,
