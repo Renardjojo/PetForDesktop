@@ -165,6 +165,11 @@ if(USE_OPENGL_API)
     target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENGL_API)
 endif()
 
+if (WIN32)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX)
+endif ()
+
+
 ########### Build link ############
 # Set a symbolic link so exe can find the /Data folder
 add_custom_target(copy_assets
