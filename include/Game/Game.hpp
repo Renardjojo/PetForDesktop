@@ -5,6 +5,7 @@
 #include "Game/ContextualMenu.hpp"
 #include "Engine/Log.hpp"
 #include "Engine/PhysicSystem.hpp"
+#include "Engine/InteractionSystem.hpp"
 #include "Engine/Settings.hpp"
 #include "Engine/SpriteSheet.hpp"
 
@@ -77,6 +78,9 @@ public:
         // Evaluate pixel distance based on dpi and monitor size
         datas.pixelPerMeter = {(float)monitorSize.x / (monitorsSizeMM.x * 0.001f),
                                (float)monitorSize.y / (monitorsSizeMM.y * 0.001f)};
+        
+        datas.interactionSystem = std::make_unique<InteractionSystem>();
+
         initUI(datas);
 
         createResources();
@@ -226,6 +230,8 @@ public:
 
             // poll for and process events
             glfwPollEvents();
+
+            datas.interactionSystem->update(datas);
         }};
 
         const std::function<void(double)> limitedUpdate{[&](double deltaTime) 

@@ -11,6 +11,7 @@ struct GameData
 {
     std::unique_ptr<class Window>   window;
     Monitors monitors;
+    std::unique_ptr<class InteractionSystem> interactionSystem;
 
     // Represente the window with all sub windows
     std::vector<std::shared_ptr<class Pet>> pets;

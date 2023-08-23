@@ -6,6 +6,8 @@
 #include "Engine/StateMachine.hpp"
 #include "Engine/UtilitySystem.hpp"
 #include "Engine/ClassUtility.hpp"
+#include "Engine/InteractionComponent.hpp"
+#include "Engine/InteractionSystem.hpp"
 #include "Engine/PhysicComponent.hpp"
 #include "Game/AnimationTransitions.hpp"
 #include "Game/Animations.hpp"
@@ -50,8 +52,9 @@ protected:
     // Animation
     bool isGrab = false;
 
-    // Physic
+    // Components
     PhysicComponent physicComponent;
+    InteractionComponent interactionComponent;
 
 protected:
     void onChange() final
@@ -65,12 +68,14 @@ public:
     DEFAULT_GETTER_SETTER_VALUE(IsGrab, isGrab)
 
     GETTER_BY_REF(PhysicComponent, physicComponent)
+    GETTER_BY_REF(InteractionComponent, interactionComponent)
 
     Pet(GameData& data)
         : datas{data}, animator{data}, dialoguePopup{data}, needUpdator(data, dialoguePopup, utilitySystem),
-          physicComponent(*this)
+          physicComponent(*this), interactionComponent(*this)
     {
         data.window->addElement(*this);
+        data.interactionSystem->addComponent(interactionComponent);
 
         parseAnimationGraph();
         setupUtilitySystem();
@@ -78,6 +83,7 @@ public:
 
     ~Pet()
     {
+        datas.interactionSystem->removeComponent(interactionComponent);
         datas.window->removeElement(*this);
     }
 

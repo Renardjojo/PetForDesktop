@@ -24,7 +24,8 @@ public:
     SETTER_BY_CONST_REF(OnChange, m_onChange)
 
     virtual ~Rect()
-    {}
+    {
+    }
 
     inline Vec2 getCornerMin() const noexcept
     {
@@ -92,7 +93,7 @@ public:
 
         if (other.getCornerMax().x > getCornerMax().x)
         {
-            m_size.x = other.getCornerMax().x - m_position.x;
+            m_size.x   = other.getCornerMax().x - m_position.x;
             hasChanged = true;
         }
 
@@ -114,6 +115,5 @@ public:
     {
         const Vec2 localPos = pointPos - (m_position - worldPosition);
         return isPointInside(localPos);
-        ;
     }
 };
