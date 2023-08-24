@@ -73,7 +73,15 @@ public:
         datas.monitors.init();
         Vec2i monitorSize    = datas.monitors.getMonitorsSize();
         Vec2i monitorsSizeMM = datas.monitors.getMonitorPhysicalSize();
-        datas.window->setSize(monitorSize);
+
+        if (datas.fullScreenWindow)
+        {
+            datas.window->setSize(monitorSize);
+        }
+        else
+        {
+            datas.window->setPosition(monitorSize / 2);
+        }
 
         // Evaluate pixel distance based on dpi and monitor size
         datas.pixelPerMeter = {(float)monitorSize.x / (monitorsSizeMM.x * 0.001f),
@@ -153,8 +161,6 @@ public:
         datas.monitors.getMonitorSize(0, monitorSize);
         datas.window->setSize(monitorSize);
         datas.window->setPosition(Vec2::zero());
-        glfwSetWindowAttrib(datas.window->getWindow(), GLFW_MOUSE_PASSTHROUGH, true); //TODO: in window
-        glfwSetWindowAttrib(datas.window->getWindow(), GLFW_TRANSPARENT_FRAMEBUFFER, true); //TODO: in window
         mainLoop.setFrameRate(1);
 
         mainLoop.start();
@@ -195,38 +201,6 @@ public:
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) 
         {
             processInput(datas.window->getWindow());
-
-            if (datas.useMousePassThoughWindow)
-            {
-                bool shouldPassThrought = true;
-                for (const std::shared_ptr<Pet>& pet : datas.pets)
-                {
-                    if (pet->isMouseOver())
-                    {
-                        shouldPassThrought = false;
-
-                        if (datas.rightButtonEvent == GLFW_PRESS)
-                        {
-                            if (datas.contextualMenu == nullptr)
-                            {
-                                datas.contextualMenu = std::make_unique<ContextualMenu>(datas);
-                                datas.window->addElement(*datas.contextualMenu);
-                            }
-                            datas.contextualMenu->setPosition(pet->getPosition());
-                        }
-                    }
-                }
-
-                if (datas.contextualMenu != nullptr)
-                {
-                    if (datas.contextualMenu->isPointInside(datas.window->getPosition(), datas.cursorPos))
-                    {
-                        shouldPassThrought = false;
-                    }
-                }
-
-                glfwSetWindowAttrib(datas.window->getWindow(), GLFW_MOUSE_PASSTHROUGH, shouldPassThrought);
-            }
 
             // poll for and process events
             glfwPollEvents();

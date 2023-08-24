@@ -60,7 +60,7 @@ public:
 
         data.window->addElement(*this);
 
-        setSize({25.f * data.scale, 25.f * data.scale});
+        m_size = {25.f * data.scale, 25.f * data.scale};
     }
 
     ~DialoguePopUp()

@@ -62,6 +62,7 @@ Setting::Setting(const char* path, GameData& data)
         if (!nodesSection)
             errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
 
+        data.fullScreenWindow          = nodesSection["FullScreenWindow"].as<bool>();
         data.showWindow                = nodesSection["ShowWindow"].as<bool>();
         data.showFrameBufferBackground = nodesSection["ShowFrameBufferBackground"].as<bool>();
         data.useForwardWindow          = nodesSection["UseForwardWindow"].as<bool>();

@@ -1,18 +1,19 @@
 #pragma once
 
+#include "Engine/ClassUtility.hpp"
+#include "Engine/InteractionComponent.hpp"
+#include "Engine/InteractionSystem.hpp"
 #include "Engine/Log.hpp"
+#include "Engine/PhysicComponent.hpp"
 #include "Engine/SpriteAnimator.hpp"
 #include "Engine/SpriteSheet.hpp"
 #include "Engine/StateMachine.hpp"
 #include "Engine/UtilitySystem.hpp"
-#include "Engine/ClassUtility.hpp"
-#include "Engine/InteractionComponent.hpp"
-#include "Engine/InteractionSystem.hpp"
-#include "Engine/PhysicComponent.hpp"
 #include "Game/AnimationTransitions.hpp"
 #include "Game/Animations.hpp"
-#include "Game/GameData.hpp"
+#include "Game/ContextualMenu.hpp"
 #include "Game/DialoguePopUp.hpp"
+#include "Game/GameData.hpp"
 
 #ifdef USE_OPENGL_API
 #include "Engine/Graphics/ScreenSpaceQuadOGL.hpp"
@@ -33,7 +34,6 @@ public:
     };
 
 protected:
-
     std::map<std::string, SpriteSheet> spriteSheets;
     ESide                              side{ESide::right};
 
@@ -53,7 +53,7 @@ protected:
     bool isGrab = false;
 
     // Components
-    PhysicComponent physicComponent;
+    PhysicComponent      physicComponent;
     InteractionComponent interactionComponent;
 
 protected:
@@ -76,6 +76,7 @@ public:
     {
         data.window->addElement(*this);
         data.interactionSystem->addComponent(interactionComponent);
+        interactionComponent.onRightReleaseOver = [&]() { onRightClic(); };
 
         parseAnimationGraph();
         setupUtilitySystem();
@@ -247,8 +248,8 @@ public:
         }
         std::string        nodeName    = node["name"].as<std::string>();
         SpriteSheet&       spriteSheet = parseAnimation(node);
-        std::shared_ptr<T> p_node =
-            std::make_shared<T>(*this, spriteAnimator, spriteSheet, node["framerate"].as<int>(), node["loop"].as<bool>());
+        std::shared_ptr<T> p_node = std::make_shared<T>(*this, spriteAnimator, spriteSheet, node["framerate"].as<int>(),
+                                                        node["loop"].as<bool>());
         nodes.emplace(nodeName, std::static_pointer_cast<StateMachine::Node>(p_node));
         return true;
     }
@@ -367,9 +368,9 @@ public:
         dialoguePopup.update(deltaTime);
 
         // Change screen size
-        Vec2  size;
-        size.x = spriteAnimator.getSheet()->getWidth() / spriteAnimator.getSheet()->getTileCount() *
-                          datas.scale * spriteAnimator.getSheet()->getSizeFactor();
+        Vec2 size;
+        size.x = spriteAnimator.getSheet()->getWidth() / spriteAnimator.getSheet()->getTileCount() * datas.scale *
+                 spriteAnimator.getSheet()->getSizeFactor();
         size.y = spriteAnimator.getSheet()->getHeight() * datas.scale * spriteAnimator.getSheet()->getSizeFactor();
         setSize(size);
     }
@@ -385,20 +386,28 @@ public:
         datas.pUnitFullScreenQuad->draw();
     }
 
-    bool isMouseOver()
-    {  
-        const Vec2 localCursorPos           = datas.cursorPos - (m_position - datas.window->getPosition());
-        if (Rect::isPointInside(localCursorPos))
+    virtual bool isPointInside(Vec2 pointPos)
+    {
+        if (Rect::isPointInside(pointPos))
         {
             float scale = datas.scale * spriteAnimator.getSheet()->getSizeFactor();
-            Vec2i localCursoPos{
-                static_cast<int>(floor(localCursorPos.x / scale)),
-                static_cast<int>(floor(localCursorPos.y / scale))};
-            return spriteAnimator.isMouseOver(localCursoPos, !(bool)side);
+            Vec2i localPointPos{static_cast<int>(floor(pointPos.x / scale)),
+                                static_cast<int>(floor(pointPos.y / scale))};
+            return spriteAnimator.isMouseOver(localPointPos, !(bool)side);
         }
         else
         {
             return false;
+        }
+    }
+
+    void onRightClic()
+    {
+        if (datas.contextualMenu == nullptr)
+        {
+            datas.contextualMenu =
+                std::make_unique<ContextualMenu>(datas, getPosition());
+            datas.window->addElement(*datas.contextualMenu);
         }
     }
 };

@@ -4,6 +4,7 @@
 
 #include "Engine/ClassUtility.hpp"
 #include "Engine/Rect.hpp"
+#include "Engine/InteractionComponent.hpp"
 
 #include "Game/GameData.hpp"
 
@@ -13,10 +14,12 @@ protected:
     GameData& datas;
     bool      shouldClose = false;
 
+    InteractionComponent interactionComponent;
+
 public:
     GETTER_BY_VALUE(ShouldClose, shouldClose)
 
-    ContextualMenu(GameData& data);
+    ContextualMenu(GameData& data, Vec2 position);
 
     virtual ~ContextualMenu();
 

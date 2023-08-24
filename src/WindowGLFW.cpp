@@ -25,6 +25,10 @@ void WindowGLFW::preSetupWindow(const GameData& datas)
 
 void WindowGLFW::postSetupWindow(GameData& datas)
 {
+    useMousePassThrough = datas.useMousePassThoughWindow;
+    isMousePassThrough = true;
+    glfwSetWindowAttrib(datas.window->getWindow(), GLFW_MOUSE_PASSTHROUGH, isMousePassThrough);
+    glfwSetWindowAttrib(datas.window->getWindow(), GLFW_TRANSPARENT_FRAMEBUFFER, true);
     glfwSetWindowAttrib(window, GLFW_DECORATED, datas.showWindow);
     glfwSetWindowAttrib(window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
     glfwSetWindowUserPointer(window, &datas);

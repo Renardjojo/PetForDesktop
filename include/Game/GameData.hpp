@@ -82,6 +82,7 @@ struct GameData
     double timeAcc = 0.0;
 
     // Window
+    bool fullScreenWindow          = false;
     bool showWindow                = false;
     bool showFrameBufferBackground = false;
     bool useForwardWindow          = true;

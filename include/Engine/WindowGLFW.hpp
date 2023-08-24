@@ -15,6 +15,9 @@ class WindowGLFW : public Canvas
 protected:
     GLFWwindow* window = nullptr;
 
+    bool isMousePassThrough;
+    bool useMousePassThrough;
+
 protected:
     void initGLFW();
     void preSetupWindow(const struct GameData& datas);
@@ -32,6 +35,15 @@ protected:
 
 public:
     GETTER_BY_VALUE(Window, window)
+
+    void setMousePassThrough(bool flag)
+    {
+        if (useMousePassThrough && isMousePassThrough == flag)
+            return;
+
+        isMousePassThrough = flag;
+        glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, isMousePassThrough);
+    }
 
     void setSize(const Vec2 windowSize) noexcept
     {

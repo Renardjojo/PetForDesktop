@@ -15,10 +15,10 @@ public:
     bool wasRightClictSelected;
 
     std::function<void()> onMouseOver;
-    std::function<void()> onSelectedLeftPress;
-    std::function<void()> onSelectedLeftRelease;
-    std::function<void()> onSelectedRightPress;
-    std::function<void()> onSelectedRightRelease;
+    std::function<void()> onLeftPressOver;
+    std::function<void()> onLeftReleaseOver;
+    std::function<void()> onRightPressOver;
+    std::function<void()> onRightReleaseOver;
 
 public:
     DEFAULT_GETTER_SETTER_VALUE(Rect, m_rect)

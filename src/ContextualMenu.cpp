@@ -16,21 +16,26 @@
 #error "Unknown compiler"
 #endif
 
-ContextualMenu::ContextualMenu(GameData& data) : datas{data}
+ContextualMenu::ContextualMenu(GameData& data, Vec2 position) : datas{data}, interactionComponent{*this}
 {
     data.window->addElement(*this);
-    setSize({75.f * data.scale, 150.f * data.scale});
+    data.interactionSystem->addComponent(interactionComponent);
+    m_size = {75.f * data.scale, 150.f * data.scale};
+    m_position = position - m_size;
+    onChange();
 }
 
 ContextualMenu ::~ContextualMenu()
 {
+    datas.interactionSystem->removeComponent(interactionComponent);
     datas.window->removeElement(*this);
 }
 
 
 void ContextualMenu::update(double deltaTime)
 {
-    ImGui::SetNextWindowPos(ImVec2(m_position.x, m_position.y));
+    ImGui::SetNextWindowPos(
+        ImVec2(m_position.x - datas.window->getPosition().x, m_position.y - datas.window->getPosition().y));
     ImGui::SetNextWindowSize(ImVec2(m_size.x, m_size.y));
     ImGui::GetStyle().WindowTitleAlign = ImVec2(0.5f, 0.5f);
     ImGui::Begin("Contextual menu", nullptr,

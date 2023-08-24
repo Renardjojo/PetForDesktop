@@ -106,7 +106,7 @@ public:
         return hasChanged;
     }
 
-    bool isPointInside(Vec2 pointPos)
+    virtual bool isPointInside(Vec2 pointPos)
     {
         return pointPos.x > 0 && pointPos.y > 0 && pointPos.x < m_size.x && pointPos.y < m_size.y;
     }
