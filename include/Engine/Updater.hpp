@@ -21,11 +21,6 @@ public:
     {
     }
 
-    ~Updater()
-    {
-        m_thread.join();
-    }
-
 private:
     static void startup(LPCTSTR lpApplicationName)
     {
