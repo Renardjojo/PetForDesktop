@@ -206,13 +206,18 @@ public:
             glfwPollEvents();
 
             datas.interactionSystem->update(datas);
+
+            for (const std::shared_ptr<Pet>& pet : datas.pets)
+            {
+                pet->update(deltaTime);
+            }
         }};
 
         const std::function<void(double)> limitedUpdate{[&](double deltaTime) 
         {
             for (const std::shared_ptr<Pet>& pet : datas.pets)
             {
-                pet->update(deltaTime);
+                pet->updateRendering(deltaTime);
             }
 
             if (datas.shouldUpdateFrame)

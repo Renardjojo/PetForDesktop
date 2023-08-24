@@ -89,6 +89,8 @@ public:
 
     void update(double deltaTime);
 
+    void updateRendering(double deltaTime);
+
     void draw();
 
     virtual bool isPointInside(Vec2 pointPos);

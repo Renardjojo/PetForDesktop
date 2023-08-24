@@ -30,11 +30,11 @@ public:
         bool shouldMousePassThough = true;
         for (auto&& comp : m_components)
         {
-            comp->isLeftPressOver    = false;
-            comp->isLeftRelease  = false;
-            comp->isRightPressOver   = false;
-            comp->isRightRelease = false;
-            comp->isMouseOver        = comp->getRect().isPointInside(data.window->getPosition(), data.cursorPos);
+            comp->isLeftPressOver  = false;
+            comp->isLeftRelease    = false;
+            comp->isRightPressOver = false;
+            comp->isRightRelease   = false;
+            comp->isMouseOver      = comp->getRect().isPointInside(data.window->getPosition(), data.cursorPos);
             if (comp->isMouseOver)
             {
                 shouldMousePassThough = false;
@@ -45,8 +45,8 @@ public:
 
             if (comp->isMouseOver && data.leftButtonEvent == GLFW_PRESS)
             {
-                comp->isLeftSelected = true;
-                comp->isLeftPressOver      = true;
+                comp->isLeftSelected  = true;
+                comp->isLeftPressOver = true;
 
                 if (comp->onLeftPressOver != nullptr)
                     comp->onLeftPressOver();
@@ -54,7 +54,7 @@ public:
             else if (comp->isLeftSelected && data.leftButtonEvent == GLFW_RELEASE)
             {
                 comp->isLeftSelected = false;
-                comp->isLeftRelease    = true;
+                comp->isLeftRelease  = true;
 
                 if (comp->isMouseOver)
                 {
@@ -65,8 +65,8 @@ public:
 
             if (comp->isMouseOver && data.rightButtonEvent == GLFW_PRESS)
             {
-                comp->isRightSelected = true;
-                comp->isRightPressOver      = true;
+                comp->isRightSelected  = true;
+                comp->isRightPressOver = true;
 
                 if (comp->onRightPressOver != nullptr)
                     comp->onRightPressOver();
@@ -74,10 +74,10 @@ public:
             else if (comp->isRightSelected && data.rightButtonEvent == GLFW_RELEASE)
             {
                 comp->isRightSelected = false;
-                comp->isRightRelease    = true;
+                comp->isRightRelease  = true;
 
                 if (comp->isMouseOver)
-                { 
+                {
                     if (comp->onRightReleaseOver != nullptr)
                         comp->onRightReleaseOver();
                 }

@@ -305,8 +305,19 @@ bool Pet::AddRandomDelayTransition(YAML::Node node, std::map<std::string, std::s
 void Pet::update(double deltaTime)
 {
     needUpdator.update(deltaTime);
-    animator.update(deltaTime);
     dialoguePopup.update(deltaTime);
+
+    if (interactionComponent.isLeftRelease)
+        physicComponent.velocity =
+            datas.deltaCursorAcc / datas.coyoteTimeCursorPos / datas.pixelPerMeter * datas.releaseImpulse;
+
+    if (interactionComponent.isLeftPressOver)
+        physicComponent.isGrounded = false;
+}
+
+void Pet::updateRendering(double deltaTime)
+{
+    animator.update(deltaTime);
 
     // Change screen size
     Vec2 size;
@@ -314,12 +325,6 @@ void Pet::update(double deltaTime)
              spriteAnimator.getSheet()->getSizeFactor();
     size.y = spriteAnimator.getSheet()->getHeight() * datas.scale * spriteAnimator.getSheet()->getSizeFactor();
     setSize(size);
-
-    if (interactionComponent.isLeftRelease)
-        physicComponent.velocity = datas.deltaCursorAcc / datas.coyoteTimeCursorPos / datas.pixelPerMeter* datas.releaseImpulse;
-
-    if (interactionComponent.isLeftPressOver)
-        physicComponent.isGrounded = false;
 }
 
 void Pet::draw()
