@@ -23,7 +23,7 @@ ContextualMenu::ContextualMenu(GameData& data, Vec2 position) : datas{data}, int
     data.window->addElement(*this);
     data.interactionSystem->addComponent(interactionComponent);
     m_size = {75.f * data.scale, 150.f * data.scale};
-    m_position = position - m_size;
+    m_position = position;
     onChange();
 }
 
