@@ -364,9 +364,7 @@ bool Pet::isPointInside(Vec2 pointPos)
 
 void Pet::onRightClic()
 {
-    if (datas.contextualMenu == nullptr)
-    {
-        datas.contextualMenu = std::make_unique<ContextualMenu>(datas, getPosition());
-        datas.window->addElement(*datas.contextualMenu);
-    }
+    datas.contextualMenu = nullptr; // delete previous window
+    datas.contextualMenu = std::make_unique<ContextualMenu>(datas, getPosition());
+    datas.window->addElement(*datas.contextualMenu);
 }
