@@ -18,7 +18,7 @@ GamePlay:
     CoyoteTimeCursorMovement: 0.05 # min 0. Record duration of the velocity before released the pet to preserve velocity with the mouse movement
 Window:
     FullScreenWindow: true # Initialize the window size and position in full screen based on the first monitor
-    ShowFrameBufferBackground: true # Define if window background should be visible
+    ShowFrameBufferBackground: false # Define if window background should be visible
     UseForwardWindow: true # Define if the application should be displayed in forground 
     ShowWindow: false # Display the window edge or not
     UseMousePassThoughWindow: true # Define if user can selection pet only with selected pixel or with the entire windows 

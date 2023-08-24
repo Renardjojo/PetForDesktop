@@ -1,5 +1,7 @@
 #include "Game/ContextualMenu.hpp"
 
+#include "Engine/InteractionSystem.hpp"
+
 #include "Game/Pet.hpp"
 #include "imgui.h"
 
