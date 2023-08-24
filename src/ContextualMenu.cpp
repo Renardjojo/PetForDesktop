@@ -52,6 +52,9 @@ void ContextualMenu::update(double deltaTime)
                  ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
     shouldClose = !isWindowOpen;
 
+    if (datas.leftButtonEvent == GLFW_PRESS && !interactionComponent.isLeftSelected)
+        shouldClose = true;
+
     ImVec2 sizeCenter = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
 
     if (ImGui::Button("Spawn pet", sizeCenter))

@@ -20,6 +20,8 @@ public:
 
     bool isLeftSelected;
     bool isRightSelected;
+
+    // One frame
     bool isMouseOver;
     bool isLeftPressOver;
     bool isLeftRelease;

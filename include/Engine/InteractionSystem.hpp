@@ -30,11 +30,12 @@ public:
         bool shouldMousePassThough = true;
         for (auto&& comp : m_components)
         {
-            comp->isLeftPressOver  = false;
-            comp->isLeftRelease    = false;
-            comp->isRightPressOver = false;
-            comp->isRightRelease   = false;
-            comp->isMouseOver      = comp->getRect().isPointInside(data.window->getPosition(), data.cursorPos);
+            comp->isLeftPressOver   = false;
+            comp->isLeftRelease     = false;
+            comp->isRightPressOver  = false;
+            comp->isRightRelease    = false;
+            comp->isMouseOver       = comp->getRect().isPointInside(data.window->getPosition(), data.cursorPos);
+
             if (comp->isMouseOver)
             {
                 shouldMousePassThough = false;
