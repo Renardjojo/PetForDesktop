@@ -46,8 +46,11 @@ void ContextualMenu::update(double deltaTime)
 
     ImGui::SetNextWindowSize(ImVec2(m_size.x, m_size.y));
     ImGui::GetStyle().WindowTitleAlign = ImVec2(0.5f, 0.5f);
-    ImGui::Begin("Contextual menu", nullptr,
+
+    bool isWindowOpen = true;
+    ImGui::Begin("Contextual menu", &isWindowOpen,
                  ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+    shouldClose = !isWindowOpen;
 
     ImVec2 sizeCenter = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
 
