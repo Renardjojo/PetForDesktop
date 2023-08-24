@@ -253,16 +253,14 @@ public:
             datas.pets[i]->setPosition(petPosition); 
         }
 
-#if USE_OPENGL_API
         mainLoop.emplaceTimer([&]() { 
                 for (const std::shared_ptr<Pet>& pet : datas.pets)
                 {
-                    physicSystem.update(pet->getPhysicComponent(), 1.f / datas.physicFrameRate); 
+                    physicSystem.update(pet->getPhysicComponent(), pet->getInteractionComponent(), 1.f / datas.physicFrameRate); 
                 }
             
             }, 1.f / datas.physicFrameRate,
                               true);
-#endif
 
         mainLoop.start();
         while (!datas.window->shouldClose())

@@ -18,13 +18,13 @@ public:
     std::function<void()> onRightPressOver;
     std::function<void()> onRightReleaseOver;
 
-    bool wasLeftClictSelected;
-    bool wasRightClictSelected;
+    bool isLeftSelected;
+    bool isRightSelected;
     bool isMouseOver;
     bool isLeftPressOver;
-    bool isLeftReleaseOver;
+    bool isLeftRelease;
     bool isRightPressOver;
-    bool isRightReleaseOver;
+    bool isRightRelease;
 
 public:
     DEFAULT_GETTER_SETTER_VALUE(Rect, m_rect)

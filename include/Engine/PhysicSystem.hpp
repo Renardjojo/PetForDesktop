@@ -11,6 +11,7 @@
 
 #include "Engine/Vector2.hpp"
 #include "Engine/PhysicComponent.hpp"
+#include "Engine/InteractionComponent.hpp"
 #include "Engine/Rect.hpp"
 #include "Game/GameData.hpp"
 
@@ -269,10 +270,18 @@ public:
         return processContinuousCollision(comp, prevToNewWinPos, newPos);
     }
 
-    void update(PhysicComponent& comp, double deltaTime)
+    void update(PhysicComponent& comp, InteractionComponent& interactionComp, double deltaTime)
     {
         // Apply gravity if not selected
-        if (data.leftButtonEvent != GLFW_PRESS)
+        if (interactionComp.isLeftSelected)
+        {
+            Vec2 movement = {data.deltaCursorPosX, data.deltaCursorPosY};
+            comp.getRect().setPosition(comp.getRect().getPosition() + movement);
+
+            data.deltaCursorPosX = 0;
+            data.deltaCursorPosY = 0;
+        }
+        else
         {
             // Acc = Sum of force / Mass
             // G is already an acceleration
@@ -323,14 +332,6 @@ public:
             // Apply monitor collision
             if (sqrDistMovement > FLT_EPSILON)
                 computeMonitorCollisions(comp);
-        }
-        else
-        {
-            Vec2 movement = {data.deltaCursorPosX, data.deltaCursorPosY};
-            comp.getRect().setPosition(comp.getRect().getPosition() + movement);
-        
-            data.deltaCursorPosX = 0;
-            data.deltaCursorPosY = 0;
         }
     }
 };

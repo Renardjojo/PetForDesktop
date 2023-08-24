@@ -314,6 +314,12 @@ void Pet::update(double deltaTime)
              spriteAnimator.getSheet()->getSizeFactor();
     size.y = spriteAnimator.getSheet()->getHeight() * datas.scale * spriteAnimator.getSheet()->getSizeFactor();
     setSize(size);
+
+    if (interactionComponent.isLeftRelease)
+        physicComponent.velocity = datas.deltaCursorAcc / datas.coyoteTimeCursorPos / datas.pixelPerMeter* datas.releaseImpulse;
+
+    if (interactionComponent.isLeftPressOver)
+        physicComponent.isGrounded = false;
 }
 
 void Pet::draw()
