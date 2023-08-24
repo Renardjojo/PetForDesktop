@@ -62,6 +62,12 @@ public:
         glfwSetWindowPos(window, windowPos.x, windowPos.y);
     }
 
+    void setPositionSize(const Vec2 windowPos, const Vec2 windowSize) noexcept
+    {
+        setPosition(windowPos);
+        setSize(windowPos);
+    }
+
     inline bool shouldClose() const noexcept
     {
         return glfwWindowShouldClose(window);

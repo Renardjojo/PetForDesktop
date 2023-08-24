@@ -25,6 +25,8 @@ ContextualMenu::ContextualMenu(GameData& data, Vec2 position) : datas{data}, int
     m_size = {75.f * data.scale, 150.f * data.scale};
     m_position = position;
     onChange();
+
+    shouldInitPosition = true;
 }
 
 ContextualMenu ::~ContextualMenu()
@@ -33,16 +35,19 @@ ContextualMenu ::~ContextualMenu()
     datas.window->removeElement(*this);
 }
 
-
 void ContextualMenu::update(double deltaTime)
 {
-    ImGui::SetNextWindowPos(
-        ImVec2(m_position.x - datas.window->getPosition().x, m_position.y - datas.window->getPosition().y));
+    if (shouldInitPosition)
+    {
+        ImGui::SetNextWindowPos(
+            ImVec2(m_position.x - datas.window->getPosition().x, m_position.y - datas.window->getPosition().y));
+        shouldInitPosition = false;
+    }
+
     ImGui::SetNextWindowSize(ImVec2(m_size.x, m_size.y));
     ImGui::GetStyle().WindowTitleAlign = ImVec2(0.5f, 0.5f);
     ImGui::Begin("Contextual menu", nullptr,
-                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse |
-                     ImGuiWindowFlags_NoMove);
+                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 
     ImVec2 sizeCenter = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
 
@@ -84,8 +89,11 @@ void ContextualMenu::update(double deltaTime)
 
     textCentered(std::format("{:.1f} FPS", ImGui::GetIO().Framerate));
     ImVec2 contentSize = ImGui::GetWindowSize();
+    ImVec2 contentPos = ImGui::GetWindowPos();
     ImGui::End();
-    setSize({contentSize.x, contentSize.y});
+
+    setPositionSize({datas.window->getPosition().x + contentPos.x, datas.window->getPosition().y + contentPos.y},
+                    {contentSize.x, contentSize.y});
 }
 
 void ContextualMenu::textCentered(std::string text)

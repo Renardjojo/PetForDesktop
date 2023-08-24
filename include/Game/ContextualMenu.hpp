@@ -3,8 +3,8 @@
 #include <cpr/cpr.h>
 
 #include "Engine/ClassUtility.hpp"
-#include "Engine/Rect.hpp"
 #include "Engine/InteractionComponent.hpp"
+#include "Engine/Rect.hpp"
 
 #include "Game/GameData.hpp"
 
@@ -12,7 +12,8 @@ class ContextualMenu : public Rect
 {
 protected:
     GameData& datas;
-    bool      shouldClose = false;
+    bool      shouldClose        = false;
+    bool      shouldInitPosition = false;
 
     InteractionComponent interactionComponent;
 

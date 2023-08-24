@@ -40,6 +40,16 @@ void Pet::setPosition(const Vec2 position)
         dialoguePopup.setPosition(position + vec2{m_size.x - dialoguePopup.getSize().x, 0});
 }
 
+void Pet::setPositionSize(const Vec2 position, const Vec2 size)
+{
+    Rect::setPositionSize(position, size);
+
+    if (side == ESide::left)
+        dialoguePopup.setPosition(position);
+    else
+        dialoguePopup.setPosition(position + vec2{m_size.x - dialoguePopup.getSize().x, 0});
+}
+
 SpriteSheet& Pet::getOrAddSpriteSheet(const char* file, int inTileCount, float inSizeFactor)
 {
     auto it = spriteSheets.find(file);

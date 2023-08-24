@@ -67,6 +67,8 @@ public:
 
     void setPosition(const Vec2 position) override;
 
+    void setPositionSize(const Vec2 position, const Vec2 size) override;
+
     SpriteSheet& getOrAddSpriteSheet(const char* file, int inTileCount, float inSizeFactor);
 
     void parseAnimationGraph();

@@ -61,6 +61,13 @@ public:
         return m_position;
     }
 
+    virtual void setPositionSize(const Vec2 position, const Vec2 size)
+    {
+        m_position = position;
+        m_size     = size;
+        onChange();
+    }
+
     inline void setSize(Vec2 size) noexcept
     {
         m_size = size;
