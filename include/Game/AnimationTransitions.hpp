@@ -74,10 +74,7 @@ struct StartLeftClicTransition : public StateMachine::Node::Transition
     {
     }
 
-    bool canTransition(GameData& blackBoard) final
-    {
-        return blackBoard.leftButtonEvent == GLFW_PRESS;
-    };
+    bool canTransition(GameData& blackBoard) final;
 };
 
 struct TouchScreenEdgeTransition : public StateMachine::Node::Transition
@@ -103,10 +100,7 @@ public:
     {
     }
 
-    void onEnter(GameData& blackBoard) final
-    {
-        leftWasPressed = blackBoard.leftButtonEvent == GLFW_PRESS;
-    };
+    void onEnter(GameData& blackBoard) final;
 
     bool canTransition(GameData& blackBoard) final;
 };

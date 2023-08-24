@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Engine/ClassUtility.hpp"
+#include "Engine/Graphics/WindowOGL.hpp"
 #include "Engine/InteractionComponent.hpp"
 #include "Engine/Rect.hpp"
 #include "Engine/Vector2.hpp"
-#include "Engine/Graphics/WindowOGL.hpp"
 #include "Game/GameData.hpp"
 
 #include <list>
@@ -30,8 +30,12 @@ public:
         bool shouldMousePassThough = true;
         for (auto&& comp : m_components)
         {
-            bool isMouseOver = comp->getRect().isPointInside(data.window->getPosition(), data.cursorPos);
-            if (isMouseOver)
+            comp->isLeftPressOver    = false;
+            comp->isLeftReleaseOver  = false;
+            comp->isRightPressOver   = false;
+            comp->isRightReleaseOver = false;
+            comp->isMouseOver        = comp->getRect().isPointInside(data.window->getPosition(), data.cursorPos);
+            if (comp->isMouseOver)
             {
                 shouldMousePassThough = false;
 
@@ -39,9 +43,10 @@ public:
                     comp->onMouseOver();
             }
 
-            if (isMouseOver && data.leftButtonEvent == GLFW_PRESS)
+            if (comp->isMouseOver && data.leftButtonEvent == GLFW_PRESS)
             {
                 comp->wasLeftClictSelected = true;
+                comp->isLeftPressOver      = true;
 
                 if (comp->onLeftPressOver != nullptr)
                     comp->onLeftPressOver();
@@ -50,13 +55,18 @@ public:
             {
                 comp->wasLeftClictSelected = false;
 
-                if (isMouseOver && comp->onLeftReleaseOver != nullptr)
-                    comp->onLeftReleaseOver();
+                if (comp->isMouseOver)
+                {
+                    comp->isLeftReleaseOver = true;
+                    if (comp->onLeftReleaseOver != nullptr)
+                        comp->onLeftReleaseOver();
+                }
             }
 
-            if (isMouseOver && data.rightButtonEvent == GLFW_PRESS)
+            if (comp->isMouseOver && data.rightButtonEvent == GLFW_PRESS)
             {
                 comp->wasRightClictSelected = true;
+                comp->isRightPressOver      = true;
 
                 if (comp->onRightPressOver != nullptr)
                     comp->onRightPressOver();
@@ -65,8 +75,12 @@ public:
             {
                 comp->wasRightClictSelected = false;
 
-                if (isMouseOver && comp->onRightReleaseOver != nullptr)
-                    comp->onRightReleaseOver();
+                if (comp->isMouseOver)
+                { 
+                    comp->isRightReleaseOver = true;
+                    if (comp->onRightReleaseOver != nullptr)
+                        comp->onRightReleaseOver();
+                }
             }
         }
 
