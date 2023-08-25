@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Engine/ClassUtility.hpp"
 #include "Engine/Graphics/WindowOGL.hpp"
 #include "Engine/InteractionComponent.hpp"
 #include "Engine/Rect.hpp"
@@ -28,13 +27,20 @@ public:
     void update(GameData& data)
     {
         bool shouldMousePassThough = true;
-        for (auto&& comp : m_components)
+        bool isLeftClickConsumed   = false;
+        bool isRightClickConsumed  = false;
+
+        for (int i = m_components.size() - 1; i >= 0; --i)
         {
-            comp->isLeftPressOver   = false;
-            comp->isLeftRelease     = false;
-            comp->isRightPressOver  = false;
-            comp->isRightRelease    = false;
-            comp->isMouseOver       = comp->getRect().isPointInside(data.window->getPosition(), data.cursorPos);
+            auto it = m_components.begin();
+            std::advance(it, i);
+            InteractionComponent* comp = *it;
+
+            comp->isLeftPressOver  = false;
+            comp->isLeftRelease    = false;
+            comp->isRightPressOver = false;
+            comp->isRightRelease   = false;
+            comp->isMouseOver      = comp->getRect().isPointInside(data.window->getPosition(), data.cursorPos);
 
             if (comp->isMouseOver)
             {
@@ -44,10 +50,11 @@ public:
                     comp->onMouseOver();
             }
 
-            if (comp->isMouseOver && data.leftButtonEvent == GLFW_PRESS)
+            if (!isLeftClickConsumed && comp->isMouseOver && data.leftButtonEvent == GLFW_PRESS)
             {
                 comp->isLeftSelected  = true;
                 comp->isLeftPressOver = true;
+                isLeftClickConsumed   = true;
 
                 if (comp->onLeftPressOver != nullptr)
                     comp->onLeftPressOver();
@@ -64,10 +71,11 @@ public:
                 }
             }
 
-            if (comp->isMouseOver && data.rightButtonEvent == GLFW_PRESS)
+            if (!isRightClickConsumed && comp->isMouseOver && data.rightButtonEvent == GLFW_PRESS)
             {
                 comp->isRightSelected  = true;
                 comp->isRightPressOver = true;
+                isRightClickConsumed   = true;
 
                 if (comp->onRightPressOver != nullptr)
                     comp->onRightPressOver();

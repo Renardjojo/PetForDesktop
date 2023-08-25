@@ -2,7 +2,6 @@
 
 #include "Engine/Rect.hpp"
 #include "Engine/ClassUtility.hpp"
-#include "Engine/Vector2.hpp"
 #include <functional>
 
 struct InteractionComponent
