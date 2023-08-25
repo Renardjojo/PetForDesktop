@@ -3,6 +3,7 @@
 #include "Engine/InteractionSystem.hpp"
 
 #include "Game/Pet.hpp"
+#include "Game/SettingMenu.hpp"
 #include "imgui.h"
 
 #include <cpr/cpr.h>
@@ -83,10 +84,15 @@ void ContextualMenu::update(double deltaTime)
 
     if (ImGui::Button("Settings", sizeCenter))
     {
+        datas.settingMenu = nullptr; // delete previous window
+        datas.settingMenu = std::make_unique<SettingMenu>(datas, pet, getPosition());
+        datas.window->addElement(*datas.settingMenu);
         shouldClose = true;
     }
 
+    ImGui::Spacing();
     ImGui::Separator();
+    ImGui::Spacing();
 
     if (ImGui::Button("Join us!", sizeCenter))
     {

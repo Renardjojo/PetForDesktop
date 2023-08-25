@@ -6,7 +6,7 @@
 
 #include "Game/GameData.hpp"
 
-class ContextualMenu : public Rect
+class SettingMenu : public Rect
 {
 protected:
     GameData& datas;
@@ -19,11 +19,9 @@ protected:
 public:
     GETTER_BY_VALUE(ShouldClose, shouldClose)
 
-    ContextualMenu(GameData& inDatas, Pet& inPet, Vec2 inPosition);
+    SettingMenu(GameData& inDatas, Pet& inPet, Vec2 inPosition);
 
-    virtual ~ContextualMenu();
+    virtual ~SettingMenu();
 
     void update(double deltaTime);
-
-    void textCentered(std::string text);
 };

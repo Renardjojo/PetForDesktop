@@ -1,18 +1,19 @@
 #pragma once
 
-#include "Game/GameData.hpp"
-#include "Game/Pet.hpp"
-#include "Game/ContextualMenu.hpp"
+#include "Engine/InteractionSystem.hpp"
 #include "Engine/Log.hpp"
 #include "Engine/PhysicSystem.hpp"
-#include "Engine/InteractionSystem.hpp"
 #include "Engine/Settings.hpp"
 #include "Engine/SpriteSheet.hpp"
+#include "Game/ContextualMenu.hpp"
+#include "Game/SettingMenu.hpp"
+#include "Game/GameData.hpp"
+#include "Game/Pet.hpp"
 
 #ifdef USE_OPENGL_API
-#include "Engine/Graphics/TextureOGL.hpp"
 #include "Engine/Graphics/ScreenSpaceQuadOGL.hpp"
 #include "Engine/Graphics/ShaderOGL.hpp"
+#include "Engine/Graphics/TextureOGL.hpp"
 #endif // USE_OPENGL_API
 
 #include "Engine/TimeManager.hpp"
@@ -20,9 +21,9 @@
 #include "Engine/Utilities.hpp"
 #include "Engine/Vector2.hpp"
 
-#include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "imgui.h"
 
 #include <GLFW/glfw3.h>
 
@@ -38,28 +39,28 @@ protected:
     PhysicSystem physicSystem;
 
 protected:
-
     void createResources()
     {
-       datas.pFramebuffer = std::make_unique<Framebuffer>();
-       
-       datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(*datas.window, 0.f, 1.f);
-       datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(*datas.window, -1.f, 1.f);
-       
-       datas.edgeDetectionShaders.emplace_back(std::make_unique<Shader>(*datas.window,
-                                               SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
-                                               SHADER_RESOURCE_PATH "dFdxEdgeDetection" SHADER_FRAG_EXT));
-       
-       datas.pImageShader = std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
-                                                       SHADER_RESOURCE_PATH "image" SHADER_FRAG_EXT);
-       
-       if (datas.debugEdgeDetection)
-           datas.pImageGreyScale =
-               std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
-                                                               SHADER_RESOURCE_PATH "imageGreyScale" SHADER_FRAG_EXT);
-       
-       datas.pSpriteSheetShader = std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "spriteSheet" SHADER_VERTEX_EXT,
-                                                           SHADER_RESOURCE_PATH "image" SHADER_FRAG_EXT);
+        datas.pFramebuffer = std::make_unique<Framebuffer>();
+
+        datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(*datas.window, 0.f, 1.f);
+        datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(*datas.window, -1.f, 1.f);
+
+        datas.edgeDetectionShaders.emplace_back(
+            std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
+                                     SHADER_RESOURCE_PATH "dFdxEdgeDetection" SHADER_FRAG_EXT));
+
+        datas.pImageShader = std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
+                                                      SHADER_RESOURCE_PATH "image" SHADER_FRAG_EXT);
+
+        if (datas.debugEdgeDetection)
+            datas.pImageGreyScale =
+                std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
+                                         SHADER_RESOURCE_PATH "imageGreyScale" SHADER_FRAG_EXT);
+
+        datas.pSpriteSheetShader =
+            std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "spriteSheet" SHADER_VERTEX_EXT,
+                                     SHADER_RESOURCE_PATH "image" SHADER_FRAG_EXT);
     }
 
 public:
@@ -86,7 +87,7 @@ public:
         // Evaluate pixel distance based on dpi and monitor size
         datas.pixelPerMeter = {(float)monitorSize.x / (monitorsSizeMM.x * 0.001f),
                                (float)monitorSize.y / (monitorsSizeMM.y * 0.001f)};
-        
+
         datas.interactionSystem = std::make_unique<InteractionSystem>();
 
         initUI(datas);
@@ -112,6 +113,9 @@ public:
         // Setup Platform/Renderer backends
         ImGui_ImplGlfw_InitForOpenGL(datas.window->getWindow(), true);
         ImGui_ImplOpenGL3_Init("#version 460");
+
+        // Load style
+        io.Fonts->AddFontFromFileTTF(RESOURCE_PATH "fonts/NimbusSanL-Reg.otf", 14);
     }
 
     ~Game()
@@ -198,8 +202,7 @@ public:
             return;
         }
 
-        const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) 
-        {
+        const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
             processInput(datas.window->getWindow());
 
             // poll for and process events
@@ -213,8 +216,7 @@ public:
             }
         }};
 
-        const std::function<void(double)> limitedUpdate{[&](double deltaTime) 
-        {
+        const std::function<void(double)> limitedUpdate{[&](double deltaTime) {
             for (const std::shared_ptr<Pet>& pet : datas.pets)
             {
                 pet->updateRendering(deltaTime);
@@ -223,12 +225,22 @@ public:
             if (datas.shouldUpdateFrame)
             {
                 updateUI();
+
+                // TODO: make generic class to avoid code repetition
                 if (datas.contextualMenu != nullptr)
                 {
                     datas.contextualMenu->update(deltaTime);
 
                     if (datas.contextualMenu->getShouldClose())
                         datas.contextualMenu = nullptr;
+                }
+
+                if (datas.settingMenu != nullptr)
+                {
+                    datas.settingMenu->update(deltaTime);
+
+                    if (datas.settingMenu->getShouldClose())
+                        datas.settingMenu = nullptr;
                 }
 
                 datas.window->initDrawContext();
@@ -255,17 +267,18 @@ public:
             Vec2 petPosition = mainMonitorPosition;
             petPosition.y += mainMonitorSize.y / 2.f;
             petPosition.x += mainMonitorSize.x / (datas.pets.size() + 1) * (i + 1);
-            datas.pets[i]->setPosition(petPosition); 
+            datas.pets[i]->setPosition(petPosition);
         }
 
-        mainLoop.emplaceTimer([&]() { 
+        mainLoop.emplaceTimer(
+            [&]() {
                 for (const std::shared_ptr<Pet>& pet : datas.pets)
                 {
-                    physicSystem.update(pet->getPhysicComponent(), pet->getInteractionComponent(), 1.f / datas.physicFrameRate); 
+                    physicSystem.update(pet->getPhysicComponent(), pet->getInteractionComponent(),
+                                        1.f / datas.physicFrameRate);
                 }
-            
-            }, 1.f / datas.physicFrameRate,
-                              true);
+            },
+            1.f / datas.physicFrameRate, true);
 
         mainLoop.start();
         while (!datas.window->shouldClose())

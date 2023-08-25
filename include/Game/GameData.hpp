@@ -16,6 +16,7 @@ struct GameData
     // Represente the window with all sub windows
     std::vector<std::shared_ptr<class Pet>> pets;
     std::unique_ptr<class ContextualMenu>   contextualMenu;
+    std::unique_ptr<class SettingMenu>      settingMenu;
 
     bool shouldUpdateFrame = true;
 
