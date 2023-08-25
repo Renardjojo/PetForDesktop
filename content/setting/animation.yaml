@@ -1,4 +1,5 @@
 FirstNode: idle1
+PauseNode: sleep
 Nodes:
     AnimationNode:
         name: idle1

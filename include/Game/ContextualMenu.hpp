@@ -12,6 +12,7 @@ class ContextualMenu : public Rect
 {
 protected:
     GameData& datas;
+    class Pet& pet;
     bool      shouldClose        = false;
     bool      shouldInitPosition = false;
 
@@ -20,7 +21,7 @@ protected:
 public:
     GETTER_BY_VALUE(ShouldClose, shouldClose)
 
-    ContextualMenu(GameData& data, Vec2 position);
+    ContextualMenu(GameData& inDatas, Pet& inPet, Vec2 inPosition);
 
     virtual ~ContextualMenu();
 

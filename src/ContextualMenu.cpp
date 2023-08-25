@@ -18,12 +18,13 @@
 #error "Unknown compiler"
 #endif
 
-ContextualMenu::ContextualMenu(GameData& data, Vec2 position) : datas{data}, interactionComponent{*this}
+ContextualMenu::ContextualMenu(GameData& inDatas, Pet& inPet, Vec2 inPosition)
+    : datas{inDatas}, pet{inPet}, interactionComponent{*this}
 {
-    data.window->addElement(*this);
-    data.interactionSystem->addComponent(interactionComponent);
-    m_size = {75.f * data.scale, 150.f * data.scale};
-    m_position = position;
+    datas.window->addElement(*this);
+    datas.interactionSystem->addComponent(interactionComponent);
+    m_size     = {75.f * datas.scale, 150.f * datas.scale};
+    m_position = inPosition;
     onChange();
 
     shouldInitPosition = true;
@@ -63,9 +64,21 @@ void ContextualMenu::update(double deltaTime)
         shouldClose = true;
     }
 
-    if (ImGui::Button("Sleep", sizeCenter))
+    if (pet.getIsPaused())
     {
-        shouldClose = true;
+        if (ImGui::Button("Resume", sizeCenter))
+        {
+            pet.setIsPaused(false);
+            shouldClose = true;
+        }
+    }
+    else
+    {
+        if (ImGui::Button("Pause", sizeCenter))
+        {
+            pet.setIsPaused(true);
+            shouldClose  = true;
+        }
     }
 
     if (ImGui::Button("Settings", sizeCenter))

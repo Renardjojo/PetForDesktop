@@ -30,6 +30,24 @@ Pet::~Pet()
     datas.window->removeElement(*this);
 }
 
+void Pet::setIsPaused(bool flag)
+{
+    if (isPaused == flag)
+        return;
+
+    isPaused = flag;
+    if (isPaused)
+    {
+        animator.setCurrent(pauseNode);
+        animator.getCurrent()->canUseTransition = false;
+    }
+    else
+    {
+        animator.setCurrent(firstNode);
+        animator.getCurrent()->canUseTransition = true;
+    }
+}
+
 void Pet::setPosition(const Vec2 position)
 {
     Rect::setPosition(position);
@@ -154,20 +172,37 @@ void Pet::parseAnimationGraph()
         }
     }
 
-    // First node
-    YAML::Node firstNode = animGraph["FirstNode"];
-    if (!firstNode)
-        errorAndExit("Cannot find \"FirstNode\" in animation.yaml");
-
-    // Start state machine
-    std::string                          firstNodeName = firstNode.as<std::string>();
-    std::shared_ptr<StateMachine::Node>& firstSMNode   = nodes[firstNodeName];
-
-    if (firstSMNode != nullptr)
+    // Optional Pause node
+    YAML::Node pauseNodeSetting = animGraph["PauseNode"];
+    if (pauseNodeSetting)
     {
-        animator.init(std::static_pointer_cast<StateMachine::Node>(firstSMNode));
+        std::string pauseNodeName = pauseNodeSetting.as<std::string>();
+        auto                               it = nodes.find(pauseNodeName);
+        if (it != nodes.end())
+        {
+            pauseNode = it->second;
+        }
     }
-    else
+
+    // First node
+    bool        firstNodeFound   = false;
+    YAML::Node firstNodeSetting = animGraph["FirstNode"];
+
+    if (firstNodeSetting)
+    {
+        std::string firstNodeName = firstNodeSetting.as<std::string>();
+
+        // Start state machine
+        firstNode = nodes[firstNodeName];
+
+        if (firstNode != nullptr)
+        {
+            animator.init(std::static_pointer_cast<StateMachine::Node>(firstNode));
+            firstNodeFound = true;
+        }
+    }
+
+    if (!firstNodeFound)
     {
         animator.init(std::static_pointer_cast<StateMachine::Node>(nodes.begin()->second));
         warning("FirstNode name is invalid. First node selected instead");
@@ -314,6 +349,9 @@ bool Pet::AddRandomDelayTransition(YAML::Node node, std::map<std::string, std::s
 
 void Pet::update(double deltaTime)
 {
+    if (isPaused)
+        return;
+
     needUpdator.update(deltaTime);
     dialoguePopup.update(deltaTime);
 
@@ -365,6 +403,6 @@ bool Pet::isPointInside(Vec2 pointPos)
 void Pet::onRightClic()
 {
     datas.contextualMenu = nullptr; // delete previous window
-    datas.contextualMenu = std::make_unique<ContextualMenu>(datas, getPosition());
+    datas.contextualMenu = std::make_unique<ContextualMenu>(datas, *this, getPosition());
     datas.window->addElement(*datas.contextualMenu);
 }

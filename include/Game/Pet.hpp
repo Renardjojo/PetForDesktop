@@ -41,7 +41,11 @@ protected:
     NeedUpdator   needUpdator;
 
     // Animation
+    std::shared_ptr<StateMachine::Node> firstNode;
+    std::shared_ptr<StateMachine::Node> pauseNode;
+
     bool isGrab = false;
+    bool isPaused = false;
 
     // Components
     PhysicComponent      physicComponent;
@@ -58,12 +62,15 @@ public:
     DEFAULT_GETTER_SETTER_VALUE(Side, side)
     DEFAULT_GETTER_SETTER_VALUE(IsGrab, isGrab)
 
+    GETTER_BY_VALUE(IsPaused, isPaused)
     GETTER_BY_REF(PhysicComponent, physicComponent)
     GETTER_BY_REF(InteractionComponent, interactionComponent)
 
     Pet(GameData& data);
 
     ~Pet();
+
+    void setIsPaused(bool flag);
 
     void setPosition(const Vec2 position) override;
 
