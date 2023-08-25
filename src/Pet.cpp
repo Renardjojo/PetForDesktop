@@ -45,7 +45,11 @@ void Pet::setIsPaused(bool flag)
     {
         animator.setCurrent(firstNode);
         animator.getCurrent()->canUseTransition = true;
+       
     }
+
+    physicComponent.velocity           = {0.f, 0.f};
+    physicComponent.continuousVelocity = {0.f, 0.f};
 }
 
 void Pet::setPosition(const Vec2 position)
