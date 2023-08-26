@@ -50,7 +50,10 @@ void ContextualMenu::update(double deltaTime)
 
     ImVec2 sizeCenter = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
 
-    if (ImGui::Button("Spawn pet", sizeCenter))
+    ImGui::BeginDisabled(datas.pets.size() > 2);
+    bool shouldSpawnPet = ImGui::Button("Spawn pet", sizeCenter);
+    ImGui::EndDisabled();
+    if (shouldSpawnPet)
     {
         datas.pets.emplace_back(std::make_shared<Pet>(datas));
         shouldClose = true;
