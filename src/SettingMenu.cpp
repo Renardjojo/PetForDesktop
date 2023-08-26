@@ -1,5 +1,6 @@
 #include "Game/SettingMenu.hpp"
 
+#include "Engine/FileExplorer.hpp"
 #include "Engine/InteractionSystem.hpp"
 #include "Engine/StylePanel.hpp"
 
@@ -44,7 +45,29 @@ void SettingMenu::update(double deltaTime)
     if (datas.leftButtonEvent == GLFW_PRESS && !interactionComponent.isLeftSelected)
         shouldClose = true;
 
-    ShowStyleEditor();
+    if (ImGui::BeginTabBar("##settingMenuTabs", ImGuiTabBarFlags_None))
+    {
+        if (ImGui::BeginTabItem("Content"))
+        {
+            if (ImGui::Button("Open content folder"))
+                SystemOpen(RESOURCE_PATH);
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Style"))
+        {
+            ShowStyleEditor();
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Accessibility"))
+        {
+
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
+    }
 
     ImVec2 contentSize = ImGui::GetWindowSize();
     ImVec2 contentPos = ImGui::GetWindowPos();

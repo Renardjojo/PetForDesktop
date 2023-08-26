@@ -5,6 +5,7 @@
 #include "Engine/PhysicSystem.hpp"
 #include "Engine/Settings.hpp"
 #include "Engine/SpriteSheet.hpp"
+#include "Engine/StylePanel.hpp"
 #include "Game/ContextualMenu.hpp"
 #include "Game/SettingMenu.hpp"
 #include "Game/GameData.hpp"
@@ -47,24 +48,24 @@ protected:
         datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(*datas.window, -1.f, 1.f);
 
         datas.edgeDetectionShaders.emplace_back(
-            std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
-                                     SHADER_RESOURCE_PATH "dFdxEdgeDetection" SHADER_FRAG_EXT));
+            std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/image" SHADER_VERTEX_EXT,
+                                     SHADER_RESOURCE_PATH "/dFdxEdgeDetection" SHADER_FRAG_EXT));
 
-        datas.pImageShader = std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
-                                                      SHADER_RESOURCE_PATH "image" SHADER_FRAG_EXT);
+        datas.pImageShader = std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/image" SHADER_VERTEX_EXT,
+                                                      SHADER_RESOURCE_PATH "/image" SHADER_FRAG_EXT);
 
         if (datas.debugEdgeDetection)
             datas.pImageGreyScale =
-                std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "image" SHADER_VERTEX_EXT,
-                                         SHADER_RESOURCE_PATH "imageGreyScale" SHADER_FRAG_EXT);
+                std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/image" SHADER_VERTEX_EXT,
+                                         SHADER_RESOURCE_PATH "/imageGreyScale" SHADER_FRAG_EXT);
 
         datas.pSpriteSheetShader =
-            std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "spriteSheet" SHADER_VERTEX_EXT,
-                                     SHADER_RESOURCE_PATH "image" SHADER_FRAG_EXT);
+            std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/spriteSheet" SHADER_VERTEX_EXT,
+                                     SHADER_RESOURCE_PATH "/image" SHADER_FRAG_EXT);
     }
 
 public:
-    Game() : setting(RESOURCE_PATH "setting/setting.yaml", datas), mainLoop(datas), physicSystem(datas)
+    Game() : setting(RESOURCE_PATH "/setting/setting.yaml", datas), mainLoop(datas), physicSystem(datas)
     {
         logf("%s %s\n", PROJECT_NAME, PROJECT_VERSION);
 
@@ -106,16 +107,14 @@ public:
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
 
-        // Setup Dear ImGui style
-        ImGui::StyleColorsDark();
-        // ImGui::StyleColorsLight();
+        // Load style
+        setDefaultTheme(); // fallback theme
+        io.Fonts->AddFontFromFileTTF(RESOURCE_PATH "/fonts/NimbusSanL-Reg.otf", 14);
+        ImGuiLoadStyle((std::string(RESOURCE_PATH) + "/styles/" + datas.styleName + ".ini").c_str(), ImGui::GetStyle());
 
         // Setup Platform/Renderer backends
         ImGui_ImplGlfw_InitForOpenGL(datas.window->getWindow(), true);
         ImGui_ImplOpenGL3_Init("#version 460");
-
-        // Load style
-        io.Fonts->AddFontFromFileTTF(RESOURCE_PATH "fonts/NimbusSanL-Reg.otf", 14);
     }
 
     ~Game()

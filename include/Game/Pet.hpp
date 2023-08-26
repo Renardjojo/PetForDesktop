@@ -35,7 +35,7 @@ protected:
     int            indexCurrentAnimSprite = 0;
     bool           loopCurrentAnim;
 
-    std::string   spritesPath = RESOURCE_PATH "sprites/";
+    std::string   spritesPath = RESOURCE_PATH "/sprites/";
     DialoguePopUp dialoguePopup;
     UtilitySystem utilitySystem;
     NeedUpdator   needUpdator;

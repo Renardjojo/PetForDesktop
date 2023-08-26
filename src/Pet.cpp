@@ -87,7 +87,7 @@ SpriteSheet& Pet::getOrAddSpriteSheet(const char* file, int inTileCount, float i
 
 void Pet::parseAnimationGraph()
 {
-    YAML::Node animGraph = YAML::LoadFile(RESOURCE_PATH "setting/animation.yaml");
+    YAML::Node animGraph = YAML::LoadFile(RESOURCE_PATH "/setting/animation.yaml");
 
     // Init nodes
     std::map<std::string, std::shared_ptr<StateMachine::Node>> nodes;

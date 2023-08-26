@@ -152,13 +152,13 @@ add_subdirectory(${ABS_DEPS_DIR}/imgui)
 target_link_libraries(${PROJECT_NAME} imgui imgui-glfw imgui-opengl3)
 
 ########### Define ############
-target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="${REL_RESOURCES_DIR}/")
+target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="${REL_RESOURCES_DIR}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_NAME="${PROJECT_NAME}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
 
 # Graphic API
 if(USE_OPENGL_API)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_RESOURCE_PATH="${REL_RESOURCES_DIR}/shader/glsl/")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_RESOURCE_PATH="${REL_RESOURCES_DIR}/shader/glsl")
     target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_VERTEX_EXT=".vs")
     target_compile_definitions(${PROJECT_NAME} PRIVATE SHADER_FRAG_EXT=".fs")
     target_compile_definitions(${PROJECT_NAME} PRIVATE GLFW_INCLUDE_NONE)

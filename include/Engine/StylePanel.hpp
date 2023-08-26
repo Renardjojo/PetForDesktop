@@ -1,61 +1,10 @@
-// This software is provided 'as-is', without any express or implied
-// warranty.  In no event will the authors be held liable for any damages
-// arising from the use of this software.
-// Permission is granted to anyone to use this software for any purpose,
-// including commercial applications, and to alter it and redistribute it
-// freely, subject to the following restrictions:
-// 1. The origin of this software must not be misrepresented; you must not
-//    claim that you wrote the original software. If you use this software
-//    in a product, an acknowledgment in the product documentation would be
-//    appreciated but is not required.
-// 2. Altered source versions must be plainly marked as such, and must not be
-//    misrepresented as being the original software.
-// 3. This notice may not be removed or altered from any source distribution.
-
-// WHAT'S THIS
-// Extension to the imgui library v.1.21 wip (https://github.com/ocornut/imgui)
-// to support saving/loading imgui styles.
-
-// USAGE:
-/*
-1) Compile this cpp file
-2) In your main.cpp just add (without including any additional file: there's no header!):
-extern bool ImGuiSaveStyle(const char* filename,const ImGuiStyle& style);
-extern bool ImGuiLoadStyle(const char* filename,ImGuiStyle& style);
-3) Use them together with ImGui::GetStyle() to save/load the current style.
-   ImGui::GetStyle() returns a reference of the current style that can be set/get.
-Please note that other style options are not globally serializable because they are "window flags",
-that must be set on a per-window basis (for example border,titlebar,scrollbar,resizable,movable,per-window alpha).
-To edit and save a style, you can use the default ImGui example and append to the "Debug" window the following code:
-            ImGui::Text("\n");
-            ImGui::Text("Please modify the current style in:");
-            ImGui::Text("ImGui Test->Window Options->Style Editor");
-            static bool loadCurrentStyle = false;
-            static bool saveCurrentStyle = false;
-            static bool resetCurrentStyle = false;
-            loadCurrentStyle = ImGui::Button("Load Saved Style");
-            saveCurrentStyle = ImGui::Button("Save Current Style");
-            resetCurrentStyle = ImGui::Button("Reset Current Style");
-            if (loadCurrentStyle)   {
-                if (!ImGuiLoadStyle("./myimgui.style",ImGui::GetStyle()))   {
-                    fprintf(stderr,"Warning: \"./myimgui.style\" not present.\n");
-                }
-            }
-            if (saveCurrentStyle)   {
-                if (!ImGuiSaveStyle("./myimgui.style",ImGui::GetStyle()))   {
-                    fprintf(stderr,"Warning: \"./myimgui.style\" cannot be saved.\n");
-                }
-            }
-            if (resetCurrentStyle)  ImGui::GetStyle() = ImGuiStyle();
-*/
-
-#include "Engine/Log.hpp"
 #include "Engine/FileExplorer.hpp"
+#include "Engine/Log.hpp"
 
 #include "backends/imgui_impl_opengl3.h"
 #include <imgui.h>
-#include <vector>
 #include <math.h> // sqrtf
+#include <vector>
 
 #ifdef _WIN32
 #define IM_NEWLINE "\r\n"
@@ -68,7 +17,7 @@ To edit and save a style, you can use the default ImGui example and append to th
 #define IM_ARRAYSIZE(_ARR) ((int)(sizeof(_ARR) / sizeof(*_ARR)))
 #include <string.h>
 
-#define PATH_UI_STYLE RESOURCE_PATH "setting/UIStyle.ini"
+#define PATH_UI_STYLE RESOURCE_PATH "/styles/UIStyle.ini"
 
 static size_t ImFormatString(char* buf, size_t buf_size, const char* fmt, ...)
 {
@@ -81,7 +30,7 @@ static size_t ImFormatString(char* buf, size_t buf_size, const char* fmt, ...)
 }
 //---------------------------------------------------------------------------
 
-void ImGuiSaveStyle(const char* filename, const ImGuiStyle& style, const char* currentFont)
+inline void ImGuiSaveStyle(const char* filename, const ImGuiStyle& style, const char* currentFont)
 {
     // Write .style file
     FILE* f = nullptr;
@@ -100,7 +49,13 @@ void ImGuiSaveStyle(const char* filename, const ImGuiStyle& style, const char* c
     fprintf(f, "[ItemInnerSpacing]\n%1.3f %1.3f\n", style.ItemInnerSpacing.x, style.ItemInnerSpacing.y);
     fprintf(f, "[TouchExtraPadding]\n%1.3f %1.3f\n", style.TouchExtraPadding.x, style.TouchExtraPadding.y);
     fprintf(f, "[WindowRounding]\n%1.3f\n", style.WindowRounding);
+    fprintf(f, "[GrabRounding]\n%1.3f\n", style.GrabRounding);
+    fprintf(f, "[GrabMinSize]\n%1.3f\n", style.GrabMinSize);
     fprintf(f, "[ColumnsMinSpacing]\n%1.3f\n", style.ColumnsMinSpacing);
+    fprintf(f, "[WindowBorderSize]\n%1.3f\n", style.WindowBorderSize);
+    fprintf(f, "[TabBorderSize]\n%1.3f\n", style.TabBorderSize);
+    fprintf(f, "[FrameBorderSize]\n%1.3f\n", style.FrameBorderSize);
+    fprintf(f, "[PopupBorderSize]\n%1.3f\n", style.PopupBorderSize);
     if (strcmp(currentFont, "default") == 0)
         fprintf(f, "[Font]\n%s\n", currentFont);
     else
@@ -119,13 +74,13 @@ void ImGuiSaveStyle(const char* filename, const ImGuiStyle& style, const char* c
     logf("Style exported\n");
 }
 
-void ImGuiLoadStyle(const char* filename, ImGuiStyle& style)
+inline void ImGuiLoadStyle(const char* filename, ImGuiStyle& style)
 {
     // Load file into memory
     FILE* f = nullptr;
     if (fopen_s(&f, filename, "rt"))
     {
-        logf("The file \"%s\" was not opened to write\n", filename);
+        warning(std::string("Could not find the file ") + filename);
         return;
     }
 
@@ -230,10 +185,40 @@ void ImGuiLoadStyle(const char* filename, ImGuiStyle& style)
                     npf   = 1;
                     pf[0] = &style.WindowRounding;
                 }
+                else if (strcmp(name, "GrabRounding") == 0)
+                {
+                    npf   = 1;
+                    pf[0] = &style.GrabRounding;
+                }
+                else if (strcmp(name, "GrabMinSize") == 0)
+                {
+                    npf   = 1;
+                    pf[0] = &style.GrabMinSize;
+                }
                 else if (strcmp(name, "ColumnsMinSpacing") == 0)
                 {
                     npf   = 1;
                     pf[0] = &style.ColumnsMinSpacing;
+                }
+                else if (strcmp(name, "WindowBorderSize") == 0)
+                {
+                    npf   = 1;
+                    pf[0] = &style.WindowBorderSize;
+                }
+                else if (strcmp(name, "TabBorderSize") == 0)
+                {
+                    npf   = 1;
+                    pf[0] = &style.TabBorderSize;
+                }
+                else if (strcmp(name, "FrameBorderSize") == 0)
+                {
+                    npf   = 1;
+                    pf[0] = &style.FrameBorderSize;
+                }
+                else if (strcmp(name, "PopupBorderSize") == 0)
+                {
+                    npf   = 1;
+                    pf[0] = &style.PopupBorderSize;
                 }
                 else if (strcmp(name, "Font") == 0)
                 {
@@ -377,7 +362,7 @@ static void setDefaultTheme()
 {
     using namespace ImGui;
 
-    auto& style = GetStyle();
+    auto&   style                          = GetStyle();
     ImVec4* colors                         = style.Colors;
     colors[ImGuiCol_Text]                  = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImGuiCol_TextDisabled]          = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
@@ -434,13 +419,15 @@ static void setDefaultTheme()
     colors[ImGuiCol_ModalWindowDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
 
     style.TabRounding       = 4;
-    style.GrabRounding      = 16;
+    style.GrabRounding      = 8;
+    style.GrabMinSize       = 12;
     style.ScrollbarRounding = 9;
     style.WindowRounding    = 4;
-    style.GrabRounding      = 3;
     style.FrameRounding     = 3;
     style.PopupRounding     = 4;
     style.ChildRounding     = 4;
+    style.WindowBorderSize  = 0;
+    style.FrameBorderSize   = 0;
 }
 
 // [Internal] Display details for a single font, called by ShowStyleEditor().
@@ -450,7 +437,7 @@ static void NodeFont(ImFont* font)
     ImGuiStyle& style               = ImGui::GetStyle();
     bool        font_details_opened = ImGui::TreeNode(font, "Font: \"%s\"\n%.2f px, %d glyphs, %d file(s)",
                                                font->ConfigData ? font->ConfigData[0].Name : "", font->FontSize,
-                                               font->Glyphs.Size, font->ConfigDataCount);
+                                                      font->Glyphs.Size, font->ConfigDataCount);
     ImGui::SameLine();
     if (ImGui::SmallButton("Set as default"))
     {
@@ -513,7 +500,7 @@ static void NodeFont(ImFont* font)
                 // We use ImFont::RenderChar as a shortcut because we don't have UTF-8 conversion functions
                 // available here and thus cannot easily generate a zero-terminated UTF-8 encoded string.
                 ImVec2             cell_p1(base_pos.x + (n % 16) * (cell_size + cell_spacing),
-                               base_pos.y + (n / 16) * (cell_size + cell_spacing));
+                                           base_pos.y + (n / 16) * (cell_size + cell_spacing));
                 ImVec2             cell_p2(cell_p1.x + cell_size, cell_p1.y + cell_size);
                 const ImFontGlyph* glyph = font->FindGlyphNoFallback((ImWchar)(base + n));
                 draw_list->AddRect(cell_p1, cell_p2,
@@ -540,7 +527,7 @@ static void NodeFont(ImFont* font)
     ImGui::TreePop();
 }
 
-bool ShowStyleSelector(const char* label)
+inline bool ShowStyleSelector(const char* label)
 {
     static int style_idx = -1;
     if (ImGui::Combo(label, &style_idx, "PetForDesktopStyle\0Dark\0Light\0"))
@@ -562,7 +549,7 @@ bool ShowStyleSelector(const char* label)
     return false;
 }
 
-void ShowFontSelector(const char* label, int& idCurrentFont)
+inline void ShowFontSelector(const char* label, int& idCurrentFont)
 {
     ImGuiIO& io           = ImGui::GetIO();
     ImFont*  font_current = ImGui::GetFont();
@@ -588,7 +575,7 @@ void ShowFontSelector(const char* label, int& idCurrentFont)
                "- If you need to add/remove fonts at runtime (e.g. for DPI change), do it before calling NewFrame().");
 }
 
-void ShowStyleEditor(ImGuiStyle* ref = nullptr)
+inline void ShowStyleEditor(ImGuiStyle* ref = nullptr)
 {
     // You can pass in a reference ImGuiStyle structure to compare to, revert to and save to
     // (without a reference style pointer, we will use one compared locally as a reference)

@@ -29,3 +29,13 @@ std::filesystem::path openFolderExplorerAndGetRelativePath(LPCWSTR title = L"Ope
 void recycleFileOrDirectory(const std::filesystem::path& path);
 
 #endif
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+#define SystemOpen(path) system("start " path);
+#elif __APPLE__
+#define SystemOpen(path) system("open " path);
+#elif __linux__
+#define SystemOpen(path) system("xdg-open" path);
+#else
+#error "Unknown compiler"
+#endif

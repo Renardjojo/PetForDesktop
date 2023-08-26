@@ -82,6 +82,15 @@ Setting::Setting(const char* path, GameData& data)
     }
 
     {
+        section                 = "Style";
+        YAML::Node nodesSection = animGraph[section];
+        if (!nodesSection)
+            errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
+
+        data.styleName = nodesSection["Profile"].as<std::string>();
+    }
+
+    {
         section                 = "Debug";
         YAML::Node nodesSection = animGraph[section];
         if (!nodesSection)

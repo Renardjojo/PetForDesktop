@@ -6,6 +6,7 @@
 #include <memory>
 #include <queue>
 #include <vector>
+#include <string>
 
 struct GameData
 {
@@ -88,6 +89,9 @@ struct GameData
     bool showFrameBufferBackground = false;
     bool useForwardWindow          = true;
     bool useMousePassThoughWindow  = true;
+
+    // Style
+    std::string styleName;
 
     // Debug
     bool debugEdgeDetection = false;

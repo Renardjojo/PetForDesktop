@@ -35,7 +35,6 @@ inline void errorAndExit(const std::string& msg)
 inline void warning(const std::string& msg)
 {
     boxer::show(msg.c_str(), PROJECT_NAME " warning", boxer::Style::Warning, boxer::Buttons::OK);
-    exit(-1);
 }
 
 #if defined(USE_OPENGL_API)

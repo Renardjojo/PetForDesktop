@@ -1,6 +1,7 @@
 #include "Game/ContextualMenu.hpp"
 
 #include "Engine/InteractionSystem.hpp"
+#include "Engine/FileExplorer.hpp"
 
 #include "Game/Pet.hpp"
 #include "Game/SettingMenu.hpp"
@@ -8,16 +9,6 @@
 
 #include <cpr/cpr.h>
 #include <format>
-
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-#define SystemOpenURL(url) system("start " url);
-#elif __APPLE__
-#define SystemOpenURL(url) system("open " url);
-#elif __linux__
-#define SystemOpenURL(url) system("xdg-open" url);
-#else
-#error "Unknown compiler"
-#endif
 
 ContextualMenu::ContextualMenu(GameData& inDatas, Pet& inPet, Vec2 inPosition)
     : datas{inDatas}, pet{inPet}, interactionComponent{*this}
@@ -96,19 +87,19 @@ void ContextualMenu::update(double deltaTime)
 
     if (ImGui::Button("Join us!", sizeCenter))
     {
-        SystemOpenURL("https://discord.gg/gjdQmHAp7e")
+        SystemOpen("https://discord.gg/gjdQmHAp7e")
         shouldClose = true;
     }
 
     if (ImGui::Button("Support this project", sizeCenter))
     {
-        SystemOpenURL("https://www.patreon.com/PetForDesktop")
+        SystemOpen("https://www.patreon.com/PetForDesktop")
         shouldClose = true;
     }
 
     if (ImGui::Button("Bug report", sizeCenter))
     {
-        SystemOpenURL("https://github.com/Renardjojo/PetForDesktop/issues/new/choose")
+        SystemOpen("https://github.com/Renardjojo/PetForDesktop/issues/new/choose")
         shouldClose = true;
     }
 

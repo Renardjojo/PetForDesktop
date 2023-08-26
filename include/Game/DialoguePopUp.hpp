@@ -36,7 +36,7 @@ class DialoguePopUp : public Rect
 {
 protected:
     GameData&                     datas;
-    std::string                   emotesPath = RESOURCE_PATH "sprites/emote/";
+    std::string                   emotesPath = RESOURCE_PATH "/sprites/emote/";
     std::map<EPopupType, Texture> popups;
     std::map<ENeed, Texture>      speachs;
 
