@@ -34,11 +34,10 @@ void SettingMenu::update(double deltaTime)
         shouldInitPosition = false;
     }
 
-    //ImGui::SetNextWindowSize(ImVec2(m_size.x, m_size.y));
+    // ImGui::SetNextWindowSize(ImVec2(m_size.x, m_size.y));
 
     bool isWindowOpen = true;
-    ImGui::Begin("Settings", &isWindowOpen,
-                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+    ImGui::Begin("Settings", &isWindowOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
     shouldClose = !isWindowOpen;
 
@@ -47,6 +46,26 @@ void SettingMenu::update(double deltaTime)
 
     if (ImGui::BeginTabBar("##settingMenuTabs", ImGuiTabBarFlags_None))
     {
+        if (ImGui::BeginTabItem("Game"))
+        {
+            if (ImGui::BeginCombo("Style", datas.styleName.c_str()))
+            {
+                for (int i = 0; i < datas.stylesPath.size(); i++)
+                {
+                    auto& path = datas.stylesPath[i];
+                    auto  fileName = path.stem();
+                    if (ImGui::Selectable(fileName.string().c_str(), fileName == datas.styleName))
+                    {
+                        ImGuiLoadStyle(path.string().c_str(), ImGui::GetStyle());
+                        datas.styleName = fileName.string();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            ImGui::EndTabItem();
+        }
+
         if (ImGui::BeginTabItem("Content"))
         {
             if (ImGui::Button("Open content folder"))
@@ -70,7 +89,7 @@ void SettingMenu::update(double deltaTime)
     }
 
     ImVec2 contentSize = ImGui::GetWindowSize();
-    ImVec2 contentPos = ImGui::GetWindowPos();
+    ImVec2 contentPos  = ImGui::GetWindowPos();
     ImGui::End();
 
     setPositionSize({datas.window->getPosition().x + contentPos.x, datas.window->getPosition().y + contentPos.y},

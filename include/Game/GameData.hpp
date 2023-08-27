@@ -3,6 +3,7 @@
 #include "Engine/Monitors.hpp"
 #include "Engine/Vector2.hpp"
 
+#include <filesystem>
 #include <memory>
 #include <queue>
 #include <vector>
@@ -91,6 +92,7 @@ struct GameData
     bool useMousePassThoughWindow  = true;
 
     // Style
+    std::vector<std::filesystem::path> stylesPath;
     std::string styleName;
 
     // Debug

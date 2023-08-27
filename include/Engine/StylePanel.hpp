@@ -342,7 +342,7 @@ inline void ImGuiLoadStyle(const char* filename, ImGuiStyle& style)
 
     // Release memory
     ImGui::MemFree(f_data);
-    logf("Style imported");
+    logf("Style imported\n");
 }
 
 static void HelpMarker(const char* desc)
