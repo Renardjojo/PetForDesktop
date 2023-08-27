@@ -35,8 +35,6 @@ class Game
 protected:
     Updater      updater;
     GameData     datas;
-    Setting      setting;
-    TimeManager  mainLoop;
     PhysicSystem physicSystem;
 
 protected:
@@ -65,9 +63,12 @@ protected:
     }
 
 public:
-    Game() : setting(RESOURCE_PATH "/setting/setting.yaml", datas), mainLoop(datas), physicSystem(datas)
+    Game() : physicSystem(datas)
     {
         logf("%s %s\n", PROJECT_NAME, PROJECT_VERSION);
+        
+        Setting::instance().importFile(RESOURCE_PATH "/setting/setting.yaml", datas);
+        TimeManager::instance().Init(datas);
 
         glfwSetMonitorCallback(setMonitorCallback);
         datas.window = std::make_unique<Window>();
@@ -183,12 +184,12 @@ public:
         datas.monitors.getMonitorSize(0, monitorSize);
         datas.window->setSize(monitorSize);
         datas.window->setPosition(Vec2::zero());
-        mainLoop.setFrameRate(1);
+        TimeManager::instance().setFrameRate(1);
 
-        mainLoop.start();
+        TimeManager::instance().start();
         while (!datas.window->shouldClose())
         {
-            mainLoop.update(unlimitedUpdate, limitedUpdateDebugCollision);
+            TimeManager::instance().update(unlimitedUpdate, limitedUpdateDebugCollision);
         }
     }
 
@@ -288,7 +289,7 @@ public:
             datas.pets[i]->setPosition(petPosition);
         }
 
-        mainLoop.emplaceTimer(
+        TimeManager::instance().emplaceTimer(
             [&]() {
                 for (const std::shared_ptr<Pet>& pet : datas.pets)
                 {
@@ -298,10 +299,10 @@ public:
             },
             1.f / datas.physicFrameRate, true);
 
-        mainLoop.start();
+        TimeManager::instance().start();
         while (!datas.window->shouldClose())
         {
-            mainLoop.update(unlimitedUpdate, limitedUpdate);
+            TimeManager::instance().update(unlimitedUpdate, limitedUpdate);
         }
     }
 };

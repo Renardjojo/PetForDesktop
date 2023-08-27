@@ -5,12 +5,12 @@
 
 #include <algorithm>
 
-Setting::Setting(const char* path, GameData& data)
+void Setting::importFile(const char* src, GameData& data)
 {
-    YAML::Node animGraph = YAML::LoadFile(path);
+    YAML::Node animGraph = YAML::LoadFile(src);
     if (!animGraph)
     {
-        errorAndExit(std::string("Could not find setting file here: ") + path);
+        errorAndExit(std::string("Could not find setting file here: ") + src);
     }
 
     std::string section;
@@ -87,7 +87,7 @@ Setting::Setting(const char* path, GameData& data)
         if (!nodesSection)
             errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
 
-        data.styleName = nodesSection["Profile"].as<std::string>();
+        data.styleName = nodesSection["Theme"].as<std::string>();
     }
 
     {
@@ -98,4 +98,108 @@ Setting::Setting(const char* path, GameData& data)
 
         data.debugEdgeDetection = nodesSection["ShowEdgeDetection"].as<bool>();
     }
+}
+
+void Setting::exportFile(const char* dest, GameData& data)
+{
+    FILE* file = nullptr;
+    if (fopen_s(&file, dest, "wt"))
+    {
+        logf("The file \"%s\" was not opened to write\n", dest);
+        return;
+    }
+
+    YAML::Emitter out;
+
+    std::string section;
+    {
+        section = "Game";
+        out << YAML::BeginMap;
+        out << YAML::Block << section;
+        out << YAML::BeginMap;
+        out << YAML::Key << "FPS" << YAML::Value << data.FPS;
+        out << YAML::Key << "Scale" << YAML::Value << data.scale;
+        out << YAML::Key << "RandomSeed" << YAML::Value << data.randomSeed;
+        out << YAML::EndMap;
+        out << YAML::EndMap;
+    }
+
+    {
+        section = "Physic";
+        out << YAML::BeginMap;
+        out << section;
+        out << YAML::BeginMap;
+        out << YAML::Key << "PhysicFrameRate" << YAML::Value << data.physicFrameRate;
+        out << YAML::Key << "Bounciness" << YAML::Value << YAML::Precision(4) << data.bounciness;
+        out << YAML::Key << "GravityX" << YAML::Value << YAML::Precision(4) << data.gravity.x;
+        out << YAML::Key << "GravityY" << YAML::Value << YAML::Precision(4) << data.gravity.y;
+        out << YAML::Key << "Friction" << YAML::Value << YAML::Precision(4) << data.friction;
+        out << YAML::Key << "ContinuousCollisionMaxVelocity" << YAML::Value << std::sqrt(data.continuousCollisionMaxSqrVelocity);
+        out << YAML::Key << "FootBasementWidth" << YAML::Value << data.footBasementWidth;
+        out << YAML::Key << "FootBasementHeight" << YAML::Value << data.footBasementHeight;
+        out << YAML::Key << "CollisionPixelRatioStopMovement" << YAML::Value << YAML::Precision(4)
+             << data.collisionPixelRatioStopMovement;
+        out << YAML::Key << "IsGroundedDetection" << YAML::Value << data.isGroundedDetection;
+        out << YAML::Key << "InputReleaseImpulse" << YAML::Value << data.releaseImpulse;
+        out << YAML::EndMap;
+        out << YAML::EndMap;
+    }
+
+    {
+        section = "GamePlay";
+        out << YAML::BeginMap;
+        out << section;
+        out << YAML::BeginMap;
+        out << YAML::Key << "CoyoteTimeCursorMovement" << YAML::Value << YAML::Precision(4) << data.coyoteTimeCursorPos;
+        out << YAML::EndMap;
+        out << YAML::EndMap;
+    }
+
+    {
+        section = "Window";
+        out << YAML::BeginMap;
+        out << section;
+        out << YAML::BeginMap;
+        out << YAML::Key << "FullScreenWindow" << YAML::Value << data.fullScreenWindow;
+        out << YAML::Key << "ShowWindow" << YAML::Value << data.showWindow;
+        out << YAML::Key << "ShowFrameBufferBackground" << YAML::Value << data.showFrameBufferBackground;
+        out << YAML::Key << "UseForwardWindow" << YAML::Value << data.useForwardWindow;
+        out << YAML::Key << "UseMousePassThoughWindow" << YAML::Value << data.useMousePassThoughWindow;
+        out << YAML::EndMap;
+        out << YAML::EndMap;
+    }
+
+    {
+        section = "Style";
+        out << YAML::BeginMap;
+        out << section;
+        out << YAML::BeginMap;
+        out << YAML::Key << "Theme" << YAML::Value << data.styleName;
+        out << YAML::EndMap;
+        out << YAML::EndMap;
+    }
+
+    {
+        section = "Accessibility";
+        out << YAML::BeginMap;
+        out << section;
+        out << YAML::BeginMap;
+        out << YAML::Key << "GlobalScale" << YAML::Value << 2;
+        out << YAML::Key << "FontScale" << YAML::Value << 14;
+        out << YAML::EndMap;
+        out << YAML::EndMap;
+    }
+
+    {
+        section = "Debug";
+        out << YAML::BeginMap;
+        out << section;
+        out << YAML::BeginMap;
+        out << YAML::Key << "ShowEdgeDetection" << YAML::Value << data.debugEdgeDetection;
+        out << YAML::EndMap;
+        out << YAML::EndMap;
+    }
+
+    fwrite(out.c_str(), sizeof(char), out.size(), file);
+    fclose(file);
 }

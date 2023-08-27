@@ -23,6 +23,9 @@ Window:
     ShowWindow: false # Display the window edge or not
     UseMousePassThoughWindow: true # Define if user can selection pet only with selected pixel or with the entire windows 
 Style:
-    Profile: PetForDesktop
+    Theme: PetForDesktop
+Accessibility:
+    GlobalScale: 2
+    FontScale: 14
 Debug:
     ShowEdgeDetection: false # Debug mode to display the result of the collision alogyrthm on the entire window

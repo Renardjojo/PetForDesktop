@@ -1,9 +1,12 @@
 #pragma once
 
+#include "Engine/Singleton.hpp"
 #include "Game/GameData.hpp"
 
-class Setting
+class Setting : public Singleton<Setting>
 {
 public:
-    Setting(const char* path, GameData& data);
+    void importFile(const char* src, GameData& data);
+
+    void exportFile(const char* dest, GameData& data);
 };

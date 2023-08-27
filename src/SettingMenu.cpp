@@ -3,6 +3,7 @@
 #include "Engine/FileExplorer.hpp"
 #include "Engine/InteractionSystem.hpp"
 #include "Engine/StylePanel.hpp"
+#include "Engine/Settings.hpp"
 
 #include "Game/Pet.hpp"
 #include "imgui.h"
@@ -81,11 +82,19 @@ void SettingMenu::update(double deltaTime)
 
         if (ImGui::BeginTabItem("Accessibility"))
         {
-
+            ImGui::DragInt("Global scale", &datas.scale, 0.05f, 1, 10);
+            ImGui::DragFloat("Font scale", &ImGui::GetFont()->Scale, 0.005f, 0.3f, 2.0f, "%.1f");
             ImGui::EndTabItem();
         }
 
         ImGui::EndTabBar();
+    }
+    const char* applyTxt   = "Apply";
+    ImVec2      buttonSize = ImGui::CalcTextSize(applyTxt, NULL, true) + ImGui::GetStyle().FramePadding * 2.0f;
+    ImGui::SetCursorPos(ImGui::GetWindowContentRegionMax() - buttonSize);
+    if (ImGui::Button(applyTxt))
+    {
+        Setting::instance().exportFile(RESOURCE_PATH "/setting/setting.yaml", datas);
     }
 
     ImVec2 contentSize = ImGui::GetWindowSize();
