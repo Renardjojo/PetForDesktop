@@ -106,6 +106,11 @@ void ContextualMenu::update(double deltaTime)
         shouldClose = true;
     }
 
+    if (ImGui::Button("Exit", sizeCenter))
+    {
+        exit(0);
+    }
+
     textCentered(std::format("{:.1f} FPS", ImGui::GetIO().Framerate));
     ImVec2 contentSize = ImGui::GetWindowSize();
     ImVec2 contentPos = ImGui::GetWindowPos();
