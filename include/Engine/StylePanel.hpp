@@ -17,7 +17,7 @@
 #define IM_ARRAYSIZE(_ARR) ((int)(sizeof(_ARR) / sizeof(*_ARR)))
 #include <string.h>
 
-#define PATH_UI_STYLE RESOURCE_PATH "/styles/UIStyle.ini"
+#define PATH_UI_STYLE RESOURCE_PATH "/styles/UIStyle.style"
 
 static size_t ImFormatString(char* buf, size_t buf_size, const char* fmt, ...)
 {

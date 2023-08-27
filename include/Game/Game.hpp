@@ -110,7 +110,21 @@ public:
         // Load style
         setDefaultTheme(); // fallback theme
         io.Fonts->AddFontFromFileTTF(RESOURCE_PATH "/fonts/NimbusSanL-Reg.otf", 14);
-        ImGuiLoadStyle((std::string(RESOURCE_PATH) + "/styles/" + datas.styleName + ".ini").c_str(), ImGui::GetStyle());
+
+        std::list<std::filesystem::path> stylesPath;
+        for (const auto& entry : fs::directory_iterator(RESOURCE_PATH "/styles"))
+        {
+            std::filesystem::path path = entry.path();
+            auto                   ext  = path.extension();
+            if (path.extension() == ".style")
+            {
+                stylesPath.emplace_back(path);
+
+                if (path.stem() == datas.styleName)
+                    ImGuiLoadStyle(path.string().c_str(), ImGui::GetStyle());
+
+            }
+        }
 
         // Setup Platform/Renderer backends
         ImGui_ImplGlfw_InitForOpenGL(datas.window->getWindow(), true);
