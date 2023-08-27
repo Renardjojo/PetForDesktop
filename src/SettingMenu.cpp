@@ -83,7 +83,10 @@ void SettingMenu::update(double deltaTime)
         if (ImGui::BeginTabItem("Accessibility"))
         {
             ImGui::DragInt("Global scale", &datas.scale, 0.05f, 1, 10);
-            ImGui::DragFloat("Font scale", &ImGui::GetFont()->Scale, 0.005f, 0.3f, 2.0f, "%.1f");
+            if (ImGui::DragFloat("Font scale", &datas.textScale, 0.005f, 0.3f, 2.0f, "%.1f"))
+            {
+                ImGui::GetFont()->Scale = datas.textScale;
+            }
             ImGui::EndTabItem();
         }
 

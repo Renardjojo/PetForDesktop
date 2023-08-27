@@ -21,7 +21,6 @@ void Setting::importFile(const char* src, GameData& data)
             errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
 
         data.FPS        = std::max(nodesSection["FPS"].as<int>(), 1);
-        data.scale      = std::max(nodesSection["Scale"].as<int>(), 1);
         data.randomSeed = nodesSection["RandomSeed"].as<int>();
     }
 
@@ -70,24 +69,22 @@ void Setting::importFile(const char* src, GameData& data)
     }
 
     {
-        section                 = "Window";
-        YAML::Node nodesSection = animGraph[section];
-        if (!nodesSection)
-            errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
-
-        data.showWindow                = nodesSection["ShowWindow"].as<bool>();
-        data.showFrameBufferBackground = nodesSection["ShowFrameBufferBackground"].as<bool>();
-        data.useForwardWindow          = nodesSection["UseForwardWindow"].as<bool>();
-        data.useMousePassThoughWindow  = nodesSection["UseMousePassThoughWindow"].as<bool>();
-    }
-
-    {
         section                 = "Style";
         YAML::Node nodesSection = animGraph[section];
         if (!nodesSection)
             errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
 
         data.styleName = nodesSection["Theme"].as<std::string>();
+    }
+
+    {
+        section                 = "Accessibility";
+        YAML::Node nodesSection = animGraph[section];
+        if (!nodesSection)
+            errorAndExit("Cannot find \"" + section + "\" in setting.yaml");
+
+        data.scale = std::max(nodesSection["Scale"].as<int>(), 1);
+        data.textScale = std::max(nodesSection["TextScale"].as<float>(), 1.f);
     }
 
     {
@@ -118,7 +115,6 @@ void Setting::exportFile(const char* dest, GameData& data)
         out << YAML::Block << section;
         out << YAML::BeginMap;
         out << YAML::Key << "FPS" << YAML::Value << data.FPS;
-        out << YAML::Key << "Scale" << YAML::Value << data.scale;
         out << YAML::Key << "RandomSeed" << YAML::Value << data.randomSeed;
         out << YAML::EndMap;
         out << YAML::EndMap;
@@ -184,8 +180,8 @@ void Setting::exportFile(const char* dest, GameData& data)
         out << YAML::BeginMap;
         out << section;
         out << YAML::BeginMap;
-        out << YAML::Key << "GlobalScale" << YAML::Value << 2;
-        out << YAML::Key << "FontScale" << YAML::Value << 14;
+        out << YAML::Key << "Scale" << data.scale;
+        out << YAML::Key << "TextScale" << data.textScale;
         out << YAML::EndMap;
         out << YAML::EndMap;
     }

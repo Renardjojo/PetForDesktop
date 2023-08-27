@@ -111,7 +111,7 @@ public:
         // Load style
         bool useDefaultProfile = true;
         setDefaultTheme(); // fallback theme
-        io.Fonts->AddFontFromFileTTF(RESOURCE_PATH "/fonts/NimbusSanL-Reg.otf", 14);
+        io.Fonts->AddFontFromFileTTF(RESOURCE_PATH "/fonts/NimbusSanL-Reg.otf", 14 * datas.textScale);
 
         // Get all styles
         for (const auto& entry : fs::directory_iterator(RESOURCE_PATH "/styles"))

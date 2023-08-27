@@ -65,6 +65,7 @@ struct GameData
     // Settings
     int FPS        = 0;
     int scale      = 0;
+    float textScale  = 0;
     int randomSeed = 0;
 
     // Physic

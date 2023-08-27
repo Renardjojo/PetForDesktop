@@ -1,6 +1,5 @@
 Game:
     FPS: 60  # min 1
-    Scale: 2 # min 1
     RandomSeed: -1 # -1: use random seed
 Physic:
     PhysicFrameRate: 60 # min 0
@@ -25,7 +24,7 @@ Window:
 Style:
     Theme: PetForDesktop
 Accessibility:
-    GlobalScale: 2
-    FontScale: 14
+    Scale: 2
+    TextScale: 1
 Debug:
     ShowEdgeDetection: false # Debug mode to display the result of the collision alogyrthm on the entire window
