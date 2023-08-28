@@ -34,10 +34,10 @@ void ContextualMenu::update(double deltaTime)
     if (datas.leftButtonEvent == GLFW_PRESS && !interactionComponent.isLeftSelected)
         shouldClose = true;
 
-    ImVec2 sizeCenter = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
+    ImVec2 sizeButton = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
 
     ImGui::BeginDisabled(datas.pets.size() > 2);
-    bool shouldSpawnPet = ImGui::Button("Spawn pet", sizeCenter);
+    bool shouldSpawnPet = ImGui::Button("Spawn pet", sizeButton);
     ImGui::EndDisabled();
     if (shouldSpawnPet)
     {
@@ -47,7 +47,7 @@ void ContextualMenu::update(double deltaTime)
 
     if (pet.getIsPaused())
     {
-        if (ImGui::Button("Resume", sizeCenter))
+        if (ImGui::Button("Resume", sizeButton))
         {
             pet.setIsPaused(false);
             shouldClose = true;
@@ -55,14 +55,14 @@ void ContextualMenu::update(double deltaTime)
     }
     else
     {
-        if (ImGui::Button("Pause", sizeCenter))
+        if (ImGui::Button("Pause", sizeButton))
         {
             pet.setIsPaused(true);
             shouldClose = true;
         }
     }
 
-    if (ImGui::Button("Settings", sizeCenter))
+    if (ImGui::Button("Settings", sizeButton))
     {
         datas.settingMenu = nullptr; // delete previous window
         datas.settingMenu = std::make_unique<SettingMenu>(datas, pet, getPosition());
@@ -74,22 +74,26 @@ void ContextualMenu::update(double deltaTime)
     ImGui::Separator();
     ImGui::Spacing();
 
-    if (ImGui::ImageButtonWithTextRight(reinterpret_cast<ImTextureID>(datas.pDiscordLogo->getID()), "Join us!", sizeCenter))
+    float imageRatio = ImGui::GetTextLineHeight() / datas.pDiscordLogo->getHeight();
+    if (ImGui::ImageButtonWithTextRight(
+            reinterpret_cast<ImTextureID>(datas.pDiscordLogo->getID()), "Join us!",
+            ImVec2(datas.pDiscordLogo->getWidth() * imageRatio, datas.pDiscordLogo->getHeight() * imageRatio),
+            sizeButton, ImVec2(ImGui::GetStyle().FramePadding.x * 2, -1)))
     {
         SystemOpen("https://discord.gg/gjdQmHAp7e") shouldClose = true;
     }
 
-    if (ImGui::Button("Support this project", sizeCenter))
+    if (ImGui::Button("Support this project", sizeButton))
     {
         SystemOpen("https://www.patreon.com/PetForDesktop") shouldClose = true;
     }
 
-    if (ImGui::Button("Bug report", sizeCenter))
+    if (ImGui::Button("Bug report", sizeButton))
     {
         SystemOpen("https://github.com/Renardjojo/PetForDesktop/issues/new/choose") shouldClose = true;
     }
 
-    if (ImGui::Button("Exit", sizeCenter))
+    if (ImGui::Button("Exit", sizeButton))
     {
         exit(0);
     }

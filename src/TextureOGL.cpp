@@ -3,7 +3,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-Texture::Texture(const char* srcPath, std::function<void()> setupCallback)
+Texture::Texture(const char* srcPath, bool verticalFlip, std::function<void()> setupCallback)
 {
     glGenTextures(1, &ID);
     glBindTexture(GL_TEXTURE_2D, ID);
@@ -11,7 +11,7 @@ Texture::Texture(const char* srcPath, std::function<void()> setupCallback)
     setupCallback();
 
     // load image, create texture and generate mipmaps
-    stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+    stbi_set_flip_vertically_on_load(verticalFlip); // tell stb_image.h to flip loaded texture's on the y-axis.
     data = stbi_load(srcPath, &width, &height, &nbChannels, 0);
     if (data)
     {

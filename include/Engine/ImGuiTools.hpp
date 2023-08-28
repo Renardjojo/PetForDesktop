@@ -130,8 +130,9 @@ inline void displayBar(float current, float max, const ImVec2& size_arg, float r
 // https://github.com/ocornut/imgui/issues/1096#issuecomment-293544142
 // Definition (.cpp file. Not sure if it needs "imgui_internal.h" or not)
 inline IMGUI_API bool ImageButtonWithTextRight(ImTextureID texId, const char* label,
-                                               const ImVec2& imageSize = ImVec2(0, 0), const ImVec2& uv0 = ImVec2(0, 0),
-                                               const ImVec2& uv1 = ImVec2(1, 1), int frame_padding = -1,
+                                               const ImVec2& imageSize  = ImVec2(0, 0),
+                                               const ImVec2& buttonSize = ImVec2(0, 0), ImVec2 padding = ImVec2(-1, -1),
+                                               const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1),
                                                const ImVec4& bg_col   = ImVec4(0, 0, 0, 0),
                                                const ImVec4& tint_col = ImVec4(1, 1, 1, 1))
 {
@@ -150,7 +151,7 @@ inline IMGUI_API bool ImageButtonWithTextRight(ImTextureID texId, const char* la
             size.x = GetTextLineHeightWithSpacing();
         else if (size.y <= 0)
             size.y = GetTextLineHeightWithSpacing();
-        //size *= window->FontWindowScale * GetIO().FontGlobalScale;
+        size *= window->FontWindowScale * GetIO().FontGlobalScale;
     }
 
     ImGuiContext&     g     = *GImGui;
@@ -160,18 +161,26 @@ inline IMGUI_API bool ImageButtonWithTextRight(ImTextureID texId, const char* la
     const ImVec2  textSize = CalcTextSize(label, NULL, true);
     const bool    hasText  = textSize.x > 0;
 
-    const float innerSpacing =
-        hasText ? ((frame_padding >= 0) ? (float)frame_padding : (style.ItemInnerSpacing.x)) : 0.f;
-    const ImVec2 padding =
-        (frame_padding >= 0) ? ImVec2((float)frame_padding, (float)frame_padding) : style.FramePadding;
-    const ImVec2 totalSizeWithoutPadding(size.x + innerSpacing + textSize.x, size.y > textSize.y ? size.y : textSize.y);
-    const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + totalSizeWithoutPadding + padding * 2);
+    const float innerSpacing = hasText ? ((padding.x >= 0) ? (float)padding.x : (style.ItemInnerSpacing.x)) : 0.f;
+    padding =
+        ImVec2(padding.x < 0 ? style.FramePadding.x : padding.x, padding.y < 0 ? style.FramePadding.y : padding.y);
+
+    ImVec2 btnSize = buttonSize;
+
+    if (btnSize.x <= 0)
+        btnSize.x = size.x + innerSpacing + textSize.x + padding.x;
+    else if (btnSize.y <= 0)
+        btnSize.y = (size.y > textSize.y ? size.y : textSize.y) + padding.y * 2.f;
+
+    const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + btnSize);
     ImVec2       start(0, 0);
     start = window->DC.CursorPos + padding;
+    start.x += textSize.x / 2;
     if (size.y < textSize.y)
         start.y += (textSize.y - size.y) * .5f;
     const ImRect image_bb(start, start + size);
     start = window->DC.CursorPos + padding;
+    start.x += textSize.x / 2;
     start.x += size.x + innerSpacing;
     if (size.y > textSize.y)
         start.y += (size.y - textSize.y) * .5f;

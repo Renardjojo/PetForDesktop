@@ -22,14 +22,14 @@ public:
     GETTER_BY_VALUE(Height, height)
     GETTER_BY_VALUE(ChannelsCount, nbChannels)
 
-    Texture(const char* srcPath, std::function<void()> setupCallback = defaultSetupCallBack);
+    Texture(const char* srcPath, bool verticalFlip = true, std::function<void()> setupCallback = nearestClampSampling);
 
     Texture(void* data, int pxlWidth, int pxlHeight, int channels = 3,
-            std ::function<void()> setupCallback = defaultSetupCallBack);
+            std ::function<void()> setupCallback = nearestClampSampling);
 
-    Texture(int pxlWidth, int pxlHeight, int channels = 4, std::function<void()> setupCallback = defaultSetupCallBack);
+    Texture(int pxlWidth, int pxlHeight, int channels = 4, std::function<void()> setupCallback = nearestClampSampling);
 
-    static void defaultSetupCallBack()
+    static void nearestClampSampling()
     {
         // set the texture wrapping parameters
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -37,6 +37,14 @@ public:
         // set texture filtering parameters
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+
+    static void linearClampSampling()
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
 
     ~Texture();

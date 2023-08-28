@@ -62,7 +62,8 @@ protected:
                                      SHADER_RESOURCE_PATH "/image" SHADER_FRAG_EXT);
 
 
-        datas.pDiscordLogo = std::make_unique<Texture>(RESOURCE_PATH "/sprites/logo/discord-mark-blue.png");
+        datas.pDiscordLogo =
+            std::make_unique<Texture>(RESOURCE_PATH "/sprites/logo/discord-mark-blue.png", false, Texture::linearClampSampling);
         //datas.pPatreonLogo =  std::make_unique<Texture>();
     }
 
