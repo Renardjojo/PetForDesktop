@@ -1,7 +1,7 @@
 #include "Game/ContextualMenu.hpp"
 
-#include "Engine/InteractionSystem.hpp"
 #include "Engine/FileExplorer.hpp"
+#include "Engine/InteractionSystem.hpp"
 
 #include "Game/Pet.hpp"
 #include "Game/SettingMenu.hpp"
@@ -11,33 +11,18 @@
 #include <format>
 
 ContextualMenu::ContextualMenu(GameData& inDatas, Pet& inPet, Vec2 inPosition)
-    : datas{inDatas}, pet{inPet}, interactionComponent{*this}
-{
-    datas.window->addElement(*this);
-    datas.interactionSystem->addComponent(interactionComponent);
-    m_size     = {75.f * datas.scale, 150.f * datas.scale};
-    m_position = inPosition;
-    onChange();
-
-    shouldInitPosition = true;
-}
+    : UIMenu(inDatas, inPosition, Vec2(75.f, 150.f)), pet{inPet}
+{}
 
 ContextualMenu ::~ContextualMenu()
 {
-    datas.interactionSystem->removeComponent(interactionComponent);
-    datas.window->removeElement(*this);
+
 }
 
 void ContextualMenu::update(double deltaTime)
 {
-    if (shouldInitPosition)
-    {
-        ImGui::SetNextWindowPos(
-            ImVec2(m_position.x - datas.window->getPosition().x, m_position.y - datas.window->getPosition().y));
-        shouldInitPosition = false;
-    }
+    windowBegin();
 
-    ImGui::SetNextWindowSize(ImVec2(m_size.x, m_size.y));
     ImGui::GetStyle().WindowTitleAlign = ImVec2(0.5f, 0.5f);
 
     bool isWindowOpen = true;
@@ -72,7 +57,7 @@ void ContextualMenu::update(double deltaTime)
         if (ImGui::Button("Pause", sizeCenter))
         {
             pet.setIsPaused(true);
-            shouldClose  = true;
+            shouldClose = true;
         }
     }
 
@@ -90,20 +75,17 @@ void ContextualMenu::update(double deltaTime)
 
     if (ImGui::Button("Join us!", sizeCenter))
     {
-        SystemOpen("https://discord.gg/gjdQmHAp7e")
-        shouldClose = true;
+        SystemOpen("https://discord.gg/gjdQmHAp7e") shouldClose = true;
     }
 
     if (ImGui::Button("Support this project", sizeCenter))
     {
-        SystemOpen("https://www.patreon.com/PetForDesktop")
-        shouldClose = true;
+        SystemOpen("https://www.patreon.com/PetForDesktop") shouldClose = true;
     }
 
     if (ImGui::Button("Bug report", sizeCenter))
     {
-        SystemOpen("https://github.com/Renardjojo/PetForDesktop/issues/new/choose")
-        shouldClose = true;
+        SystemOpen("https://github.com/Renardjojo/PetForDesktop/issues/new/choose") shouldClose = true;
     }
 
     if (ImGui::Button("Exit", sizeCenter))
@@ -112,19 +94,6 @@ void ContextualMenu::update(double deltaTime)
     }
 
     textCentered(std::format("{:.1f} FPS", ImGui::GetIO().Framerate));
-    ImVec2 contentSize = ImGui::GetWindowSize();
-    ImVec2 contentPos = ImGui::GetWindowPos();
+    windowEnd();
     ImGui::End();
-
-    setPositionSize({datas.window->getPosition().x + contentPos.x, datas.window->getPosition().y + contentPos.y},
-                    {contentSize.x, contentSize.y});
-}
-
-void ContextualMenu::textCentered(std::string text)
-{
-    auto windowWidth = ImGui::GetWindowSize().x;
-    auto textWidth   = ImGui::CalcTextSize(text.c_str()).x;
-
-    ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-    ImGui::Text(text.c_str());
 }
