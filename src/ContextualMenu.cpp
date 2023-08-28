@@ -74,7 +74,7 @@ void ContextualMenu::update(double deltaTime)
     ImGui::Separator();
     ImGui::Spacing();
 
-    if (ImGui::Button("Join us!", sizeCenter))
+    if (ImGui::ImageButtonWithTextRight(reinterpret_cast<ImTextureID>(datas.pDiscordLogo->getID()), "Join us!", sizeCenter))
     {
         SystemOpen("https://discord.gg/gjdQmHAp7e") shouldClose = true;
     }

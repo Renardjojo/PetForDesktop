@@ -147,10 +147,10 @@ inline IMGUI_API bool ImageButtonWithTextRight(ImTextureID texId, const char* la
     else
     {
         if (size.x <= 0)
-            size.x = size.y;
+            size.x = GetTextLineHeightWithSpacing();
         else if (size.y <= 0)
-            size.y = size.x;
-        size *= window->FontWindowScale * GetIO().FontGlobalScale;
+            size.y = GetTextLineHeightWithSpacing();
+        //size *= window->FontWindowScale * GetIO().FontGlobalScale;
     }
 
     ImGuiContext&     g     = *GImGui;
