@@ -14,6 +14,7 @@ SettingMenu::SettingMenu(GameData& inDatas, Pet& inPet, Vec2 inPosition)
 
 SettingMenu::~SettingMenu()
 {
+    Setting::instance().exportFile(RESOURCE_PATH "/setting/setting.yaml", datas);
 }
 
 void SettingMenu::update(double deltaTime)
@@ -74,13 +75,6 @@ void SettingMenu::update(double deltaTime)
         }
 
         ImGui::EndTabBar();
-    }
-    const char* applyTxt   = "Apply";
-    ImVec2      buttonSize = ImGui::CalcTextSize(applyTxt, NULL, true) + ImGui::GetStyle().FramePadding * 2.0f;
-    ImGui::SetCursorPos(ImGui::GetWindowContentRegionMax() - buttonSize);
-    if (ImGui::Button(applyTxt))
-    {
-        Setting::instance().exportFile(RESOURCE_PATH "/setting/setting.yaml", datas);
     }
 
     windowEnd();
