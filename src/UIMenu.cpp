@@ -3,14 +3,13 @@
 
 #include "imgui.h"
 
-UIMenu::UIMenu(GameData& inDatas,  Vec2 inPosition, Vec2 inSize)
-    : datas{inDatas},  interactionComponent{*this}
+UIMenu::UIMenu(GameData& inDatas, Vec2 inPosition, Vec2 inSize) : datas{inDatas}, interactionComponent{*this}
 {
     datas.window->addElement(*this);
     datas.interactionSystem->addComponent(interactionComponent);
-    m_size        = inSize * datas.scale;
-    m_position    = inPosition;
-    prevPos       = Vec2(m_position.x - datas.window->getPosition().x, m_position.y - datas.window->getPosition().y);
+    m_size     = inSize * datas.scale;
+    m_position = inPosition;
+    prevPos    = Vec2(m_position.x - datas.window->getPosition().x, m_position.y - datas.window->getPosition().y);
     onChange();
 
     shouldInitPosition = true;
@@ -39,20 +38,11 @@ void UIMenu::windowEnd()
     ImVec2 contentSize    = ImGui::GetWindowSize();
     ImVec2 contentPos     = ImGui::GetWindowPos();
     Vec2   windowDeltaPos = vec2(contentPos.x - prevPos.x, contentPos.y - prevPos.y);
-    prevPos = Vec2(contentPos.x, contentPos.y);
+    prevPos               = Vec2(contentPos.x, contentPos.y);
 
     // m_position
     setPositionSize({m_position.x + windowDeltaPos.x, m_position.y + windowDeltaPos.y}, {contentSize.x, contentSize.y});
     ImGui::SetWindowPos(
         ImVec2(m_position.x - datas.window->getPosition().x, m_position.y - datas.window->getPosition().y));
     prevPos = Vec2(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
-}
-
-void UIMenu::textCentered(std::string text)
-{
-    auto windowWidth = ImGui::GetWindowSize().x;
-    auto textWidth   = ImGui::CalcTextSize(text.c_str()).x;
-
-    ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-    ImGui::Text(text.c_str());
 }

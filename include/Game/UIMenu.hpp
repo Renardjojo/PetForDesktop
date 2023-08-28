@@ -1,12 +1,11 @@
 #pragma once
 
+#include "imgui.h"
 #include "Engine/ClassUtility.hpp"
 #include "Engine/InteractionComponent.hpp"
 #include "Engine/Rect.hpp"
 
 #include "Game/GameData.hpp"
-
-#include <string>
 
 class UIMenu : public Rect
 {
@@ -22,8 +21,6 @@ protected:
     void windowBegin();
 
     void windowEnd();
-
-    void textCentered(std::string text);
 
 public:
     GETTER_BY_VALUE(ShouldClose, shouldClose)

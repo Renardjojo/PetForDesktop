@@ -2,6 +2,7 @@
 
 #include "Engine/FileExplorer.hpp"
 #include "Engine/InteractionSystem.hpp"
+#include "Engine/ImGuiTools.hpp"
 
 #include "Game/Pet.hpp"
 #include "Game/SettingMenu.hpp"
@@ -93,7 +94,9 @@ void ContextualMenu::update(double deltaTime)
         exit(0);
     }
 
-    textCentered(std::format("{:.1f} FPS", ImGui::GetIO().Framerate));
+    std::string txt = std::format("{:.1f} FPS", ImGui::GetIO().Framerate);
+    ImGui::SetNextTextLayout(txt.c_str(), 0.5, 0);
+    ImGui::Text(txt.c_str());
     windowEnd();
     ImGui::End();
 }
