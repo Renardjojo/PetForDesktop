@@ -175,13 +175,12 @@ inline IMGUI_API bool ImageButtonWithTextRight(ImTextureID texId, const char* la
     const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + btnSize);
     ImVec2       start(0, 0);
     start = window->DC.CursorPos + padding;
-    start.x += textSize.x / 2;
+    start.x += btnSize.x / 2 - textSize.x / 2 - size.x - innerSpacing - padding.x + size.x / 2;
     if (size.y < textSize.y)
         start.y += (textSize.y - size.y) * .5f;
     const ImRect image_bb(start, start + size);
     start = window->DC.CursorPos + padding;
-    start.x += textSize.x / 2;
-    start.x += size.x + innerSpacing;
+    start.x += btnSize.x / 2 - textSize.x / 2 - padding.x + size.x / 2;
     if (size.y > textSize.y)
         start.y += (size.y - textSize.y) * .5f;
     ItemSize(bb);

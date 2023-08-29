@@ -64,7 +64,8 @@ protected:
 
         datas.pDiscordLogo =
             std::make_unique<Texture>(RESOURCE_PATH "/sprites/logo/discord-mark-blue.png", false, Texture::linearClampSampling);
-        //datas.pPatreonLogo =  std::make_unique<Texture>();
+        datas.pPatreonLogo = std::make_unique<Texture>(RESOURCE_PATH "/sprites/logo/Digital-Patreon-Logo_FieryCoral.png", false,
+                                                       Texture::linearClampSampling);
     }
 
 public:

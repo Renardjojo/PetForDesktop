@@ -1,8 +1,8 @@
 #include "Game/ContextualMenu.hpp"
 
 #include "Engine/FileExplorer.hpp"
-#include "Engine/InteractionSystem.hpp"
 #include "Engine/ImGuiTools.hpp"
+#include "Engine/InteractionSystem.hpp"
 
 #include "Game/Pet.hpp"
 #include "Game/SettingMenu.hpp"
@@ -12,12 +12,12 @@
 #include <format>
 
 ContextualMenu::ContextualMenu(GameData& inDatas, Pet& inPet, Vec2 inPosition)
-    : UIMenu(inDatas, inPosition, Vec2(75.f, 150.f)), pet{inPet}
-{}
+    : UIMenu(inDatas, inPosition, Vec2(100.f, 150.f)), pet{inPet}
+{
+}
 
 ContextualMenu ::~ContextualMenu()
 {
-
 }
 
 void ContextualMenu::update(double deltaTime)
@@ -74,16 +74,20 @@ void ContextualMenu::update(double deltaTime)
     ImGui::Separator();
     ImGui::Spacing();
 
-    float imageRatio = ImGui::GetTextLineHeight() / datas.pDiscordLogo->getHeight();
-    if (ImGui::ImageButtonWithTextRight(
-            reinterpret_cast<ImTextureID>(datas.pDiscordLogo->getID()), "Join us!",
-            ImVec2(datas.pDiscordLogo->getWidth() * imageRatio, datas.pDiscordLogo->getHeight() * imageRatio),
-            sizeButton, ImVec2(ImGui::GetStyle().FramePadding.x * 2, -1)))
+    float  imageRatio = ImGui::GetTextLineHeight() / datas.pDiscordLogo->getHeight();
+    ImVec2 imageSize =
+        ImVec2(datas.pDiscordLogo->getWidth() * imageRatio, datas.pDiscordLogo->getHeight() * imageRatio);
+    ImVec2 imageTextPadding = ImVec2(ImGui::GetStyle().FramePadding.x * 2, -1);
+    if (ImGui::ImageButtonWithTextRight(reinterpret_cast<ImTextureID>(datas.pDiscordLogo->getID()), "Join us!",
+                                        imageSize, sizeButton, imageTextPadding))
     {
         SystemOpen("https://discord.gg/gjdQmHAp7e") shouldClose = true;
     }
 
-    if (ImGui::Button("Support this project", sizeButton))
+    imageRatio = ImGui::GetTextLineHeight() / datas.pPatreonLogo->getHeight();
+    imageSize  = ImVec2(datas.pPatreonLogo->getWidth() * imageRatio, datas.pPatreonLogo->getHeight() * imageRatio);
+    if (ImGui::ImageButtonWithTextRight(reinterpret_cast<ImTextureID>(datas.pPatreonLogo->getID()),
+                                        "Support this project", imageSize, sizeButton, imageTextPadding))
     {
         SystemOpen("https://www.patreon.com/PetForDesktop") shouldClose = true;
     }
