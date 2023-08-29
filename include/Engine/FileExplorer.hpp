@@ -31,11 +31,11 @@ void recycleFileOrDirectory(const std::filesystem::path& path);
 #endif
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-#define SystemOpen(path) system("start " path);
+#define SystemOpen(path) system((std::string("start ") + path).c_str());
 #elif __APPLE__
-#define SystemOpen(path) system("open " path);
+#define SystemOpen(path) system((std::string("open ") + path).c_str());
 #elif __linux__
-#define SystemOpen(path) system("xdg-open" path);
+#define SystemOpen(path) system((std::string("xdg-open") + path).c_str());
 #else
 #error "Unknown compiler"
 #endif

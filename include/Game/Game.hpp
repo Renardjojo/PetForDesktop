@@ -8,6 +8,7 @@
 #include "Engine/StylePanel.hpp"
 #include "Game/ContextualMenu.hpp"
 #include "Game/SettingMenu.hpp"
+#include "Game/UpdateMenu.hpp"
 #include "Game/GameData.hpp"
 #include "Game/Pet.hpp"
 
@@ -33,7 +34,6 @@
 class Game
 {
 protected:
-    Updater      updater;
     GameData     datas;
     PhysicSystem physicSystem;
 
@@ -104,6 +104,9 @@ public:
 
         srand(datas.randomSeed == -1 ? (unsigned)time(nullptr) : datas.randomSeed);
 
+#if NDEBUG // Check for update only on release to avoid harassing the server
+        Updater::instance().checkForUpdate(datas);
+#endif
         datas.pets.emplace_back(std::make_shared<Pet>(datas));
     }
 
@@ -266,6 +269,14 @@ public:
 
                     if (datas.settingMenu->getShouldClose())
                         datas.settingMenu = nullptr;
+                }
+
+                if (datas.updateMenu != nullptr)
+                {
+                    datas.updateMenu->update(deltaTime);
+
+                    if (datas.updateMenu->getShouldClose())
+                        datas.updateMenu = nullptr;
                 }
 
                 datas.window->initDrawContext();

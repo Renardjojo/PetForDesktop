@@ -8,8 +8,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(PROJECT_NAME "PetForDesktop")
 set(PROJECT_VERSION 1.3.1)
-set(REL_RESOURCES_DIR "content")
 
+set(REL_RESOURCES_DIR "content")
 set(ABS_RESOURCE_DIR "${CMAKE_SOURCE_DIR}/${REL_RESOURCES_DIR}")
 set(ABS_DEPS_DIR "${CMAKE_SOURCE_DIR}/deps")
 set(ABS_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include")
@@ -20,37 +20,6 @@ set(ABS_LICENSE_PATH "${CMAKE_SOURCE_DIR}/LICENSE")
 set(ABS_README_PATH "${CMAKE_SOURCE_DIR}/README.md")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
-########### Create version ############
-#find_package(Git)
-#
-#if(GIT_EXECUTABLE)
-#  # Generate a git-describe version string from Git repository tags
-#  execute_process(
-#    COMMAND ${GIT_EXECUTABLE} describe --tags --dirty --match "v*"
-#    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-#    OUTPUT_VARIABLE GIT_DESCRIBE_VERSION
-#    RESULT_VARIABLE GIT_DESCRIBE_ERROR_CODE
-#    OUTPUT_STRIP_TRAILING_WHITESPACE
-#    )
-#
-#  if(NOT GIT_DESCRIBE_ERROR_CODE)
-#    string(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" VERSION_MAJOR "${GIT_DESCRIBE_VERSION}")
-#    string(REGEX REPLACE "^v[0-9]+\\.([0-9]+).*" "\\1" VERSION_MINOR "${GIT_DESCRIBE_VERSION}")
-#    string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" VERSION_PATCH "${GIT_DESCRIBE_VERSION}")
-#    string(REGEX REPLACE "^v[0-9]+\\.[0-9]+\\.[0-9]+(.*)" "\\1" VERSION_SHA1 "${GIT_DESCRIBE_VERSION}")
-#    set(PROJECT_VERSION_SHORT "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
-#    set(PROJECT_VERSION_SHA ${GIT_DESCRIBE_VERSION})
-#  endif()
-#endif()
-#
-## Final fallback: Just use a bogus version string that is semantically older
-## than anything else and spit out a warning to the developer.
-#if(NOT DEFINED PROJECT_VERSION_SHA)
-#  set(PROJECT_VERSION_SHA v0.0.0-unknown)
-#  set(PROJECT_VERSION_SHORT v0.0.0)
-#  message(WARNING "Failed to determine PROJECT_VERSION_SHA from Git tags. Using default version \"${PROJECT_VERSION_SHA}\".")
-#endif()
 
 ########### Create project ############
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION})

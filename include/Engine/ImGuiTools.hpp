@@ -2,6 +2,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h" //ImGuiItemFlags_Disabled, PushItemFlag
+#include "Engine/FileExplorer.hpp"
 
 // Thank's to : https://github.com/ocornut/imgui/issues/211#issuecomment-812293268
 namespace ImGui
@@ -325,6 +326,44 @@ inline IMGUI_API bool imageButtonWithTextCenter(ImTextureID texId, const char* l
     if (textSize.x > 0)
         RenderText(start, label);
     return pressed;
+}
+
+//https://gist.github.com/dougbinks/ef0962ef6ebe2cadae76c4e9f0586c69
+inline void addUnderLine(ImColor col)
+{
+    ImVec2 min = ImGui::GetItemRectMin();
+    ImVec2 max = ImGui::GetItemRectMax();
+    min.y      = max.y;
+    ImGui::GetWindowDrawList()->AddLine(min, max, col, 1.0f);
+}
+
+inline void textURL(const char* name, const char* URL, int sameLineBefore
+    , int sameLineAfter)
+{
+    if (1 == sameLineBefore)
+    {
+        ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+    }
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
+    ImGui::Text(name);
+    ImGui::PopStyleColor();
+    if (ImGui::IsItemHovered())
+    {
+        if (ImGui::IsMouseClicked(0))
+        {
+            SystemOpen(URL);
+        }
+        addUnderLine(ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
+        ImGui::SetTooltip("Open in browser\n%s", URL);
+    }
+    else
+    {
+        addUnderLine(ImGui::GetStyle().Colors[ImGuiCol_Button]);
+    }
+    if (1 == sameLineAfter)
+    {
+        ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+    }
 }
 
 } // namespace ImGui

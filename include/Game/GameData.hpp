@@ -19,6 +19,7 @@ struct GameData
     std::vector<std::shared_ptr<class Pet>> pets;
     std::unique_ptr<class ContextualMenu>   contextualMenu;
     std::unique_ptr<class SettingMenu>      settingMenu;
+    std::unique_ptr<class UpdateMenu>      updateMenu;
 
     bool shouldUpdateFrame = true;
 

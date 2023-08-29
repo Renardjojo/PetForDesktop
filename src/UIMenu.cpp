@@ -30,7 +30,7 @@ void UIMenu::windowBegin()
         shouldInitPosition = false;
     }
 
-    ImGui::SetNextWindowSize(ImVec2(m_size.x, m_size.y));
+    ImGui::SetNextWindowSize(ImVec2(m_size.x, m_size.y), ImGuiCond_FirstUseEver);
 }
 
 void UIMenu::windowEnd()
