@@ -15,7 +15,7 @@ class Updater
 
 public:
     Updater()
-#if _NDEBUG // Do not run the update program in debug mode to avoid spamming web requests
+#if NDEBUG // Do not run the update program in debug mode to avoid spamming web requests
         : m_thread(Updater::checkForUpdate)
 #endif
     {

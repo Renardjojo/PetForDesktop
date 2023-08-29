@@ -66,7 +66,6 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 else ()
     message(STATUS "Generate CMake cache for Debug")
-    add_definitions(-DDEBUG)
 endif (CMAKE_BUILD_TYPE MATCHES Release)
 
 # Graphic API
