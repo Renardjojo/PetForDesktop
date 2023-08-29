@@ -70,14 +70,16 @@ void ContextualMenu::update(double deltaTime)
         shouldClose = true;
     }
 
-    ImGui::Spacing();
+    // Next content at the end of the window
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetContentRegionAvail().y -
+                         ImGui::GetTextLineHeightWithSpacing() * 5 - ImGui::GetStyle().FramePadding.y * 5 - 1);
     ImGui::Separator();
-    ImGui::Spacing();
 
     float  imageRatio = ImGui::GetTextLineHeight() / datas.pDiscordLogo->getHeight();
     ImVec2 imageSize =
         ImVec2(datas.pDiscordLogo->getWidth() * imageRatio, datas.pDiscordLogo->getHeight() * imageRatio);
     ImVec2 imageTextPadding = ImVec2(ImGui::GetStyle().FramePadding.x * 2, -1);
+
     if (ImGui::ImageButtonWithTextRight(reinterpret_cast<ImTextureID>(datas.pDiscordLogo->getID()), "Join us!",
                                         imageSize, sizeButton, imageTextPadding))
     {
