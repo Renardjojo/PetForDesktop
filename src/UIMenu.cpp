@@ -8,7 +8,7 @@ UIMenu::UIMenu(GameData& inDatas, Vec2 inPosition, Vec2 inSize) : datas{inDatas}
     datas.window->addElement(*this);
     datas.interactionSystem->addComponent(interactionComponent);
     m_size     = inSize * datas.scale;
-    m_position = inPosition;
+    m_position = inPosition - m_size / 2;
     prevPos    = Vec2(m_position.x - datas.window->getPosition().x, m_position.y - datas.window->getPosition().y);
     onChange();
 
@@ -30,7 +30,7 @@ void UIMenu::windowBegin()
         shouldInitPosition = false;
     }
 
-    ImGui::SetNextWindowSize(ImVec2(m_size.x, m_size.y), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(m_size.x, m_size.y));
 }
 
 void UIMenu::windowEnd()

@@ -83,7 +83,7 @@ std::string UpdateMenu::markdownToPlainText(const std::string& markdown)
 }
 
 UpdateMenu::UpdateMenu(GameData& inDatas, Vec2 inPosition, const char* inContent, const char* version)
-    : UIMenu(inDatas, inPosition, Vec2(100.f, 150.f)), content{inContent}
+    : UIMenu(inDatas, inPosition, Vec2(400.f, 200.f)), content{inContent}
 {
     std::regex  pattern(R"("body"\s*:\s*"([^"]*)\")");
     std::smatch matches;
@@ -102,9 +102,7 @@ void UpdateMenu::update(double deltaTime)
 
     bool isWindowOpen = true;
 
-    ImGui::Begin(windowName.c_str(), &isWindowOpen,
-                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse |
-                     ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin(windowName.c_str(), &isWindowOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
     shouldClose = !isWindowOpen;
 
     ImVec2 sizeButton = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
@@ -128,7 +126,7 @@ void UpdateMenu::update(double deltaTime)
 
             // Log the author text and URL using ImGui::Text
             ImGui::Text("%s", authorText.c_str());
-            ImGui::textURL(urlText.c_str(), urlText.c_str(), 0, 0);
+            ImGui::textURL(urlText.c_str(), urlText.c_str(), 1, 0);
         }
         else
         {
