@@ -43,7 +43,7 @@ jobs:
           mkdir ${{env.BINARY_FOLDER}}/${{env.WIN64_FOLDER}}
           mkdir ${{env.BINARY_FOLDER}}/${{env.WIN64_FOLDER}}/${{env.PROJECT_NAME}}
 
-          mv out/x64-Release_ogl/Release/${{env.PROJECT_NAME}}.exe ${{env.BINARY_FOLDER}}/${{env.WIN64_FOLDER}}/${{env.PROJECT_NAME}}
+          mv out/x64-Release_ogl/${{env.PROJECT_NAME}}.exe ${{env.BINARY_FOLDER}}/${{env.WIN64_FOLDER}}/${{env.PROJECT_NAME}}
           mv content ${{env.BINARY_FOLDER}}/${{env.WIN64_FOLDER}}/${{env.PROJECT_NAME}}
 
           mv README.md ${{env.BINARY_FOLDER}}/${{env.WIN64_FOLDER}}/${{env.PROJECT_NAME}}/
