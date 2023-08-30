@@ -2,6 +2,7 @@
 
 #include "Engine/ClassUtility.hpp"
 #include "Engine/Vector2.hpp"
+#include "Engine/Canvas.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -9,13 +10,13 @@ void cursorPositionCallback(GLFWwindow* window, double x, double y);
 void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods);
 void processInput(GLFWwindow* window);
 
-class WindowGLFW
+class WindowGLFW : public Canvas
 {
 protected:
     GLFWwindow* window = nullptr;
 
-    Vec2i windowSize = {0, 0};
-    Vec2i windowPos  = {0, 0};
+    bool isMousePassThrough;
+    bool useMousePassThrough;
 
 protected:
     void initGLFW();
@@ -23,21 +24,48 @@ protected:
     void postSetupWindow(struct GameData& datas);
     void initWindow(struct GameData& datas);
 
+    void UpdatePositionSize(const Rect& other)
+    {
+        if (encapsulate(other))
+        {
+            glfwSetWindowSize(window, m_size.x, m_size.y);
+            glfwSetWindowPos(window, m_position.x, m_position.y);
+        }
+    }
+
 public:
     GETTER_BY_VALUE(Window, window)
-    GETTER_BY_VALUE(Size, windowSize)
-    GETTER_BY_VALUE(Pos, windowPos)
 
-    void setSize(const Vec2i in_windowSize) noexcept
-    {       
-        windowSize = in_windowSize;
+    void setMousePassThrough(bool flag)
+    {
+        if (useMousePassThrough && isMousePassThrough == flag)
+            return;
+
+        isMousePassThrough = flag;
+        glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, isMousePassThrough);
+    }
+
+    void setSize(const Vec2 windowSize) noexcept
+    {
+        if (windowSize == m_size)
+            return;
+        Canvas::setSize(windowSize);
         glfwSetWindowSize(window, windowSize.x, windowSize.y);
     }
 
-    void setPos(const Vec2i in_windowPos) noexcept
+    void setPosition(const Vec2 windowPos) noexcept
     {
-        windowPos = in_windowPos;
+        if (windowPos == m_position)
+            return;
+
+        Canvas::setPosition(windowPos);
         glfwSetWindowPos(window, windowPos.x, windowPos.y);
+    }
+
+    void setPositionSize(const Vec2 windowPos, const Vec2 windowSize) noexcept
+    {
+        setPosition(windowPos);
+        setSize(windowPos);
     }
 
     inline bool shouldClose() const noexcept
@@ -58,5 +86,17 @@ public:
     void renderFrame()
     {
         glfwSwapBuffers(window);
+    }
+
+    void addElement(Rect& element)
+    {
+        m_elements.emplace_back(&element);
+        element.setOnChange([&](const Rect& other) 
+            { UpdatePositionSize(other); });
+    }
+
+    void removeElement(Rect& element)
+    {
+        m_elements.remove_if([&](auto rect) { return rect == &element; });
     }
 };

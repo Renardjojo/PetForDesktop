@@ -1,6 +1,5 @@
 Game:
     FPS: 60  # min 1
-    Scale: 2 # min 1
     RandomSeed: -1 # -1: use random seed
 Physic:
     PhysicFrameRate: 60 # min 0
@@ -17,9 +16,15 @@ Physic:
 GamePlay:
     CoyoteTimeCursorMovement: 0.05 # min 0. Record duration of the velocity before released the pet to preserve velocity with the mouse movement
 Window:
-    ShowFrameBufferBackground: false
+    FullScreenWindow: true # Initialize the window size and position in full screen based on the first monitor
+    ShowFrameBufferBackground: false # Define if window background should be visible
     UseForwardWindow: true # Define if the application should be displayed in forground 
     ShowWindow: false # Display the window edge or not
     UseMousePassThoughWindow: true # Define if user can selection pet only with selected pixel or with the entire windows 
+Style:
+    Theme: PetForDesktop
+Accessibility:
+    Scale: 2
+    TextScale: 1
 Debug:
     ShowEdgeDetection: false # Debug mode to display the result of the collision alogyrthm on the entire window

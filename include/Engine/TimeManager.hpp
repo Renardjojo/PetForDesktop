@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Singleton.hpp"
 #include "Game/GameData.hpp"
 
 #include <GLFW/glfw3.h>
@@ -28,7 +29,7 @@ struct TimerTask
     }
 };
 
-class TimeManager
+class TimeManager : public Singleton<TimeManager>
 {
 protected:
     double m_time     = glfwGetTime();
@@ -37,13 +38,15 @@ protected:
     double    m_timeAccLoop    = 0.;
     double    m_deltaTime      = 0.;
     double    m_fixedDeltaTime = 1. / 60.;
-    GameData& datas;
+    GameData* datas;
 
     std::priority_queue<TimerTask, std::vector<TimerTask>, std::greater<TimerTask>> m_timerQueue;
 
 public:
-    TimeManager(GameData& data) : m_fixedDeltaTime{1. / data.FPS}, datas{data}
+    void Init(GameData& data)
     {
+        m_fixedDeltaTime = 1. / data.FPS;
+        datas = &data;
     }
 
     // improve first frame accurancy
@@ -55,7 +58,7 @@ public:
 
     inline void emplaceTimer(std::function<void()> functionToExecute, double delay, bool isLooping = false) noexcept
     {
-        m_timerQueue.emplace(functionToExecute, delay, delay + datas.timeAcc, isLooping);
+        m_timerQueue.emplace(functionToExecute, delay, delay + datas->timeAcc, isLooping);
     }
 
     void setFrameRate(int FPS)
@@ -79,19 +82,19 @@ public:
             m_deltaTime = 0.25;
 
         /*Add accumulator*/
-        datas.timeAcc += m_deltaTime;
-        datas.timeAcc *= !isinf(datas.timeAcc); // reset if isInf (avoid conditionnal jump)
+        datas->timeAcc += m_deltaTime;
+        datas->timeAcc *= !isinf(datas->timeAcc); // reset if isInf (avoid conditionnal jump)
 
         /*Fixed update*/
         m_timeAccLoop += m_deltaTime;
 
-        while (m_timeAccLoop >= m_fixedDeltaTime)
+        if (m_timeAccLoop >= m_fixedDeltaTime)
         {
-            limitedUpdateFunction(m_fixedDeltaTime);
-            m_timeAccLoop -= m_fixedDeltaTime;
+            limitedUpdateFunction(m_timeAccLoop);
+            m_timeAccLoop = 0.f;
         }
 
-        while (!m_timerQueue.empty() && m_timerQueue.top().globalTimer <= datas.timeAcc)
+        while (!m_timerQueue.empty() && m_timerQueue.top().globalTimer <= datas->timeAcc)
         {
             const TimerTask& timerTask = m_timerQueue.top();
             timerTask.task();
@@ -103,12 +106,12 @@ public:
             m_timerQueue.pop();
         }
 
-        while (!datas.deltasCursorPosBuffer.empty() &&
-               datas.deltasCursorPosBuffer.top().timer + datas.coyoteTimeCursorPos <= datas.timeAcc)
+        while (!datas->deltasCursorPosBuffer.empty() &&
+               datas->deltasCursorPosBuffer.top().timer + datas->coyoteTimeCursorPos <= datas->timeAcc)
         {
-            const GameData::DeltaCursosPosElem& elem = datas.deltasCursorPosBuffer.top();
-            datas.deltaCursorAcc -= elem.pos;
-            datas.deltasCursorPosBuffer.pop();
+            const GameData::DeltaCursosPosElem& elem = datas->deltasCursorPosBuffer.top();
+            datas->deltaCursorAcc -= elem.pos;
+            datas->deltasCursorPosBuffer.pop();
         }
     }
 };

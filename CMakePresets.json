@@ -13,6 +13,7 @@
       "binaryDir": "${sourceDir}/out/x64-Debug_ogl",
       "generator": "Ninja",
       "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
         "USE_OPENGL_API": "True"
       }
     },
@@ -23,6 +24,7 @@
       "binaryDir": "${sourceDir}/out/x64-Release_ogl",
       "generator": "Ninja",
       "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
         "USE_OPENGL_API": "True"
       }
     }

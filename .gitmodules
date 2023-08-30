@@ -10,3 +10,6 @@
 [submodule "deps/cpr"]
 	path = deps/cpr
 	url = https://github.com/libcpr/cpr.git
+[submodule "deps/imgui/imgui"]
+	path = deps/imgui/imgui
+	url = https://github.com/ocornut/imgui.git
