@@ -1,10 +1,14 @@
 #pragma once
 
-#include "Engine/Shader.hpp"
-#include "Engine/Vector2.hpp"
-#include "Game/GameData.hpp"
+#ifdef USE_OPENGL_API
+#include "Engine/Graphics/ShaderOGL.hpp"
+#include "Engine/Graphics/TextureOGL.hpp"
+#endif // USE_OPENGL_API
 
-#include <glad/glad.h>
+#include "Engine/ClassUtility.hpp"
+#include "Engine/Vector2.hpp"
+#include "Engine/Rect.hpp"
+#include "Game/GameData.hpp"
 
 class SpriteSheet : public Texture
 {
@@ -18,22 +22,20 @@ public:
     {
     }
 
-    void useSection(GameData& data, Shader& shader, int idSection, bool hFlip = false)
-    {
-        data.petSize.x    = width / tileCount * data.scale * sizeFactor;
-        data.petSize.y    = height * data.scale * sizeFactor;
-        data.windowSize.x = data.petSize.x + data.windowExt.x + data.windowMinExt.x;
-        data.windowSize.y = data.petSize.y + data.windowExt.y + data.windowMinExt.y;
-        glfwSetWindowSize(data.window, data.windowSize.x, data.windowSize.y);
+    GETTER_BY_VALUE(TileCount, tileCount)
+    GETTER_BY_VALUE(SizeFactor, sizeFactor)
 
+    void useSection(const Rect& rect, GameData& data, Shader& shader, int idSection, bool hFlip = false)
+    {
         float       hScale  = 1.f / tileCount;
         const float vScale  = 1.f; // This field can be used
         float       hOffSet = idSection / (float)tileCount;
         const float vOffset = 0.f; // This field can be used
 
-        Vec2 clipSpacePos  = Vec2::remap(static_cast<Vec2i>(data.petPos), data.windowPos,
-                                        data.windowPos + data.windowSize, Vec2{0, 1}, Vec2{1, 0});          // [-1, 1]
-        Vec2 clipSpaceSize = Vec2::remap(data.petSize, Vec2{0, 0}, data.windowSize, Vec2{0, 0}, Vec2{1, 1}); // [0, 1]
+        Vec2 clipSpacePos = Vec2::remap(rect.getCornerMin(), data.window->getCornerMin(),
+                        data.window->getCornerMax(), Vec2{0, 1}, Vec2{1, 0}); // [-1, 1]
+        Vec2 clipSpaceSize =
+            Vec2::remap(rect.getSize(), Vec2{0, 0}, data.window->getSize(), Vec2{0, 0}, Vec2{1, 1}); // [0, 1]
 
         // In shader, based on bottom left instead of upper left
         clipSpacePos.y -= clipSpaceSize.y;
@@ -48,15 +50,5 @@ public:
         shader.setVec4("uScaleOffSet", hScale, vScale, hOffSet, vOffset);
         shader.setVec4("uClipSpacePosSize", clipSpacePos.x, clipSpacePos.y, clipSpaceSize.x, clipSpaceSize.y);
         use();
-    }
-
-    float getSizeFactor() const
-    {
-        return sizeFactor;
-    }
-
-    int getTileCount() const
-    {
-        return tileCount;
     }
 };

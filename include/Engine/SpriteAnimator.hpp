@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Engine/SpriteSheet.hpp"
+#include "Engine/ClassUtility.hpp"
+#include "Engine/Rect.hpp"
 #include "Game/GameData.hpp"
 
 class SpriteAnimator
@@ -15,6 +17,8 @@ protected:
     int          indexCurrentAnimSprite = 0;
 
 public:
+    GETTER_BY_VALUE(Sheet, pSheet)
+
     void play(GameData& data, SpriteSheet& inSheet, bool inLoop, int inFrameRate)
     {
         pSheet                 = &inSheet;
@@ -54,10 +58,10 @@ public:
         }
     }
 
-    void draw(GameData& datas, Shader& shader, bool donthFlip)
+    void draw(const Rect& rect, GameData& datas, Shader& shader, bool donthFlip)
     {
         if (pSheet != nullptr)
-            pSheet->useSection(datas, shader, indexCurrentAnimSprite, !donthFlip);
+            pSheet->useSection(rect, datas, shader, indexCurrentAnimSprite, !donthFlip);
     }
 
     bool isDone() const
@@ -65,13 +69,11 @@ public:
         return pSheet == nullptr || isEnd;
     }
 
-    float getSizeFactor() const
+    bool isMouseOver(Vec2i cursorPos, bool flip)
     {
-        return pSheet->getSizeFactor();
-    }
+        if (flip)
+            cursorPos.x = (pSheet->getWidth() / pSheet->getTileCount()) - cursorPos.x - 1;
 
-    bool isMouseOver(Vec2i cursorPos)
-    {
         cursorPos.x += indexCurrentAnimSprite * pSheet->getWidth() / pSheet->getTileCount();
         return pSheet != nullptr ? pSheet->isPixelOpaque(cursorPos) : false;
     }

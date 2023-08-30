@@ -12,11 +12,16 @@
   </a>
 </p>
 <p align="center">
-  <a href="https://discord.gg/zuBup4N8">
-    <img alt="Join us on discord" src="https://img.shields.io/badge/join us-blue?logo=discord&logoColor=white">
+  <a href="https://discord.gg/gjdQmHAp7e">
+    <img alt="Join us on discord" height="26" width="91" src="https://img.shields.io/badge/join us-blue?logo=discord&logoColor=white">
+  </a>
+  <a href="https://www.patreon.com/PetForDesktop">
+    <img alt="Join us on patreon" height="26" width="91" src="https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white">
   </a>
 </p>
 
+
+ 
 ![image](https://user-images.githubusercontent.com/55276408/195999573-1e5f854b-230b-4e17-9920-6493975ed145.png)
 ![PetForDesktopDemonstration](https://user-images.githubusercontent.com/55276408/222144931-3546cc40-3989-4a36-8e5c-bf43e239ee2a.gif)
  
@@ -34,12 +39,12 @@ Just download the [lastest version](https://github.com/Renardjojo/PetDesktop//re
 - Replace the existing animation with your own horizontal sprite sheet.
 - Walk and jump but also edit and create your own animation!
 - Modify the code and contribute! (it's open source and under MIT license!)
-- Support development: Developing an app takes a lot of time for free and love is not enough to live on.
 - Use multiple monitors
+- Open a context menu to interact with it
+- [Support development](https://www.patreon.com/PetForDesktop): Access the special discord channel, test new versions before anyone else and vote for the content of the next update.
 
 ## What is currently not possible with PetForDesktop:
 - Cook and make your own coffee...
-- Save your pet's progress
 - Launch multiple pets (you can but it is not optimized)
 - Works on MacOs and Linux...
 
@@ -55,3 +60,8 @@ PetForDesktop also takes small screenshots of your screen to process collision a
 - *LeGitHubDeTai* with his tool "[github-to-discord](https://github.com/LeGitHubDeTai/github-to-discord)" to generate a notification on discord when new versions are released.  
 - *elthen* with his [fox sprite sheet](https://elthen.itch.io/2d-pixel-art-fox-sprites) which I used and modified to suit my needs.  
 - *cassala* with his [bubble sprite sheet](https://cassala.itch.io/bubble-sprites) which I used and modified to suit my needs.  
+- *jbeder and all his contributors* thanks to [yaml-cpp](https://github.com/jbeder/yaml-cpp) I was able to save parameters in a very readable format.
+- *aaronmjacobs and all his contributors* thanks to [Boxer](https://github.com/aaronmjacobs/Boxer) I've been able to open error, warning and information pop-ups if something goes wrong with the application cross-platform.
+- Thanks to all the contributors to [cpr](https://github.com/libcpr/cpr), I've been able to update and download it.
+- Thanks to all the contributors to [glfw](https://github.com/glfw/glfw) I was able to create a window and interact with it in a cross-plaftorm way.
+- *ocornuta and all it's contributor* thanks to its wonderful library [Dear ImGui](https://github.com/ocornut/imgui) I was able to add a custom user interface very easily.

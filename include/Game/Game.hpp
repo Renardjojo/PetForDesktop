@@ -1,151 +1,154 @@
 #pragma once
 
+#include "Engine/InteractionSystem.hpp"
+#include "Engine/Log.hpp"
+#include "Engine/PhysicSystem.hpp"
+#include "Engine/Settings.hpp"
+#include "Engine/SpriteSheet.hpp"
+#include "Engine/StylePanel.hpp"
+#include "Game/ContextualMenu.hpp"
+#include "Game/SettingMenu.hpp"
+#include "Game/UpdateMenu.hpp"
 #include "Game/GameData.hpp"
 #include "Game/Pet.hpp"
 
-#include "Engine/Framebuffer.hpp"
-#include "Engine/Log.hpp"
-#include "Engine/PhysicSystem.hpp"
-#include "Engine/ScreenSpaceQuad.hpp"
-#include "Engine/Settings.hpp"
-#include "Engine/Shader.hpp"
-#include "Engine/SpriteSheet.hpp"
-#include "Engine/Texture.hpp"
+#ifdef USE_OPENGL_API
+#include "Engine/Graphics/ScreenSpaceQuadOGL.hpp"
+#include "Engine/Graphics/ShaderOGL.hpp"
+#include "Engine/Graphics/TextureOGL.hpp"
+#endif // USE_OPENGL_API
+
 #include "Engine/TimeManager.hpp"
 #include "Engine/Updater.hpp"
 #include "Engine/Utilities.hpp"
 #include "Engine/Vector2.hpp"
-#include "Engine/Window.hpp"
+
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
+#include "imgui.h"
 
 #include <GLFW/glfw3.h>
-#include <glad/glad.h>
 
 #include <functional>
 
 class Game
 {
 protected:
-    Updater      updater;
     GameData     datas;
-    Setting      setting;
-    TimeManager  mainLoop;
     PhysicSystem physicSystem;
 
 protected:
-    void initWindow()
+    void createResources()
     {
-        // initialize the library
-        if (!glfwInit())
-            errorAndExit("glfw initialization error");
+        datas.pFramebuffer = std::make_unique<Framebuffer>();
 
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-#ifdef _DEBUG
-        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-#endif
+        datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(*datas.window, 0.f, 1.f);
+        datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(*datas.window, -1.f, 1.f);
 
-#ifdef __APPLE__
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
+        datas.edgeDetectionShaders.emplace_back(
+            std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/image" SHADER_VERTEX_EXT,
+                                     SHADER_RESOURCE_PATH "/dFdxEdgeDetection" SHADER_FRAG_EXT));
 
-        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, !datas.showFrameBufferBackground);
-        glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
-        glfwWindowHint(GLFW_FLOATING, datas.useForwardWindow);
+        datas.pImageShader = std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/image" SHADER_VERTEX_EXT,
+                                                      SHADER_RESOURCE_PATH "/image" SHADER_FRAG_EXT);
 
-        // Disable depth and stencil buffers
-        glfwWindowHint(GLFW_DEPTH_BITS, 0);
-        glfwWindowHint(GLFW_STENCIL_BITS, 0);
+        if (datas.debugEdgeDetection)
+            datas.pImageGreyScale =
+                std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/image" SHADER_VERTEX_EXT,
+                                         SHADER_RESOURCE_PATH "/imageGreyScale" SHADER_FRAG_EXT);
+
+        datas.pSpriteSheetShader =
+            std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/spriteSheet" SHADER_VERTEX_EXT,
+                                     SHADER_RESOURCE_PATH "/image" SHADER_FRAG_EXT);
+
+
+        datas.pDiscordLogo =
+            std::make_unique<Texture>(RESOURCE_PATH "/sprites/logo/discord-mark-blue.png", false, Texture::linearClampSampling);
+        datas.pPatreonLogo = std::make_unique<Texture>(RESOURCE_PATH "/sprites/logo/Digital-Patreon-Logo_FieryCoral.png", false,
+                                                       Texture::linearClampSampling);
+    }
+
+public:
+    Game() : physicSystem(datas)
+    {
+        logf("%s %s\n", PROJECT_NAME, PROJECT_VERSION);
+        
+        Setting::instance().importFile(RESOURCE_PATH "/setting/setting.yaml", datas);
+        TimeManager::instance().Init(datas);
 
         glfwSetMonitorCallback(setMonitorCallback);
+        datas.window = std::make_unique<Window>();
+        datas.window->init(datas);
         datas.monitors.init();
         Vec2i monitorSize    = datas.monitors.getMonitorsSize();
         Vec2i monitorsSizeMM = datas.monitors.getMonitorPhysicalSize();
 
-        datas.windowSize = {1, 1};
+        if (datas.fullScreenWindow)
+        {
+            datas.window->setSize(monitorSize);
+        }
+        else
+        {
+            datas.window->setPosition(monitorSize / 2);
+        }
 
         // Evaluate pixel distance based on dpi and monitor size
         datas.pixelPerMeter = {(float)monitorSize.x / (monitorsSizeMM.x * 0.001f),
                                (float)monitorSize.y / (monitorsSizeMM.y * 0.001f)};
 
-        datas.window = glfwCreateWindow(datas.windowSize.x, datas.windowSize.y, PROJECT_NAME, NULL, NULL);
-        if (!datas.window)
-        {
-            glfwTerminate();
-            errorAndExit("Create Window error");
-        }
+        datas.interactionSystem = std::make_unique<InteractionSystem>();
 
-        glfwMakeContextCurrent(datas.window);
-
-        glfwSetWindowAttrib(datas.window, GLFW_DECORATED, datas.showWindow);
-        glfwSetWindowAttrib(datas.window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
-        glfwDefaultWindowHints();
-    }
-
-    void initOpenGL()
-    {
-        // glad: load all OpenGL function pointers
-        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-            errorAndExit("Failed to initialize OpenGL (GLAD)");
-    }
-
-    void createResources()
-    {
-        datas.pFramebuffer = std::make_unique<Framebuffer>();
-        datas.edgeDetectionShaders.emplace_back(RESOURCE_PATH "shader/image.vs",
-                                                RESOURCE_PATH "shader/dFdxEdgeDetection.fs");
-
-        datas.pImageShader = std::make_unique<Shader>(RESOURCE_PATH "shader/image.vs", RESOURCE_PATH "shader/image.fs");
-
-        if (datas.debugEdgeDetection)
-            datas.pImageGreyScale =
-                std::make_unique<Shader>(RESOURCE_PATH "shader/image.vs", RESOURCE_PATH "shader/imageGreyScale.fs");
-
-        datas.pSpriteSheetShader =
-            std::make_unique<Shader>(RESOURCE_PATH "shader/spriteSheet.vs", RESOURCE_PATH "shader/image.fs");
-
-        datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(0.f, 1.f);
-        datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(-1.f, 1.f);
-
-#ifdef _DEBUG
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageCallback(GLDebugMessageCallback, NULL);
-#endif
-    }
-
-public:
-    Game() : setting(RESOURCE_PATH "setting/setting.yaml", datas), mainLoop(datas), physicSystem(datas)
-    {
-        logf("%s %s\n", PROJECT_NAME, PROJECT_VERSION);
-        initWindow();
-        initOpenGL();
+        initUI(datas);
 
         createResources();
 
-        glfwShowWindow(datas.window);
-        glfwSetWindowUserPointer(datas.window, &datas);
-        glfwSetMouseButtonCallback(datas.window, mousButtonCallBack);
-        glfwSetCursorPosCallback(datas.window, cursorPositionCallback);
-
         srand(datas.randomSeed == -1 ? (unsigned)time(nullptr) : datas.randomSeed);
+
+#if NDEBUG // Check for update only on release to avoid harassing the server
+        Updater::instance().checkForUpdate(datas);
+#endif
+        datas.pets.emplace_back(std::make_shared<Pet>(datas));
     }
 
-    void initDrawContext()
+    void initUI(GameData& datas)
     {
-        Framebuffer::bindScreen();
-        glViewport(0, 0, datas.windowSize.x, datas.windowSize.y);
+        // Setup Dear ImGui context
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        glActiveTexture(GL_TEXTURE0);
-        glDisable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glDisable(GL_CULL_FACE);
+        // Load style
+        bool useDefaultProfile = true;
+        setDefaultTheme(); // fallback theme
+        io.Fonts->AddFontFromFileTTF(RESOURCE_PATH "/fonts/NimbusSanL-Reg.otf", 14 * datas.textScale);
+
+        // Get all styles
+        for (const auto& entry : fs::directory_iterator(RESOURCE_PATH "/styles"))
+        {
+            std::filesystem::path path = entry.path();
+            if (path.extension() == ".style")
+            {
+                datas.stylesPath.emplace_back(path);
+
+                if (path.stem() == datas.styleName)
+                {
+                    ImGuiLoadStyle(path.string().c_str(), ImGui::GetStyle());
+                    useDefaultProfile = false;
+                }
+            }
+        }
+
+        if (useDefaultProfile)
+            datas.styleName = "default";
+
+        // Setup Platform/Renderer backends
+        ImGui_ImplGlfw_InitForOpenGL(datas.window->getWindow(), true);
+        ImGui_ImplOpenGL3_Init("#version 460");
     }
 
     ~Game()
     {
+        cleanUI();
         glfwTerminate();
     }
 
@@ -156,13 +159,13 @@ public:
             glfwPollEvents();
         }};
 
-        int frameCount = 0;
+        int                               frameCount = 0;
         const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
             ++frameCount;
 
             // render
-            initDrawContext();
-           
+            datas.window->initDrawContext();
+
             if (!(frameCount & 1) && datas.pImageGreyScale && datas.pEdgeDetectionTexture && datas.pFullScreenQuad)
             {
                 datas.pImageGreyScale->use();
@@ -173,30 +176,50 @@ public:
             }
 
             // swap front and back buffers
-            glfwSwapBuffers(datas.window);
-            
+            datas.window->renderFrame();
+
             if (frameCount & 1)
             {
                 Vec2 newPos;
-                physicSystem.CatpureScreenCollision(datas.windowSize, newPos);
+                for (const std::shared_ptr<Pet>& pet : datas.pets)
+                {
+                    physicSystem.CatpureScreenCollision(*pet, datas.window->getSize(), newPos);
+                }
             }
         }};
 
         // fullscreen
         Vec2i monitorSize;
         datas.monitors.getMonitorSize(0, monitorSize);
-        datas.windowSize = monitorSize;
-        glfwSetWindowSize(datas.window, datas.windowSize.x, datas.windowSize.y);
-        glfwSetWindowPos(datas.window, 0, 0);
-        glfwSetWindowAttrib(datas.window, GLFW_MOUSE_PASSTHROUGH, true);
-        glfwSetWindowAttrib(datas.window, GLFW_TRANSPARENT_FRAMEBUFFER, true);
-        mainLoop.setFrameRate(1);
+        datas.window->setSize(monitorSize);
+        datas.window->setPosition(Vec2::zero());
+        TimeManager::instance().setFrameRate(1);
 
-        mainLoop.start();
-        while (!glfwWindowShouldClose(datas.window))
+        TimeManager::instance().start();
+        while (!datas.window->shouldClose())
         {
-            mainLoop.update(unlimitedUpdate, limitedUpdateDebugCollision);
+            TimeManager::instance().update(unlimitedUpdate, limitedUpdateDebugCollision);
         }
+    }
+
+    void updateUI()
+    {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+    }
+
+    void renderUI()
+    {
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    }
+
+    void cleanUI()
+    {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
     }
 
     void run()
@@ -207,48 +230,96 @@ public:
             return;
         }
 
-        Pet pet(datas);
-
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
-            processInput(datas.window);
-
-            if (datas.useMousePassThoughWindow)
-                glfwSetWindowAttrib(datas.window, GLFW_MOUSE_PASSTHROUGH, !pet.isMouseOver());
+            processInput(datas.window->getWindow());
 
             // poll for and process events
             glfwPollEvents();
+
+            datas.interactionSystem->update(datas);
+
+            for (const std::shared_ptr<Pet>& pet : datas.pets)
+            {
+                pet->update(deltaTime);
+            }
         }};
 
         const std::function<void(double)> limitedUpdate{[&](double deltaTime) {
-            pet.update(deltaTime);
+            for (const std::shared_ptr<Pet>& pet : datas.pets)
+            {
+                pet->updateRendering(deltaTime);
+            }
 
             if (datas.shouldUpdateFrame)
             {
-                // render
-                initDrawContext();
+                updateUI();
 
-                pet.draw();
+                // TODO: make generic class to avoid code repetition
+                if (datas.contextualMenu != nullptr)
+                {
+                    datas.contextualMenu->update(deltaTime);
+
+                    if (datas.contextualMenu->getShouldClose())
+                        datas.contextualMenu = nullptr;
+                }
+
+                if (datas.settingMenu != nullptr)
+                {
+                    datas.settingMenu->update(deltaTime);
+
+                    if (datas.settingMenu->getShouldClose())
+                        datas.settingMenu = nullptr;
+                }
+
+                if (datas.updateMenu != nullptr)
+                {
+                    datas.updateMenu->update(deltaTime);
+
+                    if (datas.updateMenu->getShouldClose())
+                        datas.updateMenu = nullptr;
+                }
+
+                datas.window->initDrawContext();
+
+                // render
+                for (const std::shared_ptr<Pet>& pet : datas.pets)
+                {
+                    pet->draw();
+                }
+
+                renderUI();
 
                 // swap front and back buffers
-                glfwSwapBuffers(datas.window);
+                datas.window->renderFrame();
                 datas.shouldUpdateFrame = false;
             }
         }};
 
-        Vec2i                             mainMonitorPosition;
-        Vec2i                             mainMonitorSize;
+        Vec2i mainMonitorPosition;
+        Vec2i mainMonitorSize;
         datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
-        datas.windowPos = mainMonitorPosition + mainMonitorSize / 2;
-        datas.petPos    = datas.windowPos;
-        glfwSetWindowPos(datas.window, datas.windowPos.x, datas.windowPos.y);
-
-        mainLoop.emplaceTimer([&]() { physicSystem.update(1.f / datas.physicFrameRate); }, 1.f / datas.physicFrameRate,
-                              true);
-
-        mainLoop.start();
-        while (!glfwWindowShouldClose(datas.window))
+        for (size_t i = 0; i < datas.pets.size(); i++)
         {
-            mainLoop.update(unlimitedUpdate, limitedUpdate);
+            Vec2 petPosition = mainMonitorPosition;
+            petPosition.y += mainMonitorSize.y / 2.f;
+            petPosition.x += mainMonitorSize.x / (datas.pets.size() + 1) * (i + 1);
+            datas.pets[i]->setPosition(petPosition);
+        }
+
+        TimeManager::instance().emplaceTimer(
+            [&]() {
+                for (const std::shared_ptr<Pet>& pet : datas.pets)
+                {
+                    physicSystem.update(pet->getPhysicComponent(), pet->getInteractionComponent(),
+                                        1.f / datas.physicFrameRate);
+                }
+            },
+            1.f / datas.physicFrameRate, true);
+
+        TimeManager::instance().start();
+        while (!datas.window->shouldClose())
+        {
+            TimeManager::instance().update(unlimitedUpdate, limitedUpdate);
         }
     }
 };

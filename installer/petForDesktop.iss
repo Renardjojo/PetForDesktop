@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "PetForDesktop"
-#define MyAppVersion "1.2.1"
+#define MyAppVersion "1.4.0"
 #define MyAppPublisher "Foxland"
 #define MyAppURL "https://github.com/Renardjojo/PetForDesktop"
 #define MyAppExeName "PetForDesktop.exe"
@@ -28,7 +28,7 @@ DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir={#SourcePath}..\out\installer
-OutputBaseFilename=PetForDesktopInstaller
+OutputBaseFilename=PetForDesktopInstaller_{#MyAppVersion}
 SetupIconFile={#SourcePath}..\content\ico\icon.ico
 Compression=lzma
 SolidCompression=yes
@@ -66,7 +66,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "autostarticon"; Description: "{cm:AutoStartProgram,{#MyAppName}}"; GroupDescription: "{cm:AdditionalIcons}";
  
 [Files]
-Source: "{#SourcePath}..\out\x64-Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourcePath}..\out\x64-Release_ogl\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourcePath}..\content\*"; DestDir: "{app}\content"; Flags: recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 

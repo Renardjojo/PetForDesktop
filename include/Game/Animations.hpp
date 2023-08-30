@@ -10,14 +10,16 @@
 class AnimationNode : public StateMachine::Node
 {
 protected:
+    class Pet& pet;
     SpriteAnimator& spriteAnimator;
     SpriteSheet&    spriteSheets;
     int             frameRate;
     bool            loop;
 
 public:
-    AnimationNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, bool inLoop = true)
-        : spriteAnimator{inSpriteAnimator}, spriteSheets{inSpriteSheets}, frameRate{inFrameRate}, loop{inLoop}
+    AnimationNode(Pet& inPet, SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, bool inLoop = true)
+        : pet{inPet}, spriteAnimator{inSpriteAnimator}, spriteSheets{inSpriteSheets}, frameRate{inFrameRate},
+              loop{inLoop}
     {
     }
 
@@ -51,44 +53,28 @@ class PetJumpNode : public AnimationNode
     float hThrust = 0.f;
 
 public:
-    PetJumpNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, Vec2 inBaseDir,
+    PetJumpNode(Pet& inPet, SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate,
+                Vec2 inBaseDir,
                 float inVThrust, float inHThrust)
-        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, false), baseDir{inBaseDir}, vThrust{inVThrust},
+        : AnimationNode(inPet, inSpriteAnimator, inSpriteSheets, inFrameRate, false), baseDir{inBaseDir},
+          vThrust{inVThrust},
           hThrust{inHThrust}
     {
     }
 
-    void onUpdate(GameData& blackBoard, double dt) override
-    {
-        AnimationNode::onUpdate(blackBoard, dt);
-
-        if (spriteAnimator.isDone()) // Enter only for jump begin because don't loop.
-        {
-            blackBoard.velocity += baseDir * (blackBoard.side * 2.f - 1.f) * hThrust - blackBoard.gravity * vThrust;
-            blackBoard.isGrounded = false;
-        }
-    }
+    void onUpdate(GameData& blackBoard, double dt) override;
 };
 
 class GrabNode : public AnimationNode
 {
 public:
-    GrabNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, bool inLoop)
-        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, inLoop)
+    GrabNode(Pet& inPet, SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate, bool inLoop)
+        : AnimationNode(inPet, inSpriteAnimator, inSpriteSheets, inFrameRate, inLoop)
     {
     }
 
-    void onEnter(GameData& blackBoard) override
-    {
-        AnimationNode::onEnter(blackBoard);
-        blackBoard.isGrab = true;
-    }
-
-    void onExit(GameData& blackBoard) override
-    {
-        AnimationNode::onExit(blackBoard);
-        blackBoard.isGrab = false;
-    }
+    void onEnter(GameData& blackBoard) override;
+    void onExit(GameData& blackBoard) override;
 };
 
 class MovementDirectionNode : public AnimationNode
@@ -98,25 +84,13 @@ class MovementDirectionNode : public AnimationNode
     bool              applyGravity;
 
 public:
-    MovementDirectionNode(SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate,
+    MovementDirectionNode(Pet& inPet, SpriteAnimator& inSpriteAnimator, SpriteSheet& inSpriteSheets, int inFrameRate,
                           std::vector<Vec2> inDir, bool inApplyGravity = true, bool inLoop = true)
-        : AnimationNode(inSpriteAnimator, inSpriteSheets, inFrameRate, inLoop), directions{inDir}, applyGravity{inApplyGravity}
+        : AnimationNode(inPet, inSpriteAnimator, inSpriteSheets, inFrameRate, inLoop), directions{inDir},
+          applyGravity{inApplyGravity}
     {
     }
 
-    void onEnter(GameData& blackBoard) override
-    {
-        AnimationNode::onEnter(blackBoard);
-        baseDir         = directions[randNum(0, directions.size() - 1)];
-        blackBoard.side = baseDir.dot(Vec2::right()) > 0.f;
-        blackBoard.applyGravity = applyGravity;
-        blackBoard.continuousVelocity += baseDir;
-    }
-
-    void onExit(GameData& blackBoard) override
-    {
-        AnimationNode::onExit(blackBoard);
-        blackBoard.applyGravity = true;
-        blackBoard.continuousVelocity -= baseDir;
-    }
+    void onEnter(GameData& blackBoard) override;
+    void onExit(GameData& blackBoard) override;
 };

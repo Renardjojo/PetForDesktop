@@ -28,6 +28,7 @@ public:
         };
 
         std::vector<std::shared_ptr<Transition>> transitions;
+        bool                                     canUseTransition = true;
 
         void AddTransition(std::shared_ptr<Transition> transition)
         {
@@ -44,9 +45,12 @@ public:
         };
         virtual void onUpdate(GameData& blackBoard, double dt)
         {
-            for (auto&& transition : transitions)
+            if (canUseTransition)
             {
-                transition->onUpdate(blackBoard, dt);
+                for (auto&& transition : transitions)
+                {
+                    transition->onUpdate(blackBoard, dt);
+                }
             }
         };
         virtual void onExit(GameData& blackBoard)
@@ -57,6 +61,16 @@ public:
             }
         };
     };
+
+    const std::shared_ptr<Node>& getCurrent() const
+    {
+        return pCurrentNode;
+    }
+
+    void setCurrent(const std::shared_ptr<Node>& current)
+    {
+        init(current);
+    }
 
 protected:
     std::shared_ptr<Node> pCurrentNode = nullptr;
@@ -81,20 +95,23 @@ public:
 
         pCurrentNode->onUpdate(blackBoard, dt);
 
-        for (auto&& pNodeTransition : pCurrentNode->transitions)
+        if (pCurrentNode->canUseTransition)
         {
-            assert(pNodeTransition != nullptr);
-
-            if (pNodeTransition->canTransition(blackBoard))
+            for (auto&& pNodeTransition : pCurrentNode->transitions)
             {
-                pCurrentNode->onExit(blackBoard);
+                assert(pNodeTransition != nullptr);
 
-                assert(!pNodeTransition->to.empty());
-                std::shared_ptr<Node>& to = pNodeTransition->to[randNum(0, (int)pNodeTransition->to.size() - 1)];
-                assert(to != nullptr);
-                pCurrentNode = to;
-                pCurrentNode->onEnter(blackBoard);
-                break;
+                if (pNodeTransition->canTransition(blackBoard))
+                {
+                    pCurrentNode->onExit(blackBoard);
+
+                    assert(!pNodeTransition->to.empty());
+                    std::shared_ptr<Node>& to = pNodeTransition->to[randNum(0, (int)pNodeTransition->to.size() - 1)];
+                    assert(to != nullptr);
+                    pCurrentNode = to;
+                    pCurrentNode->onEnter(blackBoard);
+                    break;
+                }
             }
         }
     }
