@@ -153,10 +153,10 @@ public:
             screenShootSizeY = static_cast<int>(abs(prevToNewWinPos.y) + data.footBasementHeight);
         }
 
-        ScreenShoot              screenshoot(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
-        const ScreenShoot::Data& pxlData = screenshoot.get();
+        const ScreenCaptureLite::ImageData& pxlData =
+            liteCapture.getMonitorRegion(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
 
-        data.pCollisionTexture     = std::make_unique<Texture>(pxlData.bits, pxlData.width, pxlData.height, 4);
+        data.pCollisionTexture     = std::make_unique<Texture>(pxlData.bits.get(), pxlData.width, pxlData.height, 4);
         data.pEdgeDetectionTexture = std::make_unique<Texture>(pxlData.width, pxlData.height, 4);
 
 #if USE_OPENGL_API
@@ -208,9 +208,6 @@ public:
         // Thanks to this texture, we will iterate on pixel base on velocity vector to check collision
         // Screen shoot will be post processed with edge detection alogorythm to have only white and bblack values.
         // White will be the collision
-
-        liteCapture.StartCatpure();
-        return false;
 
         if (prevToNewWinPos.sqrLength() == 0.f)
             return false;

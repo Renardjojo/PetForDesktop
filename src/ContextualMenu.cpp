@@ -36,7 +36,7 @@ void ContextualMenu::update(double deltaTime)
 
     ImVec2 sizeButton = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
 
-    ImGui::BeginDisabled(datas.pets.size() > 2);
+    ImGui::BeginDisabled(ImGui::GetIO().Framerate < 30);
     bool shouldSpawnPet = ImGui::Button("Spawn pet", sizeButton);
     ImGui::EndDisabled();
     if (shouldSpawnPet)
