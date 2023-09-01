@@ -12,7 +12,7 @@
 
 #include "yaml-cpp/yaml.h"
 
-Pet::Pet(GameData& data)
+Pet::Pet(GameData& data, Vec2 position)
     : datas{data}, animator{data}, dialoguePopup{data}, needUpdator(data, dialoguePopup, utilitySystem),
       physicComponent(*this), interactionComponent(*this)
 {
@@ -22,6 +22,8 @@ Pet::Pet(GameData& data)
 
     parseAnimationGraph();
     setupUtilitySystem();
+
+    setPosition(position);
 }
 
 Pet::~Pet()

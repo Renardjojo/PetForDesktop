@@ -41,7 +41,14 @@ void ContextualMenu::update(double deltaTime)
     ImGui::EndDisabled();
     if (shouldSpawnPet)
     {
-        datas.pets.emplace_back(std::make_shared<Pet>(datas));
+        Vec2i mainMonitorPosition;
+        Vec2i mainMonitorSize;
+        datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
+
+        Vec2 petPosition = mainMonitorPosition;
+        petPosition.x += randNum(0, mainMonitorSize.x);
+        petPosition.y += randNum(0, mainMonitorSize.y);
+        datas.pets.emplace_back(std::make_shared<Pet>(datas, petPosition));
         shouldClose = true;
     }
 

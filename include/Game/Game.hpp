@@ -108,7 +108,14 @@ public:
 #if NDEBUG // Check for update only on release to avoid harassing the server
         Updater::instance().checkForUpdate(datas);
 #endif
-        datas.pets.emplace_back(std::make_shared<Pet>(datas));
+        Vec2i mainMonitorPosition;
+        Vec2i mainMonitorSize;
+        datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
+
+        Vec2 petPosition = mainMonitorPosition;
+        petPosition.x += randNum(0, mainMonitorSize.x);
+        petPosition.y += randNum(0, mainMonitorSize.y);
+        datas.pets.emplace_back(std::make_shared<Pet>(datas, petPosition));
     }
 
     void initUI(GameData& datas)
@@ -295,17 +302,6 @@ public:
                 datas.shouldUpdateFrame = false;
             }
         }};
-
-        Vec2i mainMonitorPosition;
-        Vec2i mainMonitorSize;
-        datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
-        for (size_t i = 0; i < datas.pets.size(); i++)
-        {
-            Vec2 petPosition = mainMonitorPosition;
-            petPosition.y += mainMonitorSize.y / 2.f;
-            petPosition.x += mainMonitorSize.x / (datas.pets.size() + 1) * (i + 1);
-            datas.pets[i]->setPosition(petPosition);
-        }
 
         TimeManager::instance().emplaceTimer(
             [&]() {
