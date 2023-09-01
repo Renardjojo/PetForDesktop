@@ -15,10 +15,16 @@ public:
         std::unique_ptr<unsigned char[]> bits        = nullptr;
     };
 
+    struct MonitorsFramebuffer : public ImageData
+    {
+        int offsetX = 0;
+        int offsetY = 0;
+    };
+
 private:
-    bool                                                       canScreenCapture = false;
-    std::shared_ptr<SL::Screen_Capture::IScreenCaptureManager> framgrabber;
-    std::map<const SL::Screen_Capture::Monitor*, std::unique_ptr<ImageData>> monitorFrameBuffer;
+    bool                                                                     canScreenCapture = false;
+    std::shared_ptr<SL::Screen_Capture::IScreenCaptureManager>               framgrabber;
+    MonitorsFramebuffer monitorsFramebuffer;
 
 public:
     ScreenCaptureLite()
@@ -54,23 +60,37 @@ public:
     void initCaptureProcess()
     {
         framgrabber =
-            SL::Screen_Capture::CreateCaptureConfiguration([]() {
-                auto mons = SL::Screen_Capture::GetMonitors();
+            SL::Screen_Capture::CreateCaptureConfiguration([&]() {
+                auto monitors = SL::Screen_Capture::GetMonitors();
+
+                int minOffsetX = std::numeric_limits<int>::max();
+                int minOffsetY = std::numeric_limits<int>::max();
+                int maxOffsetX = std::numeric_limits<int>::min();
+                int maxOffsetY = std::numeric_limits<int>::min();
+
+                for (size_t i = 0; i < monitors.size(); i++)
+                {
+                    minOffsetX = std::min(monitors[i].OffsetX, minOffsetX);
+                    minOffsetY = std::min(monitors[i].OffsetY, minOffsetY);
+                    maxOffsetX = std::max(monitors[i].OffsetX + monitors[i].Width, maxOffsetX);
+                    maxOffsetY = std::max(monitors[i].OffsetY + monitors[i].Height, maxOffsetY);
+                }
+
+                // Init global framebuffer
+                monitorsFramebuffer.offsetX     = minOffsetX;
+                monitorsFramebuffer.offsetY     = minOffsetY;
+                monitorsFramebuffer.width       = maxOffsetX - minOffsetX;
+                monitorsFramebuffer.height      = maxOffsetY - minOffsetY;
+                monitorsFramebuffer.bitPerPixel = sizeof(SL::Screen_Capture::ImageBGRA);
+                size_t size = monitorsFramebuffer.width * monitorsFramebuffer.height * monitorsFramebuffer.bitPerPixel;
+                monitorsFramebuffer.bits = std::make_unique<unsigned char[]>(size);
+
                 return SL::Screen_Capture::GetMonitors();
             })
                 ->onNewFrame([&](const SL::Screen_Capture::Image& img, const SL::Screen_Capture::Monitor& monitor) {
-                    auto monitorIt = monitorFrameBuffer.find(&monitor);
-                    if (monitorIt == monitorFrameBuffer.end())
-                    {
-                        monitorIt = monitorFrameBuffer.emplace(&monitor, nullptr).first;
-                    }
-                    size_t size = Width(img) * Height(img) * sizeof(SL::Screen_Capture::ImageBGRA);
-                    std::unique_ptr<unsigned char[]> imgbuffer(std::make_unique<unsigned char[]>(size));
-                    extractAndConvertToRGBA(img, imgbuffer.get(), size);
-
-                    monitorIt->second = std::make_unique<ImageData>(
-                        ImageData{(unsigned int)Width(img), (unsigned int)Height(img),
-                                  sizeof(SL::Screen_Capture::ImageBGRA), std::move(imgbuffer)});
+                    extractAndConvertToRGBA(img, monitorsFramebuffer.bits.get(),
+                                            monitor.Width * monitor.Height * sizeof(SL::Screen_Capture::ImageBGRA),
+                                            monitor.OffsetX, monitor.OffsetY);
                 })
                 ->start_capturing();
 
@@ -80,38 +100,42 @@ public:
 
     ImageData getMonitorRegion(int x, int y, int w, int h)
     {
-        if (monitorFrameBuffer.empty() || monitorFrameBuffer.begin()->second == nullptr)
+        if (monitorsFramebuffer.bits == nullptr)
             return ImageData{};
 
-        const ImageData& sourceImage = *monitorFrameBuffer.begin()->second;
-
         // Make sure the requested region is within bounds
-        if (x < 0 || y < 0 || x + w > sourceImage.width || y + h > sourceImage.height)
+        if (x < monitorsFramebuffer.offsetX || y < monitorsFramebuffer.offsetY ||
+            x + w > monitorsFramebuffer.offsetX + monitorsFramebuffer.width ||
+            y + h > monitorsFramebuffer.offsetY + monitorsFramebuffer.height)
         {
             // Return an empty image data structure or handle the error as appropriate
             return ImageData{};
         }
+        
+        x -= monitorsFramebuffer.offsetX;
+        y -= monitorsFramebuffer.offsetY;
 
         // Calculate the size of the region in bytes
-        size_t regionSize = static_cast<size_t>(w) * h * sourceImage.bitPerPixel;
+        size_t regionSize = static_cast<size_t>(w) * h * monitorsFramebuffer.bitPerPixel;
 
         // Allocate memory for the new image
         auto newBits(std::make_unique<unsigned char[]>(regionSize));
 
         // Calculate the offset to the starting pixel in the source image
-        size_t offset = static_cast<size_t>(y) * sourceImage.width + x;
+        size_t offset = static_cast<size_t>(y) * monitorsFramebuffer.width + x;
 
         // Calculate the number of bytes in a row of pixels in the source image
-        size_t sourceRowSize = sourceImage.width * sourceImage.bitPerPixel;
+        size_t sourceRowSize = monitorsFramebuffer.width * monitorsFramebuffer.bitPerPixel;
 
         // Iterate over each row in the region and copy pixels to the new image
         for (int row = 0; row < h; ++row)
         {
-            void* sourceRow = static_cast<unsigned char*>(sourceImage.bits.get()) + offset * sourceImage.bitPerPixel;
-            void* destRow   = static_cast<unsigned char*>(newBits.get()) +
-                            (h - row - 1) * w * sourceImage.bitPerPixel; // Vertical flip
-            memcpy(destRow, sourceRow, static_cast<size_t>(w) * sourceImage.bitPerPixel);
-            offset += sourceImage.width;
+            void* sourceRow =
+                static_cast<unsigned char*>(monitorsFramebuffer.bits.get()) + offset * monitorsFramebuffer.bitPerPixel;
+            void* destRow = static_cast<unsigned char*>(newBits.get()) +
+                            (h - row - 1) * w * monitorsFramebuffer.bitPerPixel; // Vertical flip
+            memcpy(destRow, sourceRow, static_cast<size_t>(w) * monitorsFramebuffer.bitPerPixel);
+            offset += monitorsFramebuffer.width;
         }
 
         // Create a new ImageData structure for the extracted region
@@ -129,21 +153,23 @@ public:
         framgrabber->pause();
     }
 
-    void extractAndConvertToRGBA(const SL::Screen_Capture::Image& img, unsigned char* dst, size_t dst_size)
+    void extractAndConvertToRGBA(const SL::Screen_Capture::Image& img, unsigned char* dst, size_t dst_size, int x,
+                                 int y)
     {
-        assert(dst_size >= static_cast<size_t>(SL::Screen_Capture::Width(img) * SL::Screen_Capture::Height(img) *
-                                               sizeof(SL::Screen_Capture::ImageBGRA)));
-        auto imgsrc  = StartSrc(img);
-        auto imgdist = dst;
-        for (auto h = 0; h < Height(img); h++)
+        auto imgsrc    = StartSrc(img);
+        auto imgdst    = dst;
+        int  srcHeight = Height(img);
+        int  srcWidth  = Width(img);
+        for (auto h = 0; h < srcHeight; h++)
         {
             auto startimgsrc = imgsrc;
-            for (auto w = 0; w < Width(img); w++)
+            for (auto w = 0; w < srcWidth; w++)
             {
-                *imgdist++ = imgsrc->R;
-                *imgdist++ = imgsrc->G;
-                *imgdist++ = imgsrc->B;
-                *imgdist++ = 0; // alpha should be zero
+                int offset               = (x + w + (y + h) * srcWidth) * 4;
+                *(imgdst + offset + 0) = imgsrc->R;
+                *(imgdst + offset + 1) = imgsrc->G;
+                *(imgdst + offset + 2) = imgsrc->B;
+                *(imgdst + offset + 3) = 0; // alpha should be zero
                 imgsrc++;
             }
             imgsrc = SL::Screen_Capture::GotoNextRow(img, startimgsrc);
