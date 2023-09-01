@@ -130,7 +130,7 @@ public:
         }
     }
 
-    void updateCollisionTexture(const PhysicComponent& comp, const Vec2 prevToNewWinPos)
+    bool updateCollisionTexture(const PhysicComponent& comp, const Vec2 prevToNewWinPos)
     {
         int screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY;
         if (data.debugEdgeDetection)
@@ -155,6 +155,9 @@ public:
 
         const ScreenCaptureLite::ImageData& pxlData =
             liteCapture.getMonitorRegion(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
+
+        if (pxlData.bits == nullptr)
+            return false;
 
         data.pCollisionTexture     = std::make_unique<Texture>(pxlData.bits.get(), pxlData.width, pxlData.height, 4);
         data.pEdgeDetectionTexture = std::make_unique<Texture>(pxlData.width, pxlData.height, 4);
@@ -199,6 +202,7 @@ public:
             data.pFullScreenQuad->use();
             data.pFullScreenQuad->draw();
         }
+        return true;
     }
 
     bool processContinuousCollision(const PhysicComponent& comp, const Vec2 prevToNewWinPos, Vec2& newPos)
@@ -212,7 +216,8 @@ public:
         if (prevToNewWinPos.sqrLength() == 0.f)
             return false;
 
-        updateCollisionTexture(comp, prevToNewWinPos);
+        if (!updateCollisionTexture(comp, prevToNewWinPos))
+            return false;
 
         std::vector<unsigned char> pixels;
         data.pEdgeDetectionTexture->use();
