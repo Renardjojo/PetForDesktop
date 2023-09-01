@@ -13,6 +13,7 @@
     CollisionPixelRatioStopMovement: 0.3
     IsGroundedDetection: 1
     InputReleaseImpulse: 1
+    ScreenCaptureInterval: 100
 - GamePlay:
     CoyoteTimeCursorMovement: 0.05
 - Window:

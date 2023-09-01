@@ -19,7 +19,7 @@ struct GameData
     std::vector<std::shared_ptr<class Pet>> pets;
     std::unique_ptr<class ContextualMenu>   contextualMenu;
     std::unique_ptr<class SettingMenu>      settingMenu;
-    std::unique_ptr<class UpdateMenu>      updateMenu;
+    std::unique_ptr<class UpdateMenu>       updateMenu;
 
     bool shouldUpdateFrame = true;
 
@@ -60,9 +60,10 @@ struct GameData
 
     std::priority_queue<DeltaCursosPosElem, std::vector<DeltaCursosPosElem>, std::greater<DeltaCursosPosElem>>
           deltasCursorPosBuffer;
-    float coyoteTimeCursorPos = 0.1f;
-    float releaseImpulse      = 3.f;
-    Vec2  deltaCursorAcc      = {0.f, 0.f};
+    float coyoteTimeCursorPos   = 0.1f;
+    float releaseImpulse        = 3.f;
+    int   screenCaptureInterval = 100;
+    Vec2  deltaCursorAcc        = {0.f, 0.f};
     Vec2  pixelPerMeter;
 
     // Settings

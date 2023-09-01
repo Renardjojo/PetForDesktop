@@ -35,7 +35,7 @@ class Game
 {
 protected:
     GameData     datas;
-    PhysicSystem physicSystem;
+    std::unique_ptr<PhysicSystem> physicSystem;
 
 protected:
     void createResources()
@@ -69,12 +69,13 @@ protected:
     }
 
 public:
-    Game() : physicSystem(datas)
+    Game()
     {
         logf("%s %s\n", PROJECT_NAME, PROJECT_VERSION);
         
         Setting::instance().importFile(RESOURCE_PATH "/setting/setting.yaml", datas);
         TimeManager::instance().Init(datas);
+        physicSystem = std::make_unique<PhysicSystem>(datas);
 
         glfwSetMonitorCallback(setMonitorCallback);
         datas.window = std::make_unique<Window>();
@@ -183,7 +184,7 @@ public:
                 Vec2 newPos;
                 for (const std::shared_ptr<Pet>& pet : datas.pets)
                 {
-                    physicSystem.CatpureScreenCollision(*pet, datas.window->getSize(), newPos);
+                    physicSystem->CatpureScreenCollision(*pet, datas.window->getSize(), newPos);
                 }
             }
         }};
@@ -310,7 +311,7 @@ public:
             [&]() {
                 for (const std::shared_ptr<Pet>& pet : datas.pets)
                 {
-                    physicSystem.update(pet->getPhysicComponent(), pet->getInteractionComponent(),
+                    physicSystem->update(pet->getPhysicComponent(), pet->getInteractionComponent(),
                                         1.f / datas.physicFrameRate);
                 }
             },

@@ -13,7 +13,7 @@ void Setting::importFile(const char* src, GameData& data)
         errorAndExit(std::string("Could not find setting file here: ") + src);
     }
 
-    YAML::Node  nodesSection;
+    YAML::Node nodesSection;
     for (auto roleIter = root.begin(); roleIter != root.end(); roleIter++)
     {
         nodesSection = (*roleIter)["Game"];
@@ -39,8 +39,9 @@ void Setting::importFile(const char* src, GameData& data)
             data.footBasementHeight = std::max(nodesSection["FootBasementHeight"].as<int>(), 2);
             data.collisionPixelRatioStopMovement =
                 std::clamp(nodesSection["CollisionPixelRatioStopMovement"].as<float>(), 0.f, 1.f);
-            data.isGroundedDetection = std::max(nodesSection["IsGroundedDetection"].as<float>(), 0.f);
-            data.releaseImpulse      = std::max(nodesSection["InputReleaseImpulse"].as<float>(), 0.f);
+            data.isGroundedDetection   = std::max(nodesSection["IsGroundedDetection"].as<float>(), 0.f);
+            data.releaseImpulse        = std::max(nodesSection["InputReleaseImpulse"].as<float>(), 0.f);
+            data.screenCaptureInterval = std::max(nodesSection["ScreenCaptureInterval"].as<int>(), 10);
             continue;
         }
 
@@ -127,6 +128,7 @@ void Setting::exportFile(const char* dest, GameData& data)
             << data.collisionPixelRatioStopMovement;
         out << YAML::Key << "IsGroundedDetection" << YAML::Value << data.isGroundedDetection;
         out << YAML::Key << "InputReleaseImpulse" << YAML::Value << data.releaseImpulse;
+        out << YAML::Key << "ScreenCaptureInterval" << YAML::Value << data.screenCaptureInterval;
         out << YAML::EndMap;
         out << YAML::EndMap;
     }

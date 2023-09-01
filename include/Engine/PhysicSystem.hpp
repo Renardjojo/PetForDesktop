@@ -24,7 +24,7 @@ protected:
     ScreenCaptureLite liteCapture;
 
 public:
-    PhysicSystem(GameData& data) : data{data}
+    PhysicSystem(GameData& data) : data{data}, liteCapture{data}
     {
     }
 

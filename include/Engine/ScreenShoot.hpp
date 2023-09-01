@@ -3,6 +3,7 @@
 #include "../../deps/screen_capture_lite/include/ScreenCapture.h" // Sorry for that shame
 #include <map>
 #include <thread>
+#include "Game/GameData.hpp"
 
 class ScreenCaptureLite
 {
@@ -27,10 +28,10 @@ private:
     MonitorsFramebuffer monitorsFramebuffer;
 
 public:
-    ScreenCaptureLite()
+    ScreenCaptureLite(GameData& data)
     {
         initScreenCaptureLite();
-        initCaptureProcess();
+        initCaptureProcess(data);
     }
 
     void initScreenCaptureLite()
@@ -57,7 +58,7 @@ public:
         }
     }
 
-    void initCaptureProcess()
+    void initCaptureProcess(const GameData& data)
     {
         framgrabber =
             SL::Screen_Capture::CreateCaptureConfiguration([&]() {
@@ -94,8 +95,7 @@ public:
                 })
                 ->start_capturing();
 
-        framgrabber->setFrameChangeInterval(std::chrono::milliseconds(100));
-        framgrabber->setMouseChangeInterval(std::chrono::milliseconds(100));
+        framgrabber->setFrameChangeInterval(std::chrono::milliseconds(data.screenCaptureInterval));
     }
 
     ImageData getMonitorRegion(int x, int y, int w, int h)
