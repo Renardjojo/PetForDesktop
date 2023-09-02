@@ -45,17 +45,8 @@ protected:
         datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(*datas.window, 0.f, 1.f);
         datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(*datas.window, -1.f, 1.f);
 
-        datas.edgeDetectionShaders.emplace_back(
-            std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/image" SHADER_VERTEX_EXT,
-                                     SHADER_RESOURCE_PATH "/dFdxEdgeDetection" SHADER_FRAG_EXT));
-
         datas.pImageShader = std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/image" SHADER_VERTEX_EXT,
                                                       SHADER_RESOURCE_PATH "/image" SHADER_FRAG_EXT);
-
-        if (datas.debugEdgeDetection)
-            datas.pImageGreyScale =
-                std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/image" SHADER_VERTEX_EXT,
-                                         SHADER_RESOURCE_PATH "/imageGreyScale" SHADER_FRAG_EXT);
 
         datas.pSpriteSheetShader =
             std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/spriteSheet" SHADER_VERTEX_EXT,
@@ -160,56 +151,6 @@ public:
         glfwTerminate();
     }
 
-    void runCollisionDetectionMode()
-    {
-        const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
-            // poll for and process events
-            glfwPollEvents();
-        }};
-
-        int                               frameCount = 0;
-        const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
-            ++frameCount;
-
-            // render
-            datas.window->initDrawContext();
-
-            if (!(frameCount & 1) && datas.pImageGreyScale && datas.pEdgeDetectionTexture && datas.pFullScreenQuad)
-            {
-                datas.pImageGreyScale->use();
-                datas.pImageGreyScale->setInt("uTexture", 0);
-                datas.pFullScreenQuad->use();
-                datas.pEdgeDetectionTexture->use();
-                datas.pFullScreenQuad->draw();
-            }
-
-            // swap front and back buffers
-            datas.window->renderFrame();
-
-            if (frameCount & 1)
-            {
-                Vec2 newPos;
-                for (const std::shared_ptr<Pet>& pet : datas.pets)
-                {
-                    physicSystem->CatpureScreenCollision(*pet, datas.window->getSize(), newPos);
-                }
-            }
-        }};
-
-        // fullscreen
-        Vec2i monitorSize;
-        datas.monitors.getMonitorSize(0, monitorSize);
-        datas.window->setSize(monitorSize);
-        datas.window->setPosition(Vec2::zero());
-        TimeManager::instance().setFrameRate(1);
-
-        TimeManager::instance().start();
-        while (!datas.window->shouldClose())
-        {
-            TimeManager::instance().update(unlimitedUpdate, limitedUpdateDebugCollision);
-        }
-    }
-
     void updateUI()
     {
         ImGui_ImplOpenGL3_NewFrame();
@@ -232,12 +173,6 @@ public:
 
     void run()
     {
-        if (datas.debugEdgeDetection)
-        {
-            runCollisionDetectionMode();
-            return;
-        }
-
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
             processInput(datas.window->getWindow());
 

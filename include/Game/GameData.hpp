@@ -27,14 +27,10 @@ struct GameData
     std::unique_ptr<class Framebuffer> pFramebuffer = nullptr;
 
     std::unique_ptr<class Shader>              pImageShader       = nullptr;
-    std::unique_ptr<class Shader>              pImageGreyScale    = nullptr;
     std::unique_ptr<class Shader>              pSpriteSheetShader = nullptr;
-    std::vector<std::unique_ptr<class Shader>> edgeDetectionShaders; // Sorted by pass
 
     std::unique_ptr<class Texture> pDiscordLogo          = nullptr;
     std::unique_ptr<class Texture> pPatreonLogo          = nullptr;
-    std::unique_ptr<class Texture> pCollisionTexture     = nullptr;
-    std::unique_ptr<class Texture> pEdgeDetectionTexture = nullptr;
 
     std::unique_ptr<class ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
     std::unique_ptr<class ScreenSpaceQuad> pFullScreenQuad     = nullptr;
@@ -99,7 +95,4 @@ struct GameData
     // Style
     std::vector<std::filesystem::path> stylesPath;
     std::string                        styleName;
-
-    // Debug
-    bool debugEdgeDetection = false;
 };

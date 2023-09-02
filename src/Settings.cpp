@@ -77,13 +77,6 @@ void Setting::importFile(const char* src, GameData& data)
             data.textScale = std::max(nodesSection["TextScale"].as<float>(), 1.f);
             continue;
         }
-
-        nodesSection = (*roleIter)["Debug"];
-        if (nodesSection)
-        {
-            data.debugEdgeDetection = nodesSection["ShowEdgeDetection"].as<bool>();
-            continue;
-        }
     }
 }
 
@@ -174,16 +167,6 @@ void Setting::exportFile(const char* dest, GameData& data)
         out << YAML::BeginMap;
         out << YAML::Key << "Scale" << data.scale;
         out << YAML::Key << "TextScale" << data.textScale;
-        out << YAML::EndMap;
-        out << YAML::EndMap;
-    }
-
-    {
-        section = "Debug";
-        out << YAML::BeginMap;
-        out << section;
-        out << YAML::BeginMap;
-        out << YAML::Key << "ShowEdgeDetection" << YAML::Value << data.debugEdgeDetection;
         out << YAML::EndMap;
         out << YAML::EndMap;
     }
