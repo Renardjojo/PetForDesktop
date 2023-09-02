@@ -120,6 +120,52 @@ set(IMGUI_IMPL_VULKAN OFF)
 add_subdirectory(${ABS_DEPS_DIR}/imgui)
 target_link_libraries(${PROJECT_NAME} imgui imgui-glfw imgui-opengl3)
 
+# screen_capture_lite
+set (BUILD_EXAMPLE OFF)
+set (BUILD_CSHARP OFF)
+set (BUILD_SHARED_LIBS OFF)
+
+ if(WIN32)
+	set(${PROJECT_NAME}_PLATFORM_LIBS Dwmapi)
+        target_link_libraries(${PROJECT_NAME} Dwmapi)
+  elseif(APPLE)
+    find_package(Threads REQUIRED)
+    find_library(corefoundation_lib CoreFoundation REQUIRED)
+    find_library(cocoa_lib Cocoa REQUIRED)
+    find_library(coremedia_lib CoreMedia REQUIRED)
+    find_library(avfoundation_lib AVFoundation REQUIRED)
+    find_library(coregraphics_lib CoreGraphics REQUIRED)
+    find_library(corevideo_lib CoreVideo REQUIRED)
+
+    target_link_libraries(${PROJECT_NAME}         
+        ${CMAKE_THREAD_LIBS_INIT}
+        ${corefoundation_lib}
+        ${cocoa_lib}
+        ${coremedia_lib}
+        ${avfoundation_lib}
+        ${coregraphics_lib}  
+        ${corevideo_lib})
+
+  else()
+	find_package(X11 REQUIRED)
+	if(!X11_XTest_FOUND)
+ 		message(FATAL_ERROR "X11 extensions are required, but not found!")
+	endif()
+	if(!X11_Xfixes_LIB)
+ 		message(FATAL_ERROR "X11 fixes extension is required, but not found!")
+	endif()
+	find_package(Threads REQUIRED)
+
+    target_link_libraries(${PROJECT_NAME} ${X11_LIBRARIES}
+		${X11_Xfixes_LIB}
+		${X11_XTest_LIB}
+		${X11_Xinerama_LIB}
+		${CMAKE_THREAD_LIBS_INIT})
+  endif()
+
+add_subdirectory(${ABS_DEPS_DIR}/screen_capture_lite)
+target_link_libraries(${PROJECT_NAME} screen_capture_lite_static)
+
 ########### Define ############
 target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_PATH="${REL_RESOURCES_DIR}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_NAME="${PROJECT_NAME}")

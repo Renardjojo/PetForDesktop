@@ -69,6 +69,9 @@ public:
     void getPixels(std::vector<unsigned char>& data)
     {
         int pixelsCount = width * height * nbChannels;
+        if (pixelsCount <= 0)
+            return;
+
         data.reserve(pixelsCount);
 
         for (size_t i = 0; i < pixelsCount; i++)

@@ -35,7 +35,7 @@ class Game
 {
 protected:
     GameData     datas;
-    PhysicSystem physicSystem;
+    std::unique_ptr<PhysicSystem> physicSystem;
 
 protected:
     void createResources()
@@ -45,17 +45,8 @@ protected:
         datas.pUnitFullScreenQuad = std::make_unique<ScreenSpaceQuad>(*datas.window, 0.f, 1.f);
         datas.pFullScreenQuad     = std::make_unique<ScreenSpaceQuad>(*datas.window, -1.f, 1.f);
 
-        datas.edgeDetectionShaders.emplace_back(
-            std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/image" SHADER_VERTEX_EXT,
-                                     SHADER_RESOURCE_PATH "/dFdxEdgeDetection" SHADER_FRAG_EXT));
-
         datas.pImageShader = std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/image" SHADER_VERTEX_EXT,
                                                       SHADER_RESOURCE_PATH "/image" SHADER_FRAG_EXT);
-
-        if (datas.debugEdgeDetection)
-            datas.pImageGreyScale =
-                std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/image" SHADER_VERTEX_EXT,
-                                         SHADER_RESOURCE_PATH "/imageGreyScale" SHADER_FRAG_EXT);
 
         datas.pSpriteSheetShader =
             std::make_unique<Shader>(*datas.window, SHADER_RESOURCE_PATH "/spriteSheet" SHADER_VERTEX_EXT,
@@ -69,12 +60,13 @@ protected:
     }
 
 public:
-    Game() : physicSystem(datas)
+    Game()
     {
         logf("%s %s\n", PROJECT_NAME, PROJECT_VERSION);
         
         Setting::instance().importFile(RESOURCE_PATH "/setting/setting.yaml", datas);
         TimeManager::instance().Init(datas);
+        physicSystem = std::make_unique<PhysicSystem>(datas);
 
         glfwSetMonitorCallback(setMonitorCallback);
         datas.window = std::make_unique<Window>();
@@ -107,7 +99,14 @@ public:
 #if NDEBUG // Check for update only on release to avoid harassing the server
         Updater::instance().checkForUpdate(datas);
 #endif
-        datas.pets.emplace_back(std::make_shared<Pet>(datas));
+        Vec2i mainMonitorPosition;
+        Vec2i mainMonitorSize;
+        datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
+
+        Vec2 petPosition = mainMonitorPosition;
+        petPosition.x += randNum(0, mainMonitorSize.x);
+        petPosition.y += randNum(0, mainMonitorSize.y);
+        datas.pets.emplace_back(std::make_shared<Pet>(datas, petPosition));
     }
 
     void initUI(GameData& datas)
@@ -152,56 +151,6 @@ public:
         glfwTerminate();
     }
 
-    void runCollisionDetectionMode()
-    {
-        const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
-            // poll for and process events
-            glfwPollEvents();
-        }};
-
-        int                               frameCount = 0;
-        const std::function<void(double)> limitedUpdateDebugCollision{[&](double deltaTime) {
-            ++frameCount;
-
-            // render
-            datas.window->initDrawContext();
-
-            if (!(frameCount & 1) && datas.pImageGreyScale && datas.pEdgeDetectionTexture && datas.pFullScreenQuad)
-            {
-                datas.pImageGreyScale->use();
-                datas.pImageGreyScale->setInt("uTexture", 0);
-                datas.pFullScreenQuad->use();
-                datas.pEdgeDetectionTexture->use();
-                datas.pFullScreenQuad->draw();
-            }
-
-            // swap front and back buffers
-            datas.window->renderFrame();
-
-            if (frameCount & 1)
-            {
-                Vec2 newPos;
-                for (const std::shared_ptr<Pet>& pet : datas.pets)
-                {
-                    physicSystem.CatpureScreenCollision(*pet, datas.window->getSize(), newPos);
-                }
-            }
-        }};
-
-        // fullscreen
-        Vec2i monitorSize;
-        datas.monitors.getMonitorSize(0, monitorSize);
-        datas.window->setSize(monitorSize);
-        datas.window->setPosition(Vec2::zero());
-        TimeManager::instance().setFrameRate(1);
-
-        TimeManager::instance().start();
-        while (!datas.window->shouldClose())
-        {
-            TimeManager::instance().update(unlimitedUpdate, limitedUpdateDebugCollision);
-        }
-    }
-
     void updateUI()
     {
         ImGui_ImplOpenGL3_NewFrame();
@@ -224,12 +173,6 @@ public:
 
     void run()
     {
-        if (datas.debugEdgeDetection)
-        {
-            runCollisionDetectionMode();
-            return;
-        }
-
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
             processInput(datas.window->getWindow());
 
@@ -295,22 +238,11 @@ public:
             }
         }};
 
-        Vec2i mainMonitorPosition;
-        Vec2i mainMonitorSize;
-        datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
-        for (size_t i = 0; i < datas.pets.size(); i++)
-        {
-            Vec2 petPosition = mainMonitorPosition;
-            petPosition.y += mainMonitorSize.y / 2.f;
-            petPosition.x += mainMonitorSize.x / (datas.pets.size() + 1) * (i + 1);
-            datas.pets[i]->setPosition(petPosition);
-        }
-
         TimeManager::instance().emplaceTimer(
             [&]() {
                 for (const std::shared_ptr<Pet>& pet : datas.pets)
                 {
-                    physicSystem.update(pet->getPhysicComponent(), pet->getInteractionComponent(),
+                    physicSystem->update(pet->getPhysicComponent(), pet->getInteractionComponent(),
                                         1.f / datas.physicFrameRate);
                 }
             },

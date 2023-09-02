@@ -36,12 +36,22 @@ void ContextualMenu::update(double deltaTime)
 
     ImVec2 sizeButton = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
 
-    ImGui::BeginDisabled(datas.pets.size() > 2);
+    ImGui::BeginDisabled(ImGui::GetIO().Framerate < 30);
     bool shouldSpawnPet = ImGui::Button("Spawn pet", sizeButton);
     ImGui::EndDisabled();
     if (shouldSpawnPet)
     {
-        datas.pets.emplace_back(std::make_shared<Pet>(datas));
+        Vec2i mainMonitorPosition;
+        Vec2i mainMonitorSize;
+        datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
+
+        for (size_t i = 0; i < 250; i++)
+        {
+            Vec2 petPosition = mainMonitorPosition;
+            petPosition.x += randNum(0, mainMonitorSize.x);
+            petPosition.y += randNum(0, mainMonitorSize.y);
+            datas.pets.emplace_back(std::make_shared<Pet>(datas, petPosition));
+        }
         shouldClose = true;
     }
 

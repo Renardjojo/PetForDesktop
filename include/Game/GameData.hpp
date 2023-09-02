@@ -19,7 +19,7 @@ struct GameData
     std::vector<std::shared_ptr<class Pet>> pets;
     std::unique_ptr<class ContextualMenu>   contextualMenu;
     std::unique_ptr<class SettingMenu>      settingMenu;
-    std::unique_ptr<class UpdateMenu>      updateMenu;
+    std::unique_ptr<class UpdateMenu>       updateMenu;
 
     bool shouldUpdateFrame = true;
 
@@ -27,14 +27,10 @@ struct GameData
     std::unique_ptr<class Framebuffer> pFramebuffer = nullptr;
 
     std::unique_ptr<class Shader>              pImageShader       = nullptr;
-    std::unique_ptr<class Shader>              pImageGreyScale    = nullptr;
     std::unique_ptr<class Shader>              pSpriteSheetShader = nullptr;
-    std::vector<std::unique_ptr<class Shader>> edgeDetectionShaders; // Sorted by pass
 
     std::unique_ptr<class Texture> pDiscordLogo          = nullptr;
     std::unique_ptr<class Texture> pPatreonLogo          = nullptr;
-    std::unique_ptr<class Texture> pCollisionTexture     = nullptr;
-    std::unique_ptr<class Texture> pEdgeDetectionTexture = nullptr;
 
     std::unique_ptr<class ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
     std::unique_ptr<class ScreenSpaceQuad> pFullScreenQuad     = nullptr;
@@ -60,9 +56,10 @@ struct GameData
 
     std::priority_queue<DeltaCursosPosElem, std::vector<DeltaCursosPosElem>, std::greater<DeltaCursosPosElem>>
           deltasCursorPosBuffer;
-    float coyoteTimeCursorPos = 0.1f;
-    float releaseImpulse      = 3.f;
-    Vec2  deltaCursorAcc      = {0.f, 0.f};
+    float coyoteTimeCursorPos   = 0.1f;
+    float releaseImpulse        = 3.f;
+    int   screenCaptureInterval = 100;
+    Vec2  deltaCursorAcc        = {0.f, 0.f};
     Vec2  pixelPerMeter;
 
     // Settings
@@ -98,7 +95,4 @@ struct GameData
     // Style
     std::vector<std::filesystem::path> stylesPath;
     std::string                        styleName;
-
-    // Debug
-    bool debugEdgeDetection = false;
 };

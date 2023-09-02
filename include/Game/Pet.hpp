@@ -66,7 +66,7 @@ public:
     GETTER_BY_REF(PhysicComponent, physicComponent)
     GETTER_BY_REF(InteractionComponent, interactionComponent)
 
-    Pet(GameData& data);
+    Pet(GameData& data, Vec2 position);
 
     ~Pet();
 
