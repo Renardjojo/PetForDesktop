@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/ScreenShoot.hpp"
+#include "Engine/ScreenShooter.hpp"
 
 #ifdef USE_OPENGL_API
 #include "Engine/Graphics/FramebufferOGL.hpp"
@@ -20,11 +20,11 @@
 class PhysicSystem
 {
 protected:
-    GameData&         data;
-    ScreenCaptureLite liteCapture;
+    GameData&     data;
+    ScreenShooter screenShooter;
 
 public:
-    PhysicSystem(GameData& data) : data{data}, liteCapture{data}
+    PhysicSystem(GameData& data) : data{data}, screenShooter{data}
     {
     }
 
@@ -132,7 +132,7 @@ public:
         }
     }
 
-    ScreenCaptureLite::ImageData updateCollisionTexture(const PhysicComponent& comp, const Vec2 prevToNewWinPos)
+    ScreenShooter::ImageData updateCollisionTexture(const PhysicComponent& comp, const Vec2 prevToNewWinPos)
     {
         int screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY;
 
@@ -146,7 +146,7 @@ public:
         screenShootSizeX = static_cast<int>(abs(prevToNewWinPos.x) + data.footBasementWidth);
         screenShootSizeY = static_cast<int>(abs(prevToNewWinPos.y) + data.footBasementHeight);
 
-        return liteCapture.getMonitorRegion(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
+        return screenShooter.getMonitorRegion(screenShootPosX, screenShootPosY, screenShootSizeX, screenShootSizeY);
     }
 
     bool processContinuousCollision(const PhysicComponent& comp, const Vec2 prevToNewWinPos, Vec2& newPos)
@@ -160,7 +160,7 @@ public:
         if (prevToNewWinPos.sqrLength() == 0.f)
             return false;
 
-        ScreenCaptureLite::ImageData imgData = updateCollisionTexture(comp, prevToNewWinPos);
+        ScreenShooter::ImageData imgData = updateCollisionTexture(comp, prevToNewWinPos);
         if (imgData.bits == nullptr)
             return false;
 

@@ -2,10 +2,10 @@
 
 #include "../../deps/screen_capture_lite/include/ScreenCapture.h" // Sorry for that shame
 #include <map>
-#include <thread>
+#include <memory>
 #include "Game/GameData.hpp"
 
-class ScreenCaptureLite
+class ScreenShooter
 {
 public:
     struct ImageData
@@ -28,7 +28,7 @@ private:
     MonitorsFramebuffer monitorsFramebuffer;
 
 public:
-    ScreenCaptureLite(GameData& data)
+    ScreenShooter(GameData& data)
     {
         initScreenCaptureLite();
         initCaptureProcess(data);
