@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Localization.hpp"
 #include "Engine/InteractionSystem.hpp"
 #include "Engine/Log.hpp"
 #include "Engine/PhysicSystem.hpp"
@@ -64,6 +65,7 @@ public:
     {
         logf("%s %s\n", PROJECT_NAME, PROJECT_VERSION);
         
+        Localization::instance().init();
         Setting::instance().importFile(RESOURCE_PATH "/setting/setting.yaml", datas);
         TimeManager::instance().Init(datas);
         physicSystem = std::make_unique<PhysicSystem>(datas);
