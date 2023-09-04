@@ -15,29 +15,54 @@
 
 void Localization::init()
 {
-    importLocalization(RESOURCE_PATH "/setting/localization.yaml", getUserLocalization());
+    importLocalization(getUserLocalization());
 }
 
-void Localization::importLocalization(const char* src, const std::string& local)
+void Localization::importLocalization(const std::string& local)
 {
-    YAML::Node root = YAML::LoadFile(src);
+    YAML::Node root = YAML::LoadFile(m_filePath);
     if (!root)
     {
-        errorAndExit(std::string("Could not find file here: ") + src);
+        errorAndExit(std::string("Could not find file here: ") + m_filePath);
     }
 
+    m_availableLocalizations.clear();
+
     YAML::Node nodesSection;
-    for (auto roleIter = root.begin(); roleIter != root.end(); roleIter++)
+    for (auto&& nodeLanguages : root)
     {
-        nodesSection = (*roleIter)[local];
+        m_availableLocalizations.emplace_back(nodeLanguages.begin()->first.Scalar());
+        nodesSection = nodeLanguages[local];
         if (nodesSection)
         {
+            m_currentLocalization = local;
+            m_localDatas.clear();
             for (auto&& node : nodesSection)
             {
-                localDatas.emplace(node.first.Scalar(), node.second.as<std::string>());
+                m_localDatas.emplace(node.first.Scalar(), node.second.as<std::string>());
             }
-            break;
         }
+    }
+}
+
+std::string Localization::getLocal(const std::string& key) const
+{
+    return getLocal(key, key);
+}
+
+std::string Localization::getLocal(const std::string& key, const std::string& fallback) const
+{
+    auto it = m_localDatas.find(key);
+    if (it != m_localDatas.end())
+    {
+        return it->second;
+    }
+    else
+    {
+#if _DEBUG
+        logf("Localization fallback use for key: %s\n", key);
+#endif
+        return fallback;
     }
 }
 

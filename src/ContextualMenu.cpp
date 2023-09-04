@@ -1,5 +1,6 @@
 #include "Game/ContextualMenu.hpp"
 
+#include "Engine/Localization.hpp"
 #include "Engine/FileExplorer.hpp"
 #include "Engine/ImGuiTools.hpp"
 #include "Engine/InteractionSystem.hpp"
@@ -109,7 +110,8 @@ void ContextualMenu::update(double deltaTime)
         SystemOpen("https://github.com/Renardjojo/PetForDesktop/issues/new/choose") shouldClose = true;
     }
 
-    if (ImGui::Button("Exit", sizeButton))
+
+    if (ImGui::Button(Localization::instance().getLocal("Exit").c_str(), sizeButton))
     {
         exit(0);
     }

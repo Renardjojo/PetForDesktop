@@ -2,15 +2,17 @@
 
 #include "Engine/FileExplorer.hpp"
 #include "Engine/InteractionSystem.hpp"
-#include "Engine/StylePanel.hpp"
+#include "Engine/Localization.hpp"
 #include "Engine/Settings.hpp"
+#include "Engine/StylePanel.hpp"
 
 #include "Game/Pet.hpp"
 #include "imgui.h"
 
 SettingMenu::SettingMenu(GameData& inDatas, Pet& inPet, Vec2 inPosition)
     : UIMenu(inDatas, inPosition, Vec2(400.f, 400.f)), pet{inPet}
-{}
+{
+}
 
 SettingMenu::~SettingMenu()
 {
@@ -33,11 +35,26 @@ void SettingMenu::update(double deltaTime)
     {
         if (ImGui::BeginTabItem("Game"))
         {
+            std::string& currentLoc = Localization::instance().getCurrentLocalization();
+            if (ImGui::BeginCombo("Language", currentLoc.c_str()))
+            {
+                const std::vector<std::string>& availablesLocal = Localization::instance().getAvailableLocalizations();
+                for (int i = 0; i < availablesLocal.size(); i++)
+                {
+                    if (ImGui::Selectable(availablesLocal[i].c_str(), currentLoc == availablesLocal[i]))
+                    {
+                        Localization::instance().importLocalization(availablesLocal[i]);
+                    }
+                }
+
+                ImGui::EndCombo();
+            }
+
             if (ImGui::BeginCombo("Style", datas.styleName.c_str()))
             {
                 for (int i = 0; i < datas.stylesPath.size(); i++)
                 {
-                    auto& path = datas.stylesPath[i];
+                    auto& path     = datas.stylesPath[i];
                     auto  fileName = path.stem();
                     if (ImGui::Selectable(fileName.string().c_str(), fileName == datas.styleName))
                     {
