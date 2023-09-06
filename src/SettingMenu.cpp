@@ -6,6 +6,7 @@
 #include "Engine/Localization.hpp"
 #include "Engine/Settings.hpp"
 #include "Engine/StylePanel.hpp"
+#include "Engine/PetEditor.hpp"
 
 #include "Game/Pet.hpp"
 #include "imgui.h"
@@ -74,6 +75,15 @@ void SettingMenu::update(double deltaTime)
         {
             if (ImGui::Button(Localization::instance().getLocal("OpenContent", "Open content folder").c_str()))
                 SystemOpen(RESOURCE_PATH);
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem(Localization::instance().getLocal("PetEditorTab", "Pet editor").c_str()))
+        {
+            if (!petEditor)
+                petEditor = std::make_unique<PetEditor>();
+            petEditor->Execute(deltaTime);
+
             ImGui::EndTabItem();
         }
 

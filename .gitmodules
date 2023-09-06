@@ -16,3 +16,6 @@
 [submodule "deps/screen_capture_lite"]
 	path = deps/screen_capture_lite
 	url = https://github.com/smasherprog/screen_capture_lite.git
+[submodule "deps/imgui-node-editor/imgui-node-editor"]
+	path = deps/imgui-node-editor/imgui-node-editor
+	url = https://github.com/thedmd/imgui-node-editor.git

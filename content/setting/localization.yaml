@@ -7,7 +7,7 @@
     Settings: Settings
     JoinUs: Join us!
     Support: Support this project
-    BugReport: Bug report
+    BugReport: Report a bug
     Update: Update
     GameTab: Game
     Language: Language
@@ -18,16 +18,17 @@
     OpenContent: Open content folder
     GlobalScale: Global scale
     FontScale: Font scale
+    PetEditorTab: Pet editor
 - fr:
     Exit: Quitter
     ContextualMenu: Menu contextuel
-    SpawnPet: Créer un animal de compagnie
+    SpawnPet: Créer un compagnon
     Resume: Reprendre
     Pause: Pause
     Settings: Paramètres
     JoinUs: Rejoignez-nous !
     Support: Soutenir ce projet
-    BugReport: Rapport de bug
+    BugReport: Rapporter un bug
     Update: Mise à jour
     GameTab: Jeu
     Language: Langue

@@ -120,6 +120,10 @@ set(IMGUI_IMPL_VULKAN OFF)
 add_subdirectory(${ABS_DEPS_DIR}/imgui)
 target_link_libraries(${PROJECT_NAME} imgui imgui-glfw imgui-opengl3)
 
+# imgui-node-editor
+add_subdirectory(${ABS_DEPS_DIR}/imgui-node-editor)
+target_link_libraries(${PROJECT_NAME} imgui-node-editor)
+
 # screen_capture_lite
 set (BUILD_EXAMPLE OFF)
 set (BUILD_CSHARP OFF)
