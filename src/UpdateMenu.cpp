@@ -1,5 +1,6 @@
 #include "Game/UpdateMenu.hpp"
 
+#include "Engine/Localization.hpp"
 #include "Engine/FileExplorer.hpp"
 #include "Engine/ImGuiTools.hpp"
 #include "Engine/Log.hpp"
@@ -135,7 +136,8 @@ void UpdateMenu::update(double deltaTime)
         }
     }
 
-    if (ImGui::Button("Update", sizeButton))
+    if (ImGui::Button(Localization::instance().getLocal("Update").c_str(),
+                      sizeButton))
     {
         std::regex  pattern("\"browser_download_url\":\\s*\"(.*?)\"");
         std::smatch matches;

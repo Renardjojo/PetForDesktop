@@ -1,5 +1,6 @@
 #include "Game/SettingMenu.hpp"
 
+#include "Engine/Localization.hpp"
 #include "Engine/FileExplorer.hpp"
 #include "Engine/InteractionSystem.hpp"
 #include "Engine/Localization.hpp"
@@ -33,10 +34,10 @@ void SettingMenu::update(double deltaTime)
 
     if (ImGui::BeginTabBar("##settingMenuTabs", ImGuiTabBarFlags_None))
     {
-        if (ImGui::BeginTabItem("Game"))
+        if (ImGui::BeginTabItem(Localization::instance().getLocal("GameTab", "Game").c_str()))
         {
             std::string& currentLoc = Localization::instance().getCurrentLocalization();
-            if (ImGui::BeginCombo("Language", currentLoc.c_str()))
+            if (ImGui::BeginCombo(Localization::instance().getLocal("Language").c_str(), currentLoc.c_str()))
             {
                 const std::vector<std::string>& availablesLocal = Localization::instance().getAvailableLocalizations();
                 for (int i = 0; i < availablesLocal.size(); i++)
@@ -50,7 +51,8 @@ void SettingMenu::update(double deltaTime)
                 ImGui::EndCombo();
             }
 
-            if (ImGui::BeginCombo("Style", datas.styleName.c_str()))
+            if (ImGui::BeginCombo(Localization::instance().getLocal("Style").c_str(),
+                                  datas.styleName.c_str()))
             {
                 for (int i = 0; i < datas.stylesPath.size(); i++)
                 {
@@ -68,23 +70,25 @@ void SettingMenu::update(double deltaTime)
             ImGui::EndTabItem();
         }
 
-        if (ImGui::BeginTabItem("Content"))
+        if (ImGui::BeginTabItem(Localization::instance().getLocal("ContentTab", "Content").c_str()))
         {
-            if (ImGui::Button("Open content folder"))
+            if (ImGui::Button(Localization::instance().getLocal("OpenContent", "Open content folder").c_str()))
                 SystemOpen(RESOURCE_PATH);
             ImGui::EndTabItem();
         }
 
-        if (ImGui::BeginTabItem("Style"))
+        if (ImGui::BeginTabItem(Localization::instance().getLocal("StyleTab", "Style").c_str()))
         {
             ShowStyleEditor();
             ImGui::EndTabItem();
         }
 
-        if (ImGui::BeginTabItem("Accessibility"))
+        if (ImGui::BeginTabItem(Localization::instance().getLocal("AccessibilityTab", "Accessibility").c_str()))
         {
-            ImGui::DragInt("Global scale", &datas.scale, 0.05f, 1, 10);
-            if (ImGui::DragFloat("Font scale", &datas.textScale, 0.005f, 0.3f, 2.0f, "%.1f"))
+            ImGui::DragInt(Localization::instance().getLocal("GlobalScale", "Global scale").c_str(),
+                           &datas.scale, 0.05f, 1, 10);
+            if (ImGui::DragFloat(Localization::instance().getLocal("FontScale", "Font scale").c_str(),
+                                 &datas.textScale, 0.005f, 0.3f, 2.0f, "%.1f"))
             {
                 ImGui::GetFont()->Scale = datas.textScale;
             }
