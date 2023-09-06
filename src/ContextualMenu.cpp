@@ -1,5 +1,6 @@
 #include "Game/ContextualMenu.hpp"
 
+#include "Engine/Localization.hpp"
 #include "Engine/FileExplorer.hpp"
 #include "Engine/ImGuiTools.hpp"
 #include "Engine/InteractionSystem.hpp"
@@ -27,7 +28,7 @@ void ContextualMenu::update(double deltaTime)
     ImGui::GetStyle().WindowTitleAlign = ImVec2(0.5f, 0.5f);
 
     bool isWindowOpen = true;
-    ImGui::Begin("Contextual menu", &isWindowOpen,
+    ImGui::Begin(Localization::instance().getLocal("ContextualMenu", "Contextual menu").c_str(), &isWindowOpen,
                  ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
     shouldClose = !isWindowOpen;
 
@@ -37,7 +38,8 @@ void ContextualMenu::update(double deltaTime)
     ImVec2 sizeButton = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
 
     ImGui::BeginDisabled(ImGui::GetIO().Framerate < 30);
-    bool shouldSpawnPet = ImGui::Button("Spawn pet", sizeButton);
+    bool shouldSpawnPet =
+        ImGui::Button(Localization::instance().getLocal("SpawnPet", "Spawn pet").c_str(), sizeButton);
     ImGui::EndDisabled();
     if (shouldSpawnPet)
     {
@@ -57,7 +59,7 @@ void ContextualMenu::update(double deltaTime)
 
     if (pet.getIsPaused())
     {
-        if (ImGui::Button("Resume", sizeButton))
+        if (ImGui::Button(Localization::instance().getLocal("Resume").c_str(), sizeButton))
         {
             pet.setIsPaused(false);
             shouldClose = true;
@@ -65,14 +67,14 @@ void ContextualMenu::update(double deltaTime)
     }
     else
     {
-        if (ImGui::Button("Pause", sizeButton))
+        if (ImGui::Button(Localization::instance().getLocal("Pause").c_str(), sizeButton))
         {
             pet.setIsPaused(true);
             shouldClose = true;
         }
     }
 
-    if (ImGui::Button("Settings", sizeButton))
+    if (ImGui::Button(Localization::instance().getLocal("Settings").c_str(), sizeButton))
     {
         datas.settingMenu = nullptr; // delete previous window
         datas.settingMenu = std::make_unique<SettingMenu>(datas, pet, getPosition());
@@ -90,7 +92,8 @@ void ContextualMenu::update(double deltaTime)
         ImVec2(datas.pDiscordLogo->getWidth() * imageRatio, datas.pDiscordLogo->getHeight() * imageRatio);
     ImVec2 imageTextPadding = ImVec2(ImGui::GetStyle().FramePadding.x * 2, -1);
 
-    if (ImGui::ImageButtonWithTextRight(reinterpret_cast<ImTextureID>(datas.pDiscordLogo->getID()), "Join us!",
+    if (ImGui::ImageButtonWithTextRight(reinterpret_cast<ImTextureID>(datas.pDiscordLogo->getID()),
+                                        Localization::instance().getLocal("JoinUs", "Join us!").c_str(),
                                         imageSize, sizeButton, imageTextPadding))
     {
         SystemOpen("https://discord.gg/gjdQmHAp7e") shouldClose = true;
@@ -99,17 +102,20 @@ void ContextualMenu::update(double deltaTime)
     imageRatio = ImGui::GetTextLineHeight() / datas.pPatreonLogo->getHeight();
     imageSize  = ImVec2(datas.pPatreonLogo->getWidth() * imageRatio, datas.pPatreonLogo->getHeight() * imageRatio);
     if (ImGui::ImageButtonWithTextRight(reinterpret_cast<ImTextureID>(datas.pPatreonLogo->getID()),
-                                        "Support this project", imageSize, sizeButton, imageTextPadding))
+            Localization::instance().getLocal("Support", "Support this project").c_str(), imageSize,
+            sizeButton, imageTextPadding))
     {
         SystemOpen("https://www.patreon.com/PetForDesktop") shouldClose = true;
     }
 
-    if (ImGui::Button("Bug report", sizeButton))
+    if (ImGui::Button(Localization::instance().getLocal("BugReport", "Bug report").c_str(),
+                      sizeButton))
     {
         SystemOpen("https://github.com/Renardjojo/PetForDesktop/issues/new/choose") shouldClose = true;
     }
 
-    if (ImGui::Button("Exit", sizeButton))
+
+    if (ImGui::Button(Localization::instance().getLocal("Exit").c_str(), sizeButton))
     {
         exit(0);
     }

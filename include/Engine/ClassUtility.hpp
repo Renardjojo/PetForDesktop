@@ -1,25 +1,19 @@
 #pragma once
 
 #define GETTER_BY_VALUE(variableName, variable)                                                                        \
-    [[nodiscard]] inline constexpr decltype(variable) get##variableName() const noexcept                               \
-    {                                                                                                                  \
-        return variable;                                                                                               \
-    }
-
-#define GETTER_BY_RAW_VALUE(variableName, variable)                                                                    \
     [[nodiscard]] inline decltype(variable) get##variableName() const noexcept                                         \
     {                                                                                                                  \
         return variable;                                                                                               \
     }
 
 #define GETTER_BY_REF(variableName, variable)                                                                          \
-    [[nodiscard]] inline constexpr decltype(variable)& get##variableName() noexcept                                    \
+    [[nodiscard]] inline decltype(variable)& get##variableName() noexcept                                              \
     {                                                                                                                  \
         return variable;                                                                                               \
     }
 
 #define GETTER_BY_CONST_REF(variableName, variable)                                                                    \
-    [[nodiscard]] inline constexpr const decltype(variable)& get##variableName() const noexcept                        \
+    [[nodiscard]] inline const decltype(variable)& get##variableName() const noexcept                                  \
     {                                                                                                                  \
         return variable;                                                                                               \
     }
@@ -41,5 +35,5 @@
     SETTER_BY_CONST_REF(variableName, variable)
 
 #define DEFAULT_GETTER_SETTER_VALUE(variableName, variable)                                                            \
-    GETTER_BY_RAW_VALUE(variableName, variable)                                                                        \
+    GETTER_BY_VALUE(variableName, variable)                                                                            \
     SETTER_BY_VALUE(variableName, variable)

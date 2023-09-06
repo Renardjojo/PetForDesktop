@@ -1,0 +1,40 @@
+- en:
+    Exit: Exit
+    ContextualMenu: Contextual menu
+    SpawnPet: Spawn pet
+    Resume: Resume
+    Pause: Pause
+    Settings: Settings
+    JoinUs: Join us!
+    Support: Support this project
+    BugReport: Bug report
+    Update: Update
+    GameTab: Game
+    Language: Language
+    Style: Style
+    StyleTab: Style
+    AccessibilityTab: Accessibility
+    ContentTab: Content
+    OpenContent: Open content folder
+    GlobalScale: Global scale
+    FontScale: Font scale
+- fr:
+    Exit: Quitter
+    ContextualMenu: Menu contextuel
+    SpawnPet: Créer un animal de compagnie
+    Resume: Reprendre
+    Pause: Pause
+    Settings: Paramètres
+    JoinUs: Rejoignez-nous !
+    Support: Soutenir ce projet
+    BugReport: Rapport de bug
+    Update: Mise à jour
+    GameTab: Jeu
+    Language: Langue
+    Style: Style
+    StyleTab: Style
+    AccessibilityTab: Accessibilité
+    ContentTab: Contenu
+    OpenContent: Ouvrir le dossier de contenu
+    GlobalScale: Échelle globale
+    FontScale: Échelle des polices
