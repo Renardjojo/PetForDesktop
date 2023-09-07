@@ -26,14 +26,16 @@ struct GameData
     // Resources
     std::unique_ptr<class Framebuffer> pFramebuffer = nullptr;
 
-    std::unique_ptr<class Shader>              pImageShader       = nullptr;
-    std::unique_ptr<class Shader>              pSpriteSheetShader = nullptr;
+    std::unique_ptr<class Shader> pImageShader       = nullptr;
+    std::unique_ptr<class Shader> pSpriteSheetShader = nullptr;
 
-    std::unique_ptr<class Texture> pDiscordLogo          = nullptr;
-    std::unique_ptr<class Texture> pPatreonLogo          = nullptr;
+    std::unique_ptr<class Texture> pDiscordLogo = nullptr;
+    std::unique_ptr<class Texture> pPatreonLogo = nullptr;
 
     std::unique_ptr<class ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
     std::unique_ptr<class ScreenSpaceQuad> pFullScreenQuad     = nullptr;
+
+    std::vector<class YAML::Node> animGraphs;
 
     Vec2i cursorPos;
     float prevCursorPosX   = 0;

@@ -81,8 +81,8 @@ void SettingMenu::update(double deltaTime)
         if (ImGui::BeginTabItem(Localization::instance().getLocal("PetEditorTab", "Pet editor").c_str()))
         {
             if (!petEditor)
-                petEditor = std::make_unique<PetEditor>();
-            petEditor->Execute(deltaTime);
+                petEditor = std::make_unique<PetEditor>(datas);
+            petEditor->execute(deltaTime);
 
             ImGui::EndTabItem();
         }

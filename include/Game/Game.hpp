@@ -27,9 +27,9 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "imgui.h"
+#include "yaml-cpp/yaml.h"
 
 #include <GLFW/glfw3.h>
-
 #include <functional>
 
 class Game
@@ -58,6 +58,8 @@ protected:
             std::make_unique<Texture>(RESOURCE_PATH "/sprites/logo/discord-mark-blue.png", false, Texture::linearClampSampling);
         datas.pPatreonLogo = std::make_unique<Texture>(RESOURCE_PATH "/sprites/logo/Digital-Patreon-Logo_FieryCoral.png", false,
                                                        Texture::linearClampSampling);
+
+        datas.animGraphs.emplace_back(YAML::LoadFile(RESOURCE_PATH "/setting/animation.yaml"));
     }
 
 public:
