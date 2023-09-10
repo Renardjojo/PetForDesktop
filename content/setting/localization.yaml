@@ -1,4 +1,4 @@
-- en:
+ï»¿- en:
     Exit: Exit
     ContextualMenu: Contextual menu
     SpawnPet: Spawn pet
@@ -22,20 +22,20 @@
 - fr:
     Exit: Quitter
     ContextualMenu: Menu contextuel
-    SpawnPet: Créer un compagnon
+    SpawnPet: CrÃ©er un compagnon
     Resume: Reprendre
     Pause: Pause
-    Settings: Paramètres
+    Settings: ParamÃ¨tres
     JoinUs: Rejoignez-nous !
     Support: Soutenir ce projet
     BugReport: Rapporter un bug
-    Update: Mise à jour
+    Update: Mise Ã  jour
     GameTab: Jeu
     Language: Langue
     Style: Style
     StyleTab: Style
-    AccessibilityTab: Accessibilité
+    AccessibilityTab: AccessibilitÃ©
     ContentTab: Contenu
     OpenContent: Ouvrir le dossier de contenu
-    GlobalScale: Échelle globale
-    FontScale: Échelle des polices
+    GlobalScale: Echelle globale
+    FontScale: Echelle des polices
