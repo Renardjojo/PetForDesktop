@@ -43,7 +43,7 @@ public:
 
     void addNeed(float value, float min, float max, float minThreshold, float maxThreshold)
     {
-        needs.emplace_back(needs.size(), value, min, max, minThreshold, maxThreshold);
+        needs.emplace_back(Need{(int)needs.size(), value, min, max, minThreshold, maxThreshold});
     }
 
     int getPriority()

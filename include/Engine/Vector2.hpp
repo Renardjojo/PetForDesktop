@@ -206,7 +206,7 @@ union Vector2 {
     }
 
     // Operator overloads
-    constexpr bool operator==(const Vector2& v) noexcept
+    constexpr bool operator==(const Vector2& v) const noexcept
     {
         return x == v.x && y == v.y;
     }

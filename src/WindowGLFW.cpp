@@ -70,7 +70,7 @@ void cursorPositionCallback(GLFWwindow* window, double x, double y)
         datas.prevCursorPosX = globalScreenPosX;
         datas.prevCursorPosY = globalScreenPosY;
         Vec2 delta(datas.deltaCursorPosX, datas.deltaCursorPosY);
-        datas.deltasCursorPosBuffer.emplace(datas.timeAcc, delta);
+        datas.deltasCursorPosBuffer.emplace(GameData::DeltaCursosPosElem{(float)datas.timeAcc, delta});
         datas.deltaCursorAcc += delta;
     }
 }

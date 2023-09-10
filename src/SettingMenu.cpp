@@ -26,7 +26,8 @@ void SettingMenu::update(double deltaTime)
     windowBegin();
 
     bool isWindowOpen = true;
-    ImGui::Begin("Settings", &isWindowOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+    ImGui::Begin(Localization::instance().getLocal("Settings").c_str(), &isWindowOpen,
+                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
     shouldClose = !isWindowOpen;
 
