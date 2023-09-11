@@ -25,7 +25,6 @@ public:
     };
 
 protected:
-    std::map<std::string, SpriteSheet> spriteSheets;
     ESide                              side{ESide::right};
 
     GameData& datas;

@@ -3,6 +3,8 @@
 #include "Engine/Monitors.hpp"
 #include "Engine/Vector2.hpp"
 
+#include "Engine/ResourceManager.hpp"
+
 #include <filesystem>
 #include <memory>
 #include <queue>
@@ -31,6 +33,8 @@ struct GameData
 
     std::unique_ptr<class Texture> pDiscordLogo = nullptr;
     std::unique_ptr<class Texture> pPatreonLogo = nullptr;
+
+    ResourcesManager<class SpriteSheet> spriteSheets;
 
     std::unique_ptr<class ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
     std::unique_ptr<class ScreenSpaceQuad> pFullScreenQuad     = nullptr;
