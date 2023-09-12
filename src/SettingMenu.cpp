@@ -1,12 +1,11 @@
 #include "Game/SettingMenu.hpp"
 
-#include "Engine/Localization.hpp"
 #include "Engine/FileExplorer.hpp"
 #include "Engine/InteractionSystem.hpp"
 #include "Engine/Localization.hpp"
+#include "Engine/PetEditor.hpp"
 #include "Engine/Settings.hpp"
 #include "Engine/StylePanel.hpp"
-#include "Engine/PetEditor.hpp"
 
 #include "Game/Pet.hpp"
 #include "imgui.h"
@@ -26,8 +25,7 @@ void SettingMenu::update(double deltaTime)
     windowBegin();
 
     bool isWindowOpen = true;
-    ImGui::Begin(Localization::instance().getLocal("Settings").c_str(), &isWindowOpen,
-                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+    ImGui::Begin(Localization::instance().getLocal("Settings").c_str(), &isWindowOpen, ImGuiWindowFlags_NoCollapse);
 
     shouldClose = !isWindowOpen;
 
@@ -53,8 +51,7 @@ void SettingMenu::update(double deltaTime)
                 ImGui::EndCombo();
             }
 
-            if (ImGui::BeginCombo(Localization::instance().getLocal("Style").c_str(),
-                                  datas.styleName.c_str()))
+            if (ImGui::BeginCombo(Localization::instance().getLocal("Style").c_str(), datas.styleName.c_str()))
             {
                 for (int i = 0; i < datas.stylesPath.size(); i++)
                 {
@@ -96,10 +93,10 @@ void SettingMenu::update(double deltaTime)
 
         if (ImGui::BeginTabItem(Localization::instance().getLocal("AccessibilityTab", "Accessibility").c_str()))
         {
-            ImGui::DragInt(Localization::instance().getLocal("GlobalScale", "Global scale").c_str(),
-                           &datas.scale, 0.05f, 1, 10);
-            if (ImGui::DragFloat(Localization::instance().getLocal("FontScale", "Font scale").c_str(),
-                                 &datas.textScale, 0.005f, 0.3f, 2.0f, "%.1f"))
+            ImGui::DragInt(Localization::instance().getLocal("GlobalScale", "Global scale").c_str(), &datas.scale,
+                           0.05f, 1, 10);
+            if (ImGui::DragFloat(Localization::instance().getLocal("FontScale", "Font scale").c_str(), &datas.textScale,
+                                 0.005f, 0.3f, 2.0f, "%.1f"))
             {
                 ImGui::GetFont()->Scale = datas.textScale;
             }

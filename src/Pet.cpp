@@ -76,7 +76,7 @@ void Pet::setPositionSize(const Vec2 position, const Vec2 size)
 
 SpriteSheet& Pet::getOrAddSpriteSheet(const char* file, int inTileCount, float inSizeFactor)
 {
-    return datas.spriteSheets.getOrAdd(file, (spritesPath + file).c_str(), inTileCount, inSizeFactor);
+    return datas.spriteSheets.getOrAdd(file, (std::string(SPRITES_PATH) + file).c_str(), inTileCount, inSizeFactor);
 }
 
 void Pet::parseAnimationGraph()

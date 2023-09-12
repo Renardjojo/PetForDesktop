@@ -22,7 +22,7 @@ Texture::Texture(const char* srcPath, bool verticalFlip, std::function<void()> s
     }
     else
     {
-        log("Failed to load texture");
+        logf("Failed to load texture at path %s\n", srcPath);
     }
 }
 
