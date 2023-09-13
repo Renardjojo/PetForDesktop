@@ -10,6 +10,7 @@ class PetEditor
 protected:
     int       m_selectedNode       = -1;
     int       m_selectedTransition = -1;
+    int       m_previewCurrentFrame = 0;
     GameData& datas;
 
 public:
@@ -46,18 +47,39 @@ public:
 
     void displayAnimationSprite(YAML::Node& animGraph, std::vector<YAML::Node>& items, ImVec2 size)
     {
-        // TODO: not safe and don't handle the case if the sprite don't exist in resource mamaner
+        // TODO: not safe and don't handle the case if the sprite don't exist in resource manager
         std::string  spriteKey                = items[m_selectedNode]["sprite"].Scalar();
         SpriteSheet* sprite                   = datas.spriteSheets.get(spriteKey);
         int          spriteSheetID            = sprite->getID();
         ImVec2       spriteSheetAvailableSize = size;
         spriteSheetAvailableSize.x =
-            spriteSheetAvailableSize.x * 3 - ImGui::GetStyle().ItemSpacing.x * 2 - ImGui::GetStyle().FramePadding.x * 2;
+            size.x * 2 - ImGui::GetStyle().ItemSpacing.x * 2 - ImGui::GetStyle().FramePadding.x * 2;
         spriteSheetAvailableSize.y = std::min(
             sprite->getHeight() / (float)sprite->getWidth() * spriteSheetAvailableSize.x, spriteSheetAvailableSize.y);
         ImGui::SameLine();
         ImGui::Image((ImTextureID)spriteSheetID, spriteSheetAvailableSize, ImVec2(0, 1), ImVec2(1, 0),
                      ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 0.5));
+
+        ImVec2 previewSize;
+
+        previewSize.x = spriteSheetAvailableSize.y;
+        previewSize.y = spriteSheetAvailableSize.y;
+
+        displayPreview(*sprite, items[m_selectedNode], previewSize);
+    }
+
+    void displayPreview(SpriteSheet& sprite, YAML::Node& currentAnimationNode, ImVec2 size)
+    {
+        ImGui::SameLine();
+        int         tileCount = currentAnimationNode["tileCount"].as<int>();
+        int         framerate = currentAnimationNode["framerate"].as<int>();
+        m_previewCurrentFrame = std::fmod(framerate * datas.timeAcc, tileCount);
+
+        float uvXStart = m_previewCurrentFrame / (float)tileCount;
+        float uvXEnd   = uvXStart + 1 / (float)tileCount;
+
+        ImGui::Image((ImTextureID)sprite.getID(), size, ImVec2(uvXStart, 1), ImVec2(uvXEnd, 0), ImVec4(1, 1, 1, 1),
+                     ImVec4(1, 1, 1, 0.5));
     }
 
     void displayAnimationList(YAML::Node& animGraph, std::vector<YAML::Node>& items, ImVec2 size)
