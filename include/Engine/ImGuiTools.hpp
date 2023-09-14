@@ -172,6 +172,20 @@ inline IMGUI_API void ImageWithGrid(ImTextureID user_texture_id, const ImVec2& s
     }
 }
 
+inline IMGUI_API bool Selectable(ImTextureID imageTexture, const ImVec2& imageSize, const char* label,
+                                 bool selected = false, ImGuiSelectableFlags flags = 0,
+                                 const ImVec2& size_arg = ImVec2(0, 0), const ImVec2& uv0 = ImVec2(0, 0),
+                                 const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
+                                 const ImVec4& border_col = ImVec4(0, 0, 0, 0))
+{
+    ImGui::BeginGroup();
+    ImGui::Image(imageTexture, imageSize, uv0, uv1, tint_col, border_col);
+    ImGui::SameLine();
+    bool rst = ImGui::Selectable(label, selected, flags, size_arg);
+    ImGui::EndGroup();
+    return rst;
+}
+
 // https://github.com/ocornut/imgui/issues/1096#issuecomment-293544142
 // Definition (.cpp file. Not sure if it needs "imgui_internal.h" or not)
 inline IMGUI_API bool ImageButtonWithTextRight(ImTextureID texId, const char* label,

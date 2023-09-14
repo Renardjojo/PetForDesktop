@@ -54,7 +54,7 @@ void ContextualMenu::update(double deltaTime)
             petPosition.x += randNum(0, mainMonitorSize.x);
             petPosition.y += randNum(0, mainMonitorSize.y);
             datas.pets.emplace_back(
-                std::make_shared<Pet>(datas, petPosition, PetManager::instance().getPetsTypes("fox")));
+                std::make_shared<Pet>(datas, petPosition, PetManager::instance().getPetType("fox")));
         }
         shouldClose = true;
     }

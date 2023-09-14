@@ -1,17 +1,21 @@
 #pragma once
 
+#include "Engine/ImGuiTools.hpp"
+#include "Engine/PetManager.hpp"
 #include "Engine/ResourceManager.hpp"
 #include "Engine/SpriteSheet.hpp"
 #include "Game/GameData.hpp"
-#include "Engine/ImGuiTools.hpp"
 
 #include "imgui.h"
+#include <memory>
+#include <vector>
 
 class PetEditor
 {
 protected:
-    int       m_selectedNode       = -1;
-    int       m_selectedTransition = -1;
+    int       m_selectedPetType     = -1;
+    int       m_selectedNode        = -1;
+    int       m_selectedTransition  = -1;
     int       m_previewCurrentFrame = 0;
     GameData& datas;
 
@@ -26,7 +30,14 @@ public:
 
     void execute(float deltaTime)
     {
-        displayNodeList();
+        if (m_selectedPetType == -1)
+        {
+            displayPetsTypePreview();
+        }
+        else
+        {
+            displayNodeList();
+        }
     }
 
     void displayNodeList()
@@ -47,6 +58,46 @@ public:
         }
     }
 
+    void displayPetsTypePreview()
+    {
+        ImVec2 size = ImGui::GetContentRegionAvail();
+        size.x /= 2;
+
+        const std::vector<std::shared_ptr<PetManager::PetInfo>>& petTypes = PetManager::instance().getPetsTypes();
+
+        ImGui::BeginChild("PetsTypesWindow", size, true);
+
+        for (int i = 0; i < petTypes.size(); ++i)
+        {
+            std::string label = petTypes[i]->filename + "##unique_id";
+
+            YAML::Node previewPicture = petTypes[i]->settings["previewPicture"];
+            int        previewID      = -1;
+            if (previewPicture)
+            {
+                SpriteSheet* pSprite = datas.spriteSheets.get(previewPicture.Scalar());
+                if (pSprite)
+                    previewID = pSprite->getID();
+            }
+
+            ImVec2 label_size = ImGui::CalcTextSize(label.c_str(), NULL, true);
+            if (ImGui::Selectable((ImTextureID)previewID, ImVec2(label_size.y, label_size.y), label.c_str(),
+                                  (m_selectedPetType == i), 0, ImVec2(0, 0), ImVec2(0, 1), ImVec2(1, 0)))
+            {
+                m_selectedPetType = i;
+            }
+
+            YAML::Node authorNode = petTypes[i]->settings["author"];
+            if (authorNode)
+                ImGui::SetItemTooltip("By %s", authorNode.Scalar().c_str());
+        }
+        ImGui::EndChild();
+
+        if (m_selectedPetType != -1)
+        {
+        }
+    }
+
     void displayAnimationSprite(YAML::Node& animGraph, std::vector<YAML::Node>& items, ImVec2 size)
     {
         // TODO: not safe and don't handle the case if the sprite don't exist in resource manager
@@ -60,10 +111,8 @@ public:
             sprite->getHeight() / (float)sprite->getWidth() * spriteSheetAvailableSize.x, spriteSheetAvailableSize.y);
         ImGui::SameLine();
         ImGui::ImageWithGrid((ImTextureID)spriteSheetID, spriteSheetAvailableSize,
-                             ImVec2(sprite->getWidth(), sprite->getHeight()),
-                             ImVec2(0, 1),
-                             ImVec2(1, 0),
-                     ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 0.5));
+                             ImVec2(sprite->getWidth(), sprite->getHeight()), ImVec2(0, 1), ImVec2(1, 0),
+                             ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 0.5));
 
         ImVec2 previewSize;
 
@@ -76,8 +125,8 @@ public:
     void displayPreview(SpriteSheet& sprite, YAML::Node& currentAnimationNode, ImVec2 size)
     {
         ImGui::SameLine();
-        int         tileCount = currentAnimationNode["tileCount"].as<int>();
-        int         framerate = currentAnimationNode["framerate"].as<int>();
+        int tileCount         = currentAnimationNode["tileCount"].as<int>();
+        int framerate         = currentAnimationNode["framerate"].as<int>();
         m_previewCurrentFrame = std::fmod(framerate * datas.timeAcc, tileCount);
 
         float uvXStart = m_previewCurrentFrame / (float)tileCount;

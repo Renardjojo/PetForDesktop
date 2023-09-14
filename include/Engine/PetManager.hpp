@@ -35,18 +35,23 @@ public:
             if (std::filesystem::exists(settingPath))
             {
                 const std::string filename = entry.path().filename().string();
-                const YAML::Node  node = YAML::LoadFile(settingPath.string());
+                const YAML::Node  node     = YAML::LoadFile(settingPath.string());
                 pets.emplace_back(std::make_shared<PetInfo>(PetInfo{filename, node}));
             }
         }
     }
 
-    std::shared_ptr<PetInfo> getPetsTypes(const char* name)
+    const std::vector<std::shared_ptr<PetInfo>>& getPetsTypes() const
+    {
+        return pets;
+    }
+
+    std::shared_ptr<PetInfo> getPetType(const char* name) const
     {
         for (auto pet : pets)
         {
             // Use filename to avoid choising the wrong pet if they have the same name
-            //if (pet->settings[name].Scalar() == name)
+            // if (pet->settings[name].Scalar() == name)
             if (pet->filename == name)
                 return pet;
         }
