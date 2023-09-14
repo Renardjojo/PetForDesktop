@@ -14,7 +14,7 @@ class PetManager : public Singleton<PetManager>
 public:
     struct PetInfo
     {
-        std::string name;
+        std::string filename;
         YAML::Node  settings;
     };
 
@@ -34,18 +34,20 @@ public:
             std::filesystem::path settingPath = entry.path() / "setting.yaml";
             if (std::filesystem::exists(settingPath))
             {
-                const std::string name = entry.path().filename().string();
+                const std::string filename = entry.path().filename().string();
                 const YAML::Node  node = YAML::LoadFile(settingPath.string());
-                pets.emplace_back(std::make_shared<PetInfo>(PetInfo{name, node}));
+                pets.emplace_back(std::make_shared<PetInfo>(PetInfo{filename, node}));
             }
         }
     }
 
-    std::shared_ptr<PetInfo> getPet(const char* name)
+    std::shared_ptr<PetInfo> getPetsTypes(const char* name)
     {
         for (auto pet : pets)
         {
-            if (pet->name == name)
+            // Use filename to avoid choising the wrong pet if they have the same name
+            //if (pet->settings[name].Scalar() == name)
+            if (pet->filename == name)
                 return pet;
         }
 

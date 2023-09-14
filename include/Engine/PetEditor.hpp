@@ -3,6 +3,8 @@
 #include "Engine/ResourceManager.hpp"
 #include "Engine/SpriteSheet.hpp"
 #include "Game/GameData.hpp"
+#include "Engine/ImGuiTools.hpp"
+
 #include "imgui.h"
 
 class PetEditor
@@ -57,7 +59,10 @@ public:
         spriteSheetAvailableSize.y = std::min(
             sprite->getHeight() / (float)sprite->getWidth() * spriteSheetAvailableSize.x, spriteSheetAvailableSize.y);
         ImGui::SameLine();
-        ImGui::Image((ImTextureID)spriteSheetID, spriteSheetAvailableSize, ImVec2(0, 1), ImVec2(1, 0),
+        ImGui::ImageWithGrid((ImTextureID)spriteSheetID, spriteSheetAvailableSize,
+                             ImVec2(sprite->getWidth(), sprite->getHeight()),
+                             ImVec2(0, 1),
+                             ImVec2(1, 0),
                      ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 0.5));
 
         ImVec2 previewSize;

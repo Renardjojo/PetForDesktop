@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Engine/FileExplorer.hpp"
 #include "imgui.h"
 #include "imgui_internal.h" //ImGuiItemFlags_Disabled, PushItemFlag
-#include "Engine/FileExplorer.hpp"
 
 // Thank's to : https://github.com/ocornut/imgui/issues/211#issuecomment-812293268
 namespace ImGui
@@ -126,6 +126,50 @@ inline void displayBar(float current, float max, const ImVec2& size_arg, float r
                                          bb.Max.x - overlay_size.x - style.ItemInnerSpacing.x),
                                  bb.Min.y),
                           bb.Max, overlay, NULL, &overlay_size, ImVec2(0.0f, 0.5f), &bb);
+}
+
+inline IMGUI_API void ImageWithGrid(ImTextureID user_texture_id, const ImVec2& size, const ImVec2& ceilCount,
+                                    const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1),
+                                    const ImVec4& tint_col   = ImVec4(1, 1, 1, 1),
+                                    const ImVec4& border_col = ImVec4(0, 0, 0, 0),
+                                    const ImVec4& grid_col = ImVec4(0, 0, 0, 1), float grid_thickness = 1.f)
+{
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+        return;
+
+    ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
+    if (border_col.w > 0.0f)
+        bb.Max += ImVec2(2, 2);
+    ItemSize(bb);
+    if (!ItemAdd(bb, 0))
+        return;
+
+    if (border_col.w > 0.0f)
+    {
+        bb.Min += ImVec2(1, 1);
+        bb.Max -= ImVec2(1, 1);
+    }
+
+    window->DrawList->AddImage(user_texture_id, bb.Min, bb.Max, uv0, uv1, GetColorU32(tint_col));
+
+    // Draw the grid
+    ImVec2 grid_step = ImVec2(size.x / ceilCount.x, size.y / ceilCount.y);
+    for (float x = bb.Min.x + grid_step.x; x < bb.Max.x; x += grid_step.x)
+    {
+        window->DrawList->AddLine(ImVec2(x, bb.Min.y), ImVec2(x, bb.Max.y), GetColorU32(grid_col), grid_thickness);
+    }
+    for (float y = bb.Min.y + grid_step.y; y < bb.Max.y; y += grid_step.y)
+    {
+        window->DrawList->AddLine(ImVec2(bb.Min.x, y), ImVec2(bb.Max.x, y), GetColorU32(grid_col), grid_thickness);
+    }
+
+    if (border_col.w > 0.0f)
+    {
+        bb.Min -= ImVec2(1, 1);
+        bb.Max += ImVec2(1, 1);
+        window->DrawList->AddRect(bb.Min, bb.Max, GetColorU32(border_col), 0.0f);
+    }
 }
 
 // https://github.com/ocornut/imgui/issues/1096#issuecomment-293544142
@@ -328,7 +372,7 @@ inline IMGUI_API bool imageButtonWithTextCenter(ImTextureID texId, const char* l
     return pressed;
 }
 
-//https://gist.github.com/dougbinks/ef0962ef6ebe2cadae76c4e9f0586c69
+// https://gist.github.com/dougbinks/ef0962ef6ebe2cadae76c4e9f0586c69
 inline void addUnderLine(ImColor col)
 {
     ImVec2 min = ImGui::GetItemRectMin();
@@ -337,8 +381,7 @@ inline void addUnderLine(ImColor col)
     ImGui::GetWindowDrawList()->AddLine(min, max, col, 1.0f);
 }
 
-inline void textURL(const char* name, const char* URL, int sameLineBefore
-    , int sameLineAfter)
+inline void textURL(const char* name, const char* URL, int sameLineBefore, int sameLineAfter)
 {
     if (1 == sameLineBefore)
     {

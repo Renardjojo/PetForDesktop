@@ -1,5 +1,6 @@
 #include "Engine/FileExplorer.hpp"
 #include "Engine/Log.hpp"
+#include "Engine/ImGuiTools.hpp"
 
 #include "backends/imgui_impl_opengl3.h"
 #include <imgui.h>
@@ -18,17 +19,6 @@
 #include <string.h>
 
 #define PATH_UI_STYLE RESOURCE_PATH "/styles/UIStyle.style"
-
-static size_t ImFormatString(char* buf, size_t buf_size, const char* fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    int w = vsnprintf(buf, buf_size, fmt, args);
-    va_end(args);
-    buf[buf_size - 1] = 0;
-    return (w == -1) ? buf_size : (size_t)w;
-}
-//---------------------------------------------------------------------------
 
 inline void ImGuiSaveStyle(const char* filename, const ImGuiStyle& style, const char* currentFont)
 {

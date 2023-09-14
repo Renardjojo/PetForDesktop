@@ -110,7 +110,7 @@ public:
         Vec2 petPosition = mainMonitorPosition;
         petPosition.x += randNum(0, mainMonitorSize.x);
         petPosition.y += randNum(0, mainMonitorSize.y);
-        datas.pets.emplace_back(std::make_shared<Pet>(datas, petPosition, PetManager::instance().getPet("fox")));
+        datas.pets.emplace_back(std::make_shared<Pet>(datas, petPosition, PetManager::instance().getPetsTypes("fox")));
     }
 
     void initUI(GameData& datas)
