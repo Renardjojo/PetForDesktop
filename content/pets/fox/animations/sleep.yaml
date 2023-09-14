@@ -1,0 +1,11 @@
+FirstNode: sleep
+PauseNode: sleep
+Nodes:
+    AnimationNode:
+        name: sleep
+        sprite: sleep.png
+        sizeFactor: 2
+        tileCount: 6
+        framerate: 4
+        loop: true
+Transitions:

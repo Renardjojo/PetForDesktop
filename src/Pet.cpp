@@ -11,9 +11,10 @@
 #endif // USE_OPENGL_API
 
 #include "yaml-cpp/yaml.h"
+#include <filesystem>
 
-Pet::Pet(GameData& data, Vec2 position)
-    : datas{data}, animator{data}, dialoguePopup{data}, needUpdator(data, dialoguePopup, utilitySystem),
+Pet::Pet(GameData& data, Vec2 position, std::shared_ptr<PetManager::PetInfo> info)
+    : datas{data}, m_info{info}, animator{data}, dialoguePopup{data}, needUpdator(data, dialoguePopup, utilitySystem),
       physicComponent(*this), interactionComponent(*this)
 {
     data.window->addElement(*this);
@@ -47,7 +48,6 @@ void Pet::setIsPaused(bool flag)
     {
         animator.setCurrent(firstNode);
         animator.getCurrent()->canUseTransition = true;
-       
     }
 
     physicComponent.velocity           = {0.f, 0.f};
@@ -76,7 +76,24 @@ void Pet::setPositionSize(const Vec2 position, const Vec2 size)
 
 SpriteSheet& Pet::getOrAddSpriteSheet(const char* file, int inTileCount, float inSizeFactor)
 {
-    return datas.spriteSheets.getOrAdd(file, (std::string(SPRITES_PATH) + file).c_str(), inTileCount, inSizeFactor);
+    std::string spritePath;
+
+    if (m_info)
+    {
+        spritePath = std::string(PETS_PATH) + m_info->name + "/sprites/" + file;
+        if (std::filesystem::exists(spritePath))
+        {
+            return datas.spriteSheets.getOrAdd(file, spritePath.c_str(), inTileCount, inSizeFactor);
+        }
+    }
+
+    spritePath = std::string(RESOURCE_PATH) + "sprites/" + file;
+    if (std::filesystem::exists(spritePath))
+    {
+        return datas.spriteSheets.getOrAdd(file, spritePath.c_str(), inTileCount, inSizeFactor);
+    }
+
+    errorAndExit(std::string("File with name ") + file + "could not be found");
 }
 
 void Pet::parseAnimationGraph()
@@ -116,7 +133,7 @@ void Pet::parseAnimationGraph()
         }
         else
         {
-            warning(std::string("Node with name ") + title + " isn't implemented and is skiped");
+            warning(std::string("Node with name ") + title + " isn't implemented and is skipped");
         }
     }
 
@@ -166,7 +183,7 @@ void Pet::parseAnimationGraph()
         }
         else
         {
-            warning(std::string("Transition with name ") + title + " isn't implemented and is skiped");
+            warning(std::string("Transition with name ") + title + " isn't implemented and is skipped");
         }
     }
 
@@ -175,7 +192,7 @@ void Pet::parseAnimationGraph()
     if (pauseNodeSetting)
     {
         std::string pauseNodeName = pauseNodeSetting.as<std::string>();
-        auto                               it = nodes.find(pauseNodeName);
+        auto        it            = nodes.find(pauseNodeName);
         if (it != nodes.end())
         {
             pauseNode = it->second;
@@ -183,7 +200,7 @@ void Pet::parseAnimationGraph()
     }
 
     // First node
-    bool        firstNodeFound   = false;
+    bool       firstNodeFound   = false;
     YAML::Node firstNodeSetting = animGraph["FirstNode"];
 
     if (firstNodeSetting)
@@ -382,6 +399,16 @@ void Pet::draw()
     spriteAnimator.draw(*this, datas, *datas.pSpriteSheetShader, (bool)side);
     datas.pUnitFullScreenQuad->use();
     datas.pUnitFullScreenQuad->draw();
+}
+
+std::vector<std::string> Pet::getAllPetName()
+{
+    std::vector<std::string> pets;
+
+    for (const auto& entry : std::filesystem::directory_iterator(PETS_PATH))
+        pets.emplace_back(entry.path().filename().string());
+
+    return pets;
 }
 
 bool Pet::isPointInside(Vec2 pointPos)

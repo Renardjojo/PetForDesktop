@@ -4,14 +4,15 @@
 #include "Engine/InteractionComponent.hpp"
 #include "Engine/PhysicComponent.hpp"
 #include "Engine/SpriteAnimator.hpp"
-#include "Engine/SpriteSheet.hpp"
 #include "Engine/StateMachine.hpp"
 #include "Engine/UtilitySystem.hpp"
+#include "Engine/PetManager.hpp"
 #include "Game/DialoguePopUp.hpp"
 #include "Game/GameData.hpp"
 
 #include <map>
 #include <string>
+#include <memory>
 
 #include "yaml-cpp/yaml.h"
 
@@ -28,6 +29,7 @@ protected:
     ESide                              side{ESide::right};
 
     GameData& datas;
+    std::shared_ptr<PetManager::PetInfo> m_info;
 
     StateMachine   animator;
     SpriteAnimator spriteAnimator;
@@ -64,7 +66,7 @@ public:
     GETTER_BY_REF(PhysicComponent, physicComponent)
     GETTER_BY_REF(InteractionComponent, interactionComponent)
 
-    Pet(GameData& data, Vec2 position);
+    Pet(GameData& data, Vec2 position, std::shared_ptr<PetManager::PetInfo> info = nullptr);
 
     ~Pet();
 
@@ -99,6 +101,8 @@ public:
     void updateRendering(double deltaTime);
 
     void draw();
+
+    static std::vector<std::string> getAllPetName();
 
     virtual bool isPointInside(Vec2 pointPos);
 

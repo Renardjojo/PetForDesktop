@@ -1,6 +1,7 @@
 #include "Game/ContextualMenu.hpp"
 
 #include "Engine/Localization.hpp"
+#include "Engine/PetManager.hpp"
 #include "Engine/FileExplorer.hpp"
 #include "Engine/ImGuiTools.hpp"
 #include "Engine/InteractionSystem.hpp"
@@ -47,12 +48,12 @@ void ContextualMenu::update(double deltaTime)
         Vec2i mainMonitorSize;
         datas.monitors.getMainMonitorWorkingArea(mainMonitorPosition, mainMonitorSize);
 
-        for (size_t i = 0; i < 250; i++)
+        for (size_t i = 0; i < 1; i++)
         {
             Vec2 petPosition = mainMonitorPosition;
             petPosition.x += randNum(0, mainMonitorSize.x);
             petPosition.y += randNum(0, mainMonitorSize.y);
-            datas.pets.emplace_back(std::make_shared<Pet>(datas, petPosition));
+            datas.pets.emplace_back(std::make_shared<Pet>(datas, petPosition, PetManager::instance().getPet("fox")));
         }
         shouldClose = true;
     }

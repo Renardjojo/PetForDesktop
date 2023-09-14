@@ -1,0 +1,143 @@
+FirstNode: idle1
+PauseNode: sleep
+Nodes:
+    AnimationNode:
+        name: idle1
+        sprite: idle.png
+        sizeFactor: 2
+        tileCount: 5
+        framerate: 5
+        loop: true
+    AnimationNode:
+        name: idle2
+        sprite: idle2.png
+        sizeFactor: 2
+        tileCount: 14
+        framerate: 7
+        loop: true
+    AnimationNode:
+        name: sleep
+        sprite: sleep.png
+        sizeFactor: 2
+        tileCount: 6
+        framerate: 4
+        loop: true
+    GrabNode:
+        name: grab
+        sprite: grab.png
+        sizeFactor: 2
+        tileCount: 4
+        framerate: 10
+        loop: true
+    MovementDirectionNode:
+        name: walk
+        sprite: walk.png
+        sizeFactor: 2
+        tileCount: 8
+        framerate: 10
+        directions: [[0.2, 0], [-0.2, 0]]
+        applyGravity: true
+        loop: true
+    MovementDirectionNode:
+        name: fly
+        sprite: flyBubble.png
+        sizeFactor: 1
+        tileCount: 1
+        framerate: 10
+        directions: [[0.15, -0.1], [0.1, -0.1], [-0.1, -0.1], [-0.15, -0.1]]
+        applyGravity: false
+        loop: true
+    PetJumpNode:
+        name: jump
+        sprite: jump.png
+        sizeFactor: 2
+        tileCount: 4
+        framerate: 10
+        direction: [1, 0]
+        verticalThrust: 0.15
+        horizontalThrust: 0.3
+    AnimationNode:
+        name: air
+        sprite: air.png
+        sizeFactor: 2
+        tileCount: 1
+        framerate: 10
+        loop: true
+    AnimationNode:
+        name: landing
+        sprite: landing.png
+        sizeFactor: 2
+        tileCount: 6
+        framerate: 10
+        loop: false
+Transitions:
+    StartLeftClicTransition:
+        from: idle1
+        to: grab
+    RandomDelayTransition:
+        from: idle1
+        to: [walk, walk, jump, sleep]
+        duration: 4000
+        interval: 2000
+    IsNotGroundedTransition:
+        from: idle1
+        to: air
+    StartLeftClicTransition:
+        from: idle2
+        to: grab
+    RandomDelayTransition:
+        from: idle2
+        to: [walk, jump, jump, fly]
+        duration: 2000
+        interval: 1000
+    IsNotGroundedTransition:
+        from: idle2
+        to: air
+    StartLeftClicTransition:
+        from: walk
+        to: grab
+    TouchScreenEdgeTransition:
+        from: walk
+        to: [idle1, idle2]
+    RandomDelayTransition:
+        from: walk
+        to: [idle1, idle2]
+        duration: 2000
+        interval: 1000
+    TouchScreenEdgeTransition:
+        from: fly
+        to: [idle1, idle2]
+    StartLeftClicTransition:
+        from: fly
+        to: grab
+    RandomDelayTransition:
+        from: fly
+        to: [idle1, idle2]
+        duration: 6000
+        interval: 2000
+    StartLeftClicTransition:
+        from: jump
+        to: grab
+    StartLeftClicTransition:
+        from: air
+        to: grab
+    StartLeftClicTransition:
+        from: sleep
+        to: grab
+    AnimationEndTransition:
+        from: jump
+        to: air
+    EndLeftClicTransition:
+        from: grab
+        to: air
+    IsGroundedTransition:
+        from: air
+        to: landing
+    AnimationEndTransition:
+        from: landing
+        to: [idle1, idle2]
+    RandomDelayTransition:
+        from: sleep
+        to: [idle1, idle2]
+        duration: 30000
+        interval: 15000
