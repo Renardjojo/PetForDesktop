@@ -36,6 +36,14 @@ public:
         }
         else
         {
+            const char* petTypeName = PetManager::instance().getPetsTypes()[m_selectedPetType]->filename.c_str();
+            ImVec2      prevAlign   = ImGui::GetStyle().SelectableTextAlign;
+            ImGui::GetStyle().SelectableTextAlign = ImVec2(0.5, 0.5);
+            if (ImGui::Selectable(petTypeName))
+            {
+                m_selectedPetType = -1;
+            }
+            ImGui::GetStyle().SelectableTextAlign = prevAlign;
             displayNodeList();
         }
     }
@@ -80,7 +88,7 @@ public:
                     previewID = pSprite->getID();
             }
 
-            ImVec2 label_size = ImGui::CalcTextSize(label.c_str(), NULL, true);
+            ImVec2 label_size     = ImGui::CalcTextSize(label.c_str(), NULL, true);
             ImVec2 selectableSize = label_size;
             selectableSize.y      = 32;
 
