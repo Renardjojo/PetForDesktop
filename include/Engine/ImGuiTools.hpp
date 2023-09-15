@@ -181,7 +181,10 @@ inline IMGUI_API bool Selectable(ImTextureID imageTexture, const ImVec2& imageSi
     ImGui::BeginGroup();
     ImGui::Image(imageTexture, imageSize, uv0, uv1, tint_col, border_col);
     ImGui::SameLine();
-    bool rst = ImGui::Selectable(label, selected, flags, size_arg);
+    ImVec2 prevAlign = ImGui::GetStyle().SelectableTextAlign;
+    ImGui::GetStyle().SelectableTextAlign                    = ImVec2(0, 0.5);
+    bool rst = Selectable(label, selected, flags, size_arg);
+    ImGui::GetStyle().SelectableTextAlign                    = prevAlign;
     ImGui::EndGroup();
     return rst;
 }

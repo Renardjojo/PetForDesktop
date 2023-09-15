@@ -81,8 +81,12 @@ public:
             }
 
             ImVec2 label_size = ImGui::CalcTextSize(label.c_str(), NULL, true);
-            if (ImGui::Selectable((ImTextureID)previewID, ImVec2(label_size.y, label_size.y), label.c_str(),
-                                  (m_selectedPetType == i), 0, ImVec2(0, 0), ImVec2(0, 1), ImVec2(1, 0)))
+            ImVec2 selectableSize = label_size;
+            selectableSize.y      = 32;
+
+            if (ImGui::Selectable((ImTextureID)previewID, ImVec2(selectableSize.y, selectableSize.y), label.c_str(),
+                                  (m_selectedPetType == i), ImGuiSelectableFlags_SpanAvailWidth, selectableSize,
+                                  ImVec2(0, 1), ImVec2(1, 0)))
             {
                 m_selectedPetType = i;
             }

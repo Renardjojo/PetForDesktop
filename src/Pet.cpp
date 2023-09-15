@@ -80,7 +80,7 @@ SpriteSheet& Pet::getOrAddSpriteSheet(const char* file, int inTileCount, float i
 
     if (m_info)
     {
-        spritePath = std::string(PETS_PATH) + m_info->filename + "/sprites/" + file;
+        spritePath = std::string(PETS_PATH) + "/" + m_info->filename + "/sprites/" + file;
         if (std::filesystem::exists(spritePath))
         {
             return datas.spriteSheets.getOrAdd(file, spritePath.c_str(), inTileCount, inSizeFactor);
@@ -88,7 +88,7 @@ SpriteSheet& Pet::getOrAddSpriteSheet(const char* file, int inTileCount, float i
         logf("%s could not be found in pet called %s\n", file, m_info->filename);
     }
 
-    spritePath = std::string(RESOURCE_PATH) + "sprites/" + file;
+    spritePath = std::string(RESOURCE_PATH) + "/sprites/" + file;
     if (std::filesystem::exists(spritePath))
     {
         return datas.spriteSheets.getOrAdd(file, spritePath.c_str(), inTileCount, inSizeFactor);
