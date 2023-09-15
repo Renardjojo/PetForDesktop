@@ -36,16 +36,22 @@ public:
         }
         else
         {
-            const char* petTypeName = PetManager::instance().getPetsTypes()[m_selectedPetType]->filename.c_str();
-            ImVec2      prevAlign   = ImGui::GetStyle().SelectableTextAlign;
-            ImGui::GetStyle().SelectableTextAlign = ImVec2(0.5, 0.5);
-            if (ImGui::Selectable(petTypeName))
-            {
-                m_selectedPetType = -1;
-            }
-            ImGui::GetStyle().SelectableTextAlign = prevAlign;
+            displayPetTitle();
             displayNodeList();
         }
+    }
+
+    void displayPetTitle()
+    {
+        const char* petTypeName = PetManager::instance().getPetsTypes()[m_selectedPetType]->filename.c_str();
+        ImVec2      prevAlign   = ImGui::GetStyle().SelectableTextAlign;
+        ImGui::GetStyle().SelectableTextAlign = ImVec2(0.5, 0.5);
+        if (ImGui::Selectable(petTypeName))
+        {
+            m_selectedPetType = -1;
+        }
+        ImGui::GetStyle().SelectableTextAlign = prevAlign;
+        ImGui::Separator();
     }
 
     void displayNodeList()
@@ -70,44 +76,64 @@ public:
     {
         ImVec2 size = ImGui::GetContentRegionAvail();
         size.x /= 2;
+        ImVec2 addButtonSize = ImVec2(size.x, 40);
+        size.y -= addButtonSize.y + ImGui::GetStyle().FramePadding.y;
 
         const std::vector<std::shared_ptr<PetManager::PetInfo>>& petTypes = PetManager::instance().getPetsTypes();
 
-        ImGui::BeginChild("PetsTypesWindow", size, true);
+        ImGui::BeginGroup();
+        //ImGui::BeginChild("PetsTypesWindow", size, true);
 
-        for (int i = 0; i < petTypes.size(); ++i)
+        ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
+                                       ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_RowBg |
+                                               ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX;
+        
+        if (ImGui::BeginTable("table1", 1, flags))
         {
-            std::string label = petTypes[i]->filename + "##unique_id";
-
-            YAML::Node previewPicture = petTypes[i]->settings["previewPicture"];
-            int        previewID      = -1;
-            if (previewPicture)
+            for (int i = 0; i < petTypes.size(); ++i)
             {
-                SpriteSheet* pSprite = datas.spriteSheets.get(previewPicture.Scalar());
-                if (pSprite)
-                    previewID = pSprite->getID();
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+
+                std::string label = petTypes[i]->filename + "##unique_id";
+
+                YAML::Node previewPicture = petTypes[i]->settings["previewPicture"];
+                int        previewID      = -1;
+                if (previewPicture)
+                {
+                    SpriteSheet* pSprite = datas.spriteSheets.get(previewPicture.Scalar());
+                    if (pSprite)
+                        previewID = pSprite->getID();
+                }
+
+                ImVec2 label_size     = ImGui::CalcTextSize(label.c_str(), NULL, true);
+                ImVec2 selectableSize = label_size;
+                selectableSize.y      = 32;
+
+                if (ImGui::Selectable((ImTextureID)previewID, ImVec2(selectableSize.y, selectableSize.y), label.c_str(),
+                                      (m_selectedPetType == i), ImGuiSelectableFlags_SpanAvailWidth, selectableSize,
+                                      ImVec2(0, 1), ImVec2(1, 0)))
+                {
+                    m_selectedPetType = i;
+                }
+
+                YAML::Node authorNode = petTypes[i]->settings["author"];
+                if (authorNode)
+                    ImGui::SetItemTooltip("By %s", authorNode.Scalar().c_str());
             }
 
-            ImVec2 label_size     = ImGui::CalcTextSize(label.c_str(), NULL, true);
-            ImVec2 selectableSize = label_size;
-            selectableSize.y      = 32;
 
-            if (ImGui::Selectable((ImTextureID)previewID, ImVec2(selectableSize.y, selectableSize.y), label.c_str(),
-                                  (m_selectedPetType == i), ImGuiSelectableFlags_SpanAvailWidth, selectableSize,
-                                  ImVec2(0, 1), ImVec2(1, 0)))
+            addButtonSize.x = ImGui::GetColumnWidth() + ImGui::GetStyle().ColumnsMinSpacing + ImGui::GetStyle().CellPadding.x;
+            ImGui::TableNextRow(0, ImGui::GetContentRegionAvail().y - addButtonSize.y); // Fill the rest of the window with void
+            ImGui::EndTable();
+            
+            // ImGui::SetCursorPosY(ImGui::GetWindowPos().y + ImGui::GetWindowSize().y - buttonSize.y);
+            if (ImGui::Button("+", addButtonSize))
             {
-                m_selectedPetType = i;
             }
-
-            YAML::Node authorNode = petTypes[i]->settings["author"];
-            if (authorNode)
-                ImGui::SetItemTooltip("By %s", authorNode.Scalar().c_str());
         }
-        ImGui::EndChild();
 
-        if (m_selectedPetType != -1)
-        {
-        }
+        ImGui::EndGroup();
     }
 
     void displayAnimationSprite(YAML::Node& animGraph, std::vector<YAML::Node>& items, ImVec2 size)
