@@ -179,8 +179,15 @@ inline IMGUI_API bool Selectable(ImTextureID imageTexture, const ImVec2& imageSi
                                  const ImVec4& border_col = ImVec4(0, 0, 0, 0))
 {
     ImGui::BeginGroup();
-    ImGui::Image(imageTexture, imageSize, uv0, uv1, tint_col, border_col);
-    ImGui::SameLine();
+    if (imageTexture != nullptr)
+    {
+        ImGui::Image(imageTexture, imageSize, uv0, uv1, tint_col, border_col);
+        ImGui::SameLine();
+    }
+    else
+    {
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + imageSize.x + ImGui::GetStyle().ItemSpacing.x);
+    }
     ImVec2 prevAlign = ImGui::GetStyle().SelectableTextAlign;
     ImGui::GetStyle().SelectableTextAlign                    = ImVec2(0, 0.5);
     bool rst = Selectable(label, selected, flags, size_arg);

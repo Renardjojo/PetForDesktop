@@ -17,6 +17,8 @@ protected:
     int       m_selectedNode        = -1;
     int       m_selectedTransition  = -1;
     int       m_previewCurrentFrame = 0;
+    bool      m_isCreatingPet       = false;
+    char      m_newPetName[64] = "";
     GameData& datas;
 
 public:
@@ -82,12 +84,10 @@ public:
         const std::vector<std::shared_ptr<PetManager::PetInfo>>& petTypes = PetManager::instance().getPetsTypes();
 
         ImGui::BeginGroup();
-        //ImGui::BeginChild("PetsTypesWindow", size, true);
-
         ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
-                                       ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_RowBg |
-                                               ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX;
-        
+                                ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_RowBg |
+                                ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX;
+
         if (ImGui::BeginTable("table1", 1, flags))
         {
             for (int i = 0; i < petTypes.size(); ++i)
@@ -98,7 +98,7 @@ public:
                 std::string label = petTypes[i]->filename + "##unique_id";
 
                 YAML::Node previewPicture = petTypes[i]->settings["previewPicture"];
-                int        previewID      = -1;
+                int        previewID      = 0;
                 if (previewPicture)
                 {
                     SpriteSheet* pSprite = datas.spriteSheets.get(previewPicture.Scalar());
@@ -122,14 +122,32 @@ public:
                     ImGui::SetItemTooltip("By %s", authorNode.Scalar().c_str());
             }
 
-
-            addButtonSize.x = ImGui::GetColumnWidth() + ImGui::GetStyle().ColumnsMinSpacing + ImGui::GetStyle().CellPadding.x;
-            ImGui::TableNextRow(0, ImGui::GetContentRegionAvail().y - addButtonSize.y); // Fill the rest of the window with void
-            ImGui::EndTable();
-            
-            // ImGui::SetCursorPosY(ImGui::GetWindowPos().y + ImGui::GetWindowSize().y - buttonSize.y);
-            if (ImGui::Button("+", addButtonSize))
+            if (m_isCreatingPet)
             {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+
+                ImGui::SetKeyboardFocusHere();
+                if (ImGui::InputText("##unique_id", m_newPetName, IM_ARRAYSIZE(m_newPetName),
+                                 ImGuiInputTextFlags_EnterReturnsTrue))
+                {
+                    if (m_newPetName[0] != '\0')
+                    {
+                        m_isCreatingPet = false;
+                        PetManager::instance().createNewPet(m_newPetName);
+                    }
+                }
+            }
+
+            addButtonSize.x =
+                ImGui::GetColumnWidth() + ImGui::GetStyle().ColumnsMinSpacing + ImGui::GetStyle().CellPadding.x;
+            ImGui::TableNextRow(0, ImGui::GetContentRegionAvail().y -
+                                       addButtonSize.y); // Fill the rest of the window with void
+            ImGui::EndTable();
+
+            if (ImGui::Button("Create new pet", addButtonSize))
+            {
+                m_isCreatingPet = true;
             }
         }
 

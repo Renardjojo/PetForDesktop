@@ -29,6 +29,7 @@ public:
 
     void refresh()
     {
+        pets.clear();
         for (const auto& entry : std::filesystem::directory_iterator(PETS_PATH))
         {
             std::filesystem::path settingPath = entry.path() / "setting.yaml";
@@ -39,6 +40,14 @@ public:
                 pets.emplace_back(std::make_shared<PetInfo>(PetInfo{filename, node}));
             }
         }
+    }
+
+    void createNewPet(const char* name)
+    {
+        refresh();
+        const std::string filename = name;
+        YAML::Node        node     = YAML::Node{};
+        pets.emplace_back(std::make_shared<PetInfo>(PetInfo{filename, node}));
     }
 
     const std::vector<std::shared_ptr<PetInfo>>& getPetsTypes() const
