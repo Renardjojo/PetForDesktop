@@ -15,10 +15,11 @@ class PetEditor
 protected:
     int       m_selectedPetType     = -1;
     int       m_selectedNode        = -1;
+    int       m_selectedAnimation   = 0;
     int       m_selectedTransition  = -1;
     int       m_previewCurrentFrame = 0;
     bool      m_isCreatingPet       = false;
-    char      m_newPetName[64] = "";
+    char      m_newPetName[64]      = "";
     GameData& datas;
 
 public:
@@ -39,7 +40,11 @@ public:
         else
         {
             displayPetTitle();
-            displayNodeList();
+
+            if (m_selectedPetType != -1)
+            {
+                displayNodeList();
+            }
         }
     }
 
@@ -58,19 +63,49 @@ public:
 
     void displayNodeList()
     {
-        for (YAML::Node& animGraph : datas.animGraphs)
+        std::string animPath = RESOURCE_PATH "/setting/animation.yaml";
+        YAML::LoadFile(RESOURCE_PATH "/setting/animation.yaml");
+
+        ImVec2 listWinSize = ImGui::GetContentRegionAvail();
+        listWinSize.x /= 5;
+
+        ImGui::BeginGroup();
+
+        std::vector<PetManager::YAMLFile>& animations =
+            PetManager::instance().getPetsTypes()[m_selectedPetType]->animations;
+        std::vector<std::string> animationsNames;
+
+        for (PetManager::YAMLFile& animation : animations)
         {
-            std::vector<YAML::Node> items;
-            ImVec2                  listWinSize = ImGui::GetContentRegionAvail();
-            listWinSize.x /= 5;
+            animationsNames.emplace_back(animation.path.stem().string());
+        }
+        
+        ImGui::SetNextItemWidth(listWinSize.x);
+        ImGui::Combo("##unique_id", &m_selectedAnimation, animationsNames);
+        //ImGui::Combo(
+        //    "##unique_id", &m_selectedAnimation,
+        //    [](void* vec, int idx, const char** out_text) {
+        //        std::vector<std::string>* vector = reinterpret_cast<std::vector<std::string>*>(vec);
+        //        if (idx < 0 || idx >= vector->size())
+        //            return false;
+        //        *out_text = vector->at(idx).c_str();
+        //        return true;
+        //    },
+        //    reinterpret_cast<void*>(&animationsNames), animationsNames.size());
 
-            displayAnimationList(animGraph, items, listWinSize);
+        PetManager::YAMLFile& animGraph = animations[m_selectedAnimation];
 
-            if (m_selectedNode != -1)
-            {
-                displayTransitionList(animGraph, items, listWinSize);
-                displayAnimationSprite(animGraph, items, listWinSize);
-            }
+        std::vector<YAML::Node> items;
+
+
+        displayAnimationList(animGraph.file, items, listWinSize);
+
+        ImGui::EndGroup();
+
+        if (m_selectedNode != -1)
+        {
+            displayTransitionList(animGraph.file, items, listWinSize);
+            displayAnimationSprite(animGraph.file, items, listWinSize);
         }
     }
 
@@ -88,7 +123,7 @@ public:
                                 ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_RowBg |
                                 ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX;
 
-        if (ImGui::BeginTable("table1", 1, flags))
+        if (ImGui::BeginTable("##unique_id", 1, flags))
         {
             for (int i = 0; i < petTypes.size(); ++i)
             {
@@ -114,7 +149,11 @@ public:
                                       (m_selectedPetType == i), ImGuiSelectableFlags_SpanAvailWidth, selectableSize,
                                       ImVec2(0, 1), ImVec2(1, 0)))
                 {
-                    m_selectedPetType = i;
+                    m_selectedPetType     = i;
+                    m_selectedNode        = -1;
+                    m_selectedAnimation   = 0;
+                    m_selectedTransition  = -1;
+                    m_previewCurrentFrame = 0;
                 }
 
                 YAML::Node authorNode = petTypes[i]->settings["author"];
@@ -129,7 +168,7 @@ public:
 
                 ImGui::SetKeyboardFocusHere();
                 if (ImGui::InputText("##unique_id", m_newPetName, IM_ARRAYSIZE(m_newPetName),
-                                 ImGuiInputTextFlags_EnterReturnsTrue))
+                                     ImGuiInputTextFlags_EnterReturnsTrue))
                 {
                     if (m_newPetName[0] != '\0')
                     {

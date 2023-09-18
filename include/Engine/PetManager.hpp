@@ -9,13 +9,23 @@
 
 #include "yaml-cpp/yaml.h"
 
+#include <iostream>
+
 class PetManager : public Singleton<PetManager>
 {
 public:
+
+    struct YAMLFile
+    {
+        std::filesystem::path path;
+        YAML::Node  file;
+    };
+
     struct PetInfo
     {
-        std::string filename;
-        YAML::Node  settings;
+        std::string             filename;
+        YAML::Node              settings;
+        std::vector<YAMLFile>   animations;
     };
 
 protected:
@@ -32,12 +42,27 @@ public:
         pets.clear();
         for (const auto& entry : std::filesystem::directory_iterator(PETS_PATH))
         {
-            std::filesystem::path settingPath = entry.path() / "setting.yaml";
-            if (std::filesystem::exists(settingPath))
+            std::filesystem::path path = entry.path() / "setting.yaml";
+            if (std::filesystem::exists(path))
             {
-                const std::string filename = entry.path().filename().string();
-                const YAML::Node  node     = YAML::LoadFile(settingPath.string());
-                pets.emplace_back(std::make_shared<PetInfo>(PetInfo{filename, node}));
+                std::shared_ptr<PetInfo> pet = std::make_shared<PetInfo>();
+
+                pet->filename   = entry.path().filename().string();
+                pet->settings = YAML::LoadFile(path.string());
+                
+                path = entry.path() / "animations";
+                if (std::filesystem::exists(path))
+                {
+                    for (const auto& entry : std::filesystem::directory_iterator(path))
+                    {
+                        if (entry.is_regular_file())
+                        {
+                            pet->animations.emplace_back(YAMLFile{entry.path(), YAML::LoadFile(entry.path().string())});
+                        }
+                    }
+                }
+
+                pets.emplace_back(std::move(pet));
             }
         }
     }
@@ -57,7 +82,7 @@ public:
 
     std::shared_ptr<PetInfo> getPetType(const char* name) const
     {
-        for (auto pet : pets)
+        for (auto& pet : pets)
         {
             // Use filename to avoid choising the wrong pet if they have the same name
             // if (pet->settings[name].Scalar() == name)
