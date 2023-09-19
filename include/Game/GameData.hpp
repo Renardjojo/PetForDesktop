@@ -35,6 +35,7 @@ struct GameData
     std::unique_ptr<class Texture> pPatreonLogo = nullptr;
 
     ResourcesManager<class SpriteSheet> spriteSheets;
+    ResourcesManager<class YAML::Node>  animsGraphs;
 
     std::unique_ptr<class ScreenSpaceQuad> pUnitFullScreenQuad = nullptr;
     std::unique_ptr<class ScreenSpaceQuad> pFullScreenQuad     = nullptr;

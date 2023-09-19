@@ -15,10 +15,11 @@ class PetEditor
 protected:
     int       m_selectedPetType     = -1;
     int       m_selectedNode        = -1;
+    int       m_selectedAnimation   = -1;
     int       m_selectedTransition  = -1;
     int       m_previewCurrentFrame = 0;
     bool      m_isCreatingPet       = false;
-    char      m_newPetName[64] = "";
+    char      m_newPetName[64]      = "";
     GameData& datas;
 
 public:
@@ -39,7 +40,11 @@ public:
         else
         {
             displayPetTitle();
-            displayNodeList();
+
+            if (m_selectedPetType != -1)
+            {
+                displayNodeList();
+            }
         }
     }
 
@@ -58,19 +63,59 @@ public:
 
     void displayNodeList()
     {
-        for (YAML::Node& animGraph : datas.animGraphs)
-        {
-            std::vector<YAML::Node> items;
-            ImVec2                  listWinSize = ImGui::GetContentRegionAvail();
-            listWinSize.x /= 5;
+        std::string animPath = RESOURCE_PATH "/setting/animation.yaml";
+        YAML::LoadFile(RESOURCE_PATH "/setting/animation.yaml");
 
-            displayAnimationList(animGraph, items, listWinSize);
+        ImVec2 listWinSize = ImGui::GetContentRegionAvail();
+        listWinSize.x /= 5;
+
+        ImGui::BeginGroup();
+
+        std::vector<PetManager::YAMLFile>& animations =
+            PetManager::instance().getPetsTypes()[m_selectedPetType]->animations;
+
+        displayAnimationList(animations, listWinSize);
+
+        if (m_selectedAnimation != -1)
+        {
+            PetManager::YAMLFile& animGraph = animations[m_selectedAnimation];
+
+            std::vector<YAML::Node> items;
+
+            displayAnimationNodeList(animGraph.file, items, listWinSize);
+
+            ImGui::EndGroup();
 
             if (m_selectedNode != -1)
             {
-                displayTransitionList(animGraph, items, listWinSize);
-                displayAnimationSprite(animGraph, items, listWinSize);
+                displayTransitionList(animGraph.file, items, listWinSize);
+                displayAnimationSprite(animGraph.file, items, listWinSize);
             }
+        }
+        else
+        {
+            ImGui::EndGroup();
+        }
+    }
+
+    void displayAnimationList(std::vector<PetManager::YAMLFile>& animations, ImVec2 size)
+    {
+        ImGui::SetNextItemWidth(size.x);
+        if (ImGui::BeginCombo("##unique_id", m_selectedAnimation == -1
+                                                 ? ""
+                                                 : animations[m_selectedAnimation].path.stem().string().c_str()))
+        {
+            for (int n = 0; n < animations.size(); n++)
+            {
+                const bool is_selected = (m_selectedAnimation == n);
+                if (ImGui::Selectable(animations[n].path.stem().string().c_str(), is_selected))
+                    m_selectedAnimation = n;
+
+                // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
         }
     }
 
@@ -88,7 +133,7 @@ public:
                                 ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_RowBg |
                                 ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX;
 
-        if (ImGui::BeginTable("table1", 1, flags))
+        if (ImGui::BeginTable("##unique_id", 1, flags))
         {
             for (int i = 0; i < petTypes.size(); ++i)
             {
@@ -114,7 +159,11 @@ public:
                                       (m_selectedPetType == i), ImGuiSelectableFlags_SpanAvailWidth, selectableSize,
                                       ImVec2(0, 1), ImVec2(1, 0)))
                 {
-                    m_selectedPetType = i;
+                    m_selectedPetType     = i;
+                    m_selectedNode        = -1;
+                    m_selectedAnimation   = -1;
+                    m_selectedTransition  = -1;
+                    m_previewCurrentFrame = 0;
                 }
 
                 YAML::Node authorNode = petTypes[i]->settings["author"];
@@ -129,7 +178,7 @@ public:
 
                 ImGui::SetKeyboardFocusHere();
                 if (ImGui::InputText("##unique_id", m_newPetName, IM_ARRAYSIZE(m_newPetName),
-                                 ImGuiInputTextFlags_EnterReturnsTrue))
+                                     ImGuiInputTextFlags_EnterReturnsTrue))
                 {
                     if (m_newPetName[0] != '\0')
                     {
@@ -192,7 +241,7 @@ public:
                      ImVec4(1, 1, 1, 0.5));
     }
 
-    void displayAnimationList(YAML::Node& animGraph, std::vector<YAML::Node>& items, ImVec2 size)
+    void displayAnimationNodeList(YAML::Node& animGraph, std::vector<YAML::Node>& items, ImVec2 size)
     {
         YAML::Node nodesSection = animGraph["Nodes"];
         if (!nodesSection)

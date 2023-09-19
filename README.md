@@ -15,13 +15,17 @@
   <a href="https://discord.gg/gjdQmHAp7e">
     <img alt="Join us on discord" height="26" width="91" src="https://img.shields.io/badge/join us-blue?logo=discord&logoColor=white">
   </a>
-  <a href="https://www.patreon.com/PetForDesktop">
-    <img alt="Join us on patreon" height="26" width="91" src="https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white">
-  </a>
+  <p align="center">
+    <a href="https://www.patreon.com/PetForDesktop">
+      <img alt="Join us on patreon" height="26" width="91" src="https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white">
+    </a>
+    <a href="https://ko-fi.com/O4O6P7YYQ">
+      <img alt="Join us on ko-fi" height="26" width="80" src="https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white">
+    </a>
+  </p>
 </p>
 
 
- 
 ![image](https://user-images.githubusercontent.com/55276408/195999573-1e5f854b-230b-4e17-9920-6493975ed145.png)
 ![PetForDesktopDemonstration](https://user-images.githubusercontent.com/55276408/222144931-3546cc40-3989-4a36-8e5c-bf43e239ee2a.gif)
  

@@ -4,6 +4,9 @@
 #include "imgui.h"
 #include "imgui_internal.h" //ImGuiItemFlags_Disabled, PushItemFlag
 
+#include <vector>
+#include <string>
+
 // Thank's to : https://github.com/ocornut/imgui/issues/211#issuecomment-812293268
 namespace ImGui
 {
@@ -126,6 +129,20 @@ inline void displayBar(float current, float max, const ImVec2& size_arg, float r
                                          bb.Max.x - overlay_size.x - style.ItemInnerSpacing.x),
                                  bb.Min.y),
                           bb.Max, overlay, NULL, &overlay_size, ImVec2(0.0f, 0.5f), &bb);
+}
+
+inline IMGUI_API bool Combo(const char* label, int* current_item, std::vector<std::string> items, int popup_max_height_in_items = -1)
+{
+    return ImGui::Combo(
+        label, current_item,
+        [](void* vec, int idx, const char** out_text) {
+            std::vector<std::string>* vector = reinterpret_cast<std::vector<std::string>*>(vec);
+            if (idx < 0 || idx >= vector->size())
+                return false;
+            *out_text = vector->at(idx).c_str();
+            return true;
+        },
+        reinterpret_cast<void*>(&items), items.size(), popup_max_height_in_items);
 }
 
 inline IMGUI_API void ImageWithGrid(ImTextureID user_texture_id, const ImVec2& size, const ImVec2& ceilCount,
