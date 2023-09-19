@@ -81,17 +81,10 @@ public:
         }
         
         ImGui::SetNextItemWidth(listWinSize.x);
-        ImGui::Combo("##unique_id", &m_selectedAnimation, animationsNames);
-        //ImGui::Combo(
-        //    "##unique_id", &m_selectedAnimation,
-        //    [](void* vec, int idx, const char** out_text) {
-        //        std::vector<std::string>* vector = reinterpret_cast<std::vector<std::string>*>(vec);
-        //        if (idx < 0 || idx >= vector->size())
-        //            return false;
-        //        *out_text = vector->at(idx).c_str();
-        //        return true;
-        //    },
-        //    reinterpret_cast<void*>(&animationsNames), animationsNames.size());
+        if (ImGui::Combo("##unique_id", &m_selectedAnimation, animationsNames))
+        {
+            m_selectedNode = -1;
+        }
 
         PetManager::YAMLFile& animGraph = animations[m_selectedAnimation];
 
