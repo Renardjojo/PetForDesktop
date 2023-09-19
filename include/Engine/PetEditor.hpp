@@ -15,7 +15,7 @@ class PetEditor
 protected:
     int       m_selectedPetType     = -1;
     int       m_selectedNode        = -1;
-    int       m_selectedAnimation   = 0;
+    int       m_selectedAnimation   = -1;
     int       m_selectedTransition  = -1;
     int       m_previewCurrentFrame = 0;
     bool      m_isCreatingPet       = false;
@@ -73,32 +73,49 @@ public:
 
         std::vector<PetManager::YAMLFile>& animations =
             PetManager::instance().getPetsTypes()[m_selectedPetType]->animations;
-        std::vector<std::string> animationsNames;
 
-        for (PetManager::YAMLFile& animation : animations)
+        displayAnimationList(animations, listWinSize);
+
+        if (m_selectedAnimation != -1)
         {
-            animationsNames.emplace_back(animation.path.stem().string());
+            PetManager::YAMLFile& animGraph = animations[m_selectedAnimation];
+
+            std::vector<YAML::Node> items;
+
+            displayAnimationNodeList(animGraph.file, items, listWinSize);
+
+            ImGui::EndGroup();
+
+            if (m_selectedNode != -1)
+            {
+                displayTransitionList(animGraph.file, items, listWinSize);
+                displayAnimationSprite(animGraph.file, items, listWinSize);
+            }
         }
-        
-        ImGui::SetNextItemWidth(listWinSize.x);
-        if (ImGui::Combo("##unique_id", &m_selectedAnimation, animationsNames))
+        else
         {
-            m_selectedNode = -1;
+            ImGui::EndGroup();
         }
+    }
 
-        PetManager::YAMLFile& animGraph = animations[m_selectedAnimation];
-
-        std::vector<YAML::Node> items;
-
-
-        displayAnimationList(animGraph.file, items, listWinSize);
-
-        ImGui::EndGroup();
-
-        if (m_selectedNode != -1)
+    void displayAnimationList(std::vector<PetManager::YAMLFile>& animations, ImVec2 size)
+    {
+        ImGui::SetNextItemWidth(size.x);
+        if (ImGui::BeginCombo("##unique_id", m_selectedAnimation == -1
+                                                 ? ""
+                                                 : animations[m_selectedAnimation].path.stem().string().c_str()))
         {
-            displayTransitionList(animGraph.file, items, listWinSize);
-            displayAnimationSprite(animGraph.file, items, listWinSize);
+            for (int n = 0; n < animations.size(); n++)
+            {
+                const bool is_selected = (m_selectedAnimation == n);
+                if (ImGui::Selectable(animations[n].path.stem().string().c_str(), is_selected))
+                    m_selectedAnimation = n;
+
+                // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
         }
     }
 
@@ -144,7 +161,7 @@ public:
                 {
                     m_selectedPetType     = i;
                     m_selectedNode        = -1;
-                    m_selectedAnimation   = 0;
+                    m_selectedAnimation   = -1;
                     m_selectedTransition  = -1;
                     m_previewCurrentFrame = 0;
                 }
@@ -224,7 +241,7 @@ public:
                      ImVec4(1, 1, 1, 0.5));
     }
 
-    void displayAnimationList(YAML::Node& animGraph, std::vector<YAML::Node>& items, ImVec2 size)
+    void displayAnimationNodeList(YAML::Node& animGraph, std::vector<YAML::Node>& items, ImVec2 size)
     {
         YAML::Node nodesSection = animGraph["Nodes"];
         if (!nodesSection)
