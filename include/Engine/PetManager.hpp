@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Singleton.hpp"
+#include "Engine/Log.hpp"
 
 #include <filesystem>
 #include <memory>
@@ -68,11 +69,33 @@ public:
         }
     }
 
-    void createNewPet(const char* name)
+    void createNewPet(const char* filename, const char* name = "", const char* previewPicture = "",
+                      const char* author = "")
     {
-        refresh();
-        const std::string filename = name;
-        YAML::Node        node     = YAML::Node{};
+        YAML::Node        node;
+        node["name"]           = name;
+        node["previewPicture"] = previewPicture;
+        node["author"]         = author;
+
+        std::filesystem::path newDirectoryPath = PETS_PATH;
+        newDirectoryPath /= filename;
+        std::filesystem::create_directory(newDirectoryPath);
+        std::string filePath = (newDirectoryPath / "setting.yaml").string();
+
+        YAML::Emitter out;
+        out << node;
+     
+        FILE* file = nullptr;
+        if (fopen_s(&file, filePath.c_str(), "wt"))
+        {
+            std::filesystem::remove(newDirectoryPath);
+            logf("The file \"%s\" was not opened to write\n", filePath);
+            return;
+        }
+
+        fwrite(out.c_str(), sizeof(char), out.size(), file);
+        fclose(file);
+
         pets.emplace_back(std::make_shared<PetInfo>(PetInfo{filename, std::filesystem::path(PETS_PATH) / filename, node}));
     }
 
