@@ -14,18 +14,18 @@
 class PetManager : public Singleton<PetManager>
 {
 public:
-
     struct YAMLFile
     {
         std::filesystem::path path;
-        YAML::Node  file;
+        YAML::Node            file;
     };
 
     struct PetInfo
     {
-        std::string             filename;
-        YAML::Node              settings;
-        std::vector<YAMLFile>   animations;
+        std::string           filename;
+        std::filesystem::path rootPath;
+        YAML::Node            settings;
+        std::vector<YAMLFile> animations;
     };
 
 protected:
@@ -47,9 +47,10 @@ public:
             {
                 std::shared_ptr<PetInfo> pet = std::make_shared<PetInfo>();
 
-                pet->filename   = entry.path().filename().string();
+                pet->filename = entry.path().filename().string();
+                pet->rootPath = entry.path();
                 pet->settings = YAML::LoadFile(path.string());
-                
+
                 path = entry.path() / "animations";
                 if (std::filesystem::exists(path))
                 {
@@ -72,7 +73,15 @@ public:
         refresh();
         const std::string filename = name;
         YAML::Node        node     = YAML::Node{};
-        pets.emplace_back(std::make_shared<PetInfo>(PetInfo{filename, node}));
+        pets.emplace_back(std::make_shared<PetInfo>(PetInfo{filename, std::filesystem::path(PETS_PATH) / filename, node}));
+    }
+
+    void createNewPetAnimation(unsigned int petTypeID, const char* animationName)
+    {
+        refresh();
+        YAML::Node node = YAML::Node{};
+        pets[petTypeID]->animations.emplace_back(
+            YAMLFile{pets[petTypeID]->rootPath / "animations" / animationName, node});
     }
 
     const std::vector<std::shared_ptr<PetInfo>>& getPetsTypes() const

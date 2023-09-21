@@ -19,7 +19,8 @@ protected:
     int       m_selectedTransition  = -1;
     int       m_previewCurrentFrame = 0;
     bool      m_isCreatingPet       = false;
-    char      m_newPetName[64]      = "";
+    bool      m_isCreatingAnimation = false;
+    char      m_strBuffer64[64]     = "";
     GameData& datas;
 
 public:
@@ -101,21 +102,51 @@ public:
     void displayAnimationList(std::vector<PetManager::YAMLFile>& animations, ImVec2 size)
     {
         ImGui::SetNextItemWidth(size.x);
-        if (ImGui::BeginCombo("##unique_id", m_selectedAnimation == -1
-                                                 ? ""
-                                                 : animations[m_selectedAnimation].path.stem().string().c_str()))
-        {
-            for (int n = 0; n < animations.size(); n++)
-            {
-                const bool is_selected = (m_selectedAnimation == n);
-                if (ImGui::Selectable(animations[n].path.stem().string().c_str(), is_selected))
-                    m_selectedAnimation = n;
 
-                // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                if (is_selected)
-                    ImGui::SetItemDefaultFocus();
+        if (m_isCreatingAnimation)
+        {
+            ImGui::SetKeyboardFocusHere();
+            if (ImGui::InputText("##unique_id", m_strBuffer64, IM_ARRAYSIZE(m_strBuffer64),
+                                 ImGuiInputTextFlags_EnterReturnsTrue))
+            {
+                if (m_strBuffer64[0] != '\0')
+                {
+                    m_isCreatingAnimation = false;
+                    PetManager::instance().createNewPetAnimation(m_selectedPetType, m_strBuffer64);
+                    m_strBuffer64[0] = '\0';
+                }
             }
-            ImGui::EndCombo();
+        }
+        else
+        {
+            if (ImGui::BeginCombo("##unique_id", m_selectedAnimation == -1
+                                                     ? ""
+                                                     : animations[m_selectedAnimation].path.stem().string().c_str()))
+            {
+                for (int n = 0; n < animations.size(); n++)
+                {
+                    const bool is_selected = (m_selectedAnimation == n);
+                    if (ImGui::Selectable(animations[n].path.stem().string().c_str(), is_selected))
+                        m_selectedAnimation = n;
+
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+
+                if (m_isCreatingAnimation)
+                {
+                }
+                else
+                {
+                    if (ImGui::Selectable("Add"))
+                    {
+                        m_isCreatingAnimation = true;
+                    }
+                }
+
+                ImGui::EndCombo();
+            }
         }
     }
 
@@ -177,13 +208,14 @@ public:
                 ImGui::TableNextColumn();
 
                 ImGui::SetKeyboardFocusHere();
-                if (ImGui::InputText("##unique_id", m_newPetName, IM_ARRAYSIZE(m_newPetName),
+                if (ImGui::InputText("##unique_id", m_strBuffer64, IM_ARRAYSIZE(m_strBuffer64),
                                      ImGuiInputTextFlags_EnterReturnsTrue))
                 {
-                    if (m_newPetName[0] != '\0')
+                    if (m_strBuffer64[0] != '\0')
                     {
                         m_isCreatingPet = false;
-                        PetManager::instance().createNewPet(m_newPetName);
+                        PetManager::instance().createNewPet(m_strBuffer64);
+                        m_strBuffer64[0] = '\0';
                     }
                 }
             }
