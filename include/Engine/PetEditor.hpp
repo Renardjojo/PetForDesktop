@@ -20,6 +20,7 @@ protected:
     int       m_previewCurrentFrame = 0;
     bool      m_isCreatingPet       = false;
     bool      m_isCreatingAnimation = false;
+    bool      m_isCreatingAnimationNode = false;
     char      m_strBuffer64[64]     = "";
     GameData& datas;
 
@@ -127,8 +128,11 @@ public:
                 {
                     const bool is_selected = (m_selectedAnimation == n);
                     if (ImGui::Selectable(animations[n].path.stem().string().c_str(), is_selected))
+                    {
                         m_selectedAnimation = n;
-
+                        m_selectedNode      = -1;
+                        m_selectedTransition= -1;
+                    }
                     // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                     if (is_selected)
                         ImGui::SetItemDefaultFocus();
@@ -142,6 +146,8 @@ public:
                     if (ImGui::Selectable("Add"))
                     {
                         m_isCreatingAnimation = true;
+                        m_selectedNode        = -1;
+                        m_selectedTransition  = -1;
                     }
                 }
 
@@ -220,8 +226,8 @@ public:
                 }
             }
 
-            addButtonSize.x =
-                ImGui::GetColumnWidth() + ImGui::GetStyle().ColumnsMinSpacing + ImGui::GetStyle().CellPadding.x;
+            addButtonSize.x = ImGui::GetCurrentTable()->BgClipRect.GetWidth();
+
             ImGui::TableNextRow(0, ImGui::GetContentRegionAvail().y -
                                        addButtonSize.y); // Fill the rest of the window with void
             ImGui::EndTable();
@@ -275,6 +281,9 @@ public:
 
     void displayAnimationNodeList(YAML::Node& animGraph, std::vector<YAML::Node>& items, ImVec2 size)
     {
+        ImVec2 addButtonSize = ImVec2(size.x, 40);
+        size.y -= addButtonSize.y + ImGui::GetStyle().FramePadding.y;
+
         YAML::Node nodesSection = animGraph["Nodes"];
         if (!nodesSection)
             errorAndExit("Cannot find \"Nodes\" in animation.yaml");
@@ -286,17 +295,63 @@ public:
             items.emplace_back(it->second);
         }
 
-        ImGui::BeginChild("NodesWindow", size, true);
+        ImGui::BeginGroup();
+        ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
+                                ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_RowBg |
+                                ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX;
 
-        for (int i = 0; i < items.size(); ++i)
+        if (ImGui::BeginTable("##unique_id", 1, flags))
         {
-            if (ImGui::Selectable(items[i]["name"].Scalar().c_str(), m_selectedNode == i))
+            for (int i = 0; i < items.size(); ++i)
             {
-                m_selectedNode = i;
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+
+                std::string label          = items[i]["name"].Scalar() + "##unique_id";
+
+
+                if (ImGui::Selectable(label.c_str(), (m_selectedNode == i), ImGuiSelectableFlags_SpanAvailWidth))
+                {
+                    m_selectedNode = i;
+                }
             }
-            ImGui::SetItemTooltip("Info");
+
+            if (m_isCreatingAnimationNode)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+
+                ImGui::SetKeyboardFocusHere();
+                if (ImGui::InputText("##unique_id", m_strBuffer64, IM_ARRAYSIZE(m_strBuffer64),
+                                     ImGuiInputTextFlags_EnterReturnsTrue))
+                {
+                    if (m_strBuffer64[0] != '\0')
+                    {
+                        m_isCreatingAnimationNode = false;
+                        //PetManager::instance().createNewPet(m_strBuffer64);
+                        m_strBuffer64[0] = '\0';
+                    }
+                }
+            }
+            
+            addButtonSize.x = ImGui::GetCurrentTable()->BgClipRect.GetWidth();
+
+            ImGui::TableNextRow(
+                0, ImGui::GetContentRegionAvail().y -
+                       ImGui::GetStyle().ColumnsMinSpacing -
+                                       addButtonSize.y); // Fill the rest of the window with void
+
+            ImGui::EndTable();
+
+            ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0, 0.5));
+            if (ImGui::Button("Create new animation", addButtonSize))
+            {
+                m_isCreatingAnimationNode = true;
+            }
+            ImGui::PopStyleVar();
         }
-        ImGui::EndChild();
+
+        ImGui::EndGroup();
     }
 
     void displayTransitionList(YAML::Node& animGraph, std::vector<YAML::Node>& items, ImVec2 size)

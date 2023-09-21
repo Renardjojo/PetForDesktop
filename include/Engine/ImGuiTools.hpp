@@ -205,10 +205,10 @@ inline IMGUI_API bool Selectable(ImTextureID imageTexture, const ImVec2& imageSi
     {
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + imageSize.x + ImGui::GetStyle().ItemSpacing.x);
     }
-    ImVec2 prevAlign = ImGui::GetStyle().SelectableTextAlign;
-    ImGui::GetStyle().SelectableTextAlign                    = ImVec2(0, 0.5);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0, 0.5));
     bool rst = Selectable(label, selected, flags, size_arg);
-    ImGui::GetStyle().SelectableTextAlign                    = prevAlign;
+    ImGui::PopStyleVar();
     ImGui::EndGroup();
     return rst;
 }
