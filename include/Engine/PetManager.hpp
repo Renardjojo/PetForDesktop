@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Engine/Singleton.hpp"
 #include "Engine/Log.hpp"
+#include "Engine/Singleton.hpp"
 
 #include <filesystem>
 #include <memory>
@@ -72,7 +72,7 @@ public:
     void createNewPet(const char* filename, const char* name = "", const char* previewPicture = "",
                       const char* author = "")
     {
-        YAML::Node        node;
+        YAML::Node node;
         node["name"]           = name;
         node["previewPicture"] = previewPicture;
         node["author"]         = author;
@@ -82,29 +82,52 @@ public:
         std::filesystem::create_directory(newDirectoryPath);
         std::string filePath = (newDirectoryPath / "setting.yaml").string();
 
-        YAML::Emitter out;
-        out << node;
-     
-        FILE* file = nullptr;
-        if (fopen_s(&file, filePath.c_str(), "wt"))
+        if (!saveYAML(node, filePath))
         {
             std::filesystem::remove(newDirectoryPath);
-            logf("The file \"%s\" was not opened to write\n", filePath);
             return;
         }
 
-        fwrite(out.c_str(), sizeof(char), out.size(), file);
-        fclose(file);
-
-        pets.emplace_back(std::make_shared<PetInfo>(PetInfo{filename, std::filesystem::path(PETS_PATH) / filename, node}));
+        pets.emplace_back(
+            std::make_shared<PetInfo>(PetInfo{filename, std::filesystem::path(PETS_PATH) / filename, node}));
     }
 
     void createNewPetAnimation(unsigned int petTypeID, const char* animationName)
     {
         refresh();
-        YAML::Node node = YAML::Node{};
-        pets[petTypeID]->animations.emplace_back(
-            YAMLFile{pets[petTypeID]->rootPath / "animations" / animationName, node});
+        YAML::Node root        = YAML::Node{};
+        YAML::Node nodes       = YAML::Node{};
+        YAML::Node transitions = YAML::Node{};
+        root["FirstNode"]      = "";
+        root["PauseNode"]      = "";
+        root["Nodes"]          = nodes;
+        root["Transitions"]    = transitions;
+
+        std::string filePath = (pets[petTypeID]->rootPath / "animations" / animationName).string();
+
+        if (!saveYAML(root, filePath))
+        {
+            return;
+        }
+
+        pets[petTypeID]->animations.emplace_back(YAMLFile{filePath + ".yaml", root});
+    }
+
+    bool saveYAML(YAML::Node& node, std::string& path)
+    {
+        YAML::Emitter out;
+        out << node;
+
+        FILE* file = nullptr;
+        if (fopen_s(&file, path.c_str(), "wt"))
+        {
+            logf("The file \"%s\" was not opened to write\n", path);
+            return false;
+        }
+
+        fwrite(out.c_str(), sizeof(char), out.size(), file);
+        fclose(file);
+        return true;
     }
 
     const std::vector<std::shared_ptr<PetInfo>>& getPetsTypes() const
