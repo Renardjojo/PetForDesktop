@@ -135,12 +135,11 @@ inline IMGUI_API bool Combo(const char* label, int* current_item, std::vector<st
 {
     return ImGui::Combo(
         label, current_item,
-        [](void* vec, int idx, const char** out_text) {
+        [](void* vec, int idx) -> const char*{
             std::vector<std::string>* vector = reinterpret_cast<std::vector<std::string>*>(vec);
             if (idx < 0 || idx >= vector->size())
-                return false;
-            *out_text = vector->at(idx).c_str();
-            return true;
+                return nullptr;
+            return vector->at(idx).c_str();
         },
         reinterpret_cast<void*>(&items), items.size(), popup_max_height_in_items);
 }
