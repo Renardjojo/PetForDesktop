@@ -213,6 +213,14 @@ inline IMGUI_API bool Selectable(ImTextureID imageTexture, const ImVec2& imageSi
     return rst;
 }
 
+inline IMGUI_API void ContentRectBackground(ImVec4 color = ImVec4(0.1f, 0.1f, 0.1f, 0.5f))
+{
+    // Draw a semi-transparent gray background based on the current window size and position
+    ImGui::GetWindowDrawList()->AddRectFilled(GImGui->CurrentWindow->ContentRegionRect.Min,
+                                              GImGui->CurrentWindow->ContentRegionRect.Max,
+                                              ImGui::GetColorU32(color));
+}
+
 // https://github.com/ocornut/imgui/issues/1096#issuecomment-293544142
 // Definition (.cpp file. Not sure if it needs "imgui_internal.h" or not)
 inline IMGUI_API bool ImageButtonWithTextRight(ImTextureID texId, const char* label,

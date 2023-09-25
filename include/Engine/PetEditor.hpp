@@ -13,15 +13,19 @@
 class PetEditor
 {
 protected:
-    int       m_selectedPetType     = -1;
-    int       m_selectedNode        = -1;
-    int       m_selectedAnimation   = -1;
-    int       m_selectedTransition  = -1;
-    int       m_previewCurrentFrame = 0;
-    bool      m_isCreatingPet       = false;
-    bool      m_isCreatingAnimation = false;
-    bool      m_isCreatingAnimationNode = false;
-    char      m_strBuffer64[64]     = "";
+    int                            m_selectedPetType         = -1;
+    int                            m_selectedNode            = -1;
+    int                            m_selectedAnimation       = -1;
+    std::string                    m_selectedAnimationTypeName   = "";
+    int                            m_selectedTransition      = -1;
+    int                            m_previewCurrentFrame     = 0;
+    bool                           m_isCreatingPet           = false;
+    bool                           m_isCreatingAnimation     = false;
+    bool                           m_isCreatingAnimationNode = false;
+    char                           m_strBuffer64[64]         = "";
+    const std::vector<const char*> m_animationList           = {"AnimationNode", "GrabNode", "MovementDirectionNode",
+                                                                "PetJumpNode"};
+
     GameData& datas;
 
 public:
@@ -37,7 +41,14 @@ public:
     {
         if (m_selectedPetType == -1)
         {
-            displayPetsTypePreview();
+            if (m_isCreatingPet)
+            {
+                displayPetCreation();
+            }
+            else
+            {
+                displayPetsTypePreview();
+            }
         }
         else
         {
@@ -90,13 +101,37 @@ public:
 
             if (m_selectedNode != -1)
             {
-                displayTransitionList(animGraph.file, items, listWinSize);
-                displayAnimationSprite(animGraph.file, items, listWinSize);
+                displayTransitionList(animGraph.file, items[m_selectedNode], listWinSize);
+                ImGui::SameLine();
+                ImGui::BeginGroup();
+                displayAnimationNodeType(animGraph.file, items[m_selectedNode]);
+                displayAnimationSprite(animGraph.file, items[m_selectedNode], listWinSize);
+                ImGui::EndGroup();
             }
         }
         else
         {
             ImGui::EndGroup();
+        }
+    }
+
+    void displayAnimationNodeType(YAML::Node& animGraph, YAML::Node& currentAnimationNode)
+    {
+        if (ImGui::BeginCombo("AnimationType##unique_id", m_selectedAnimationTypeName.c_str()))
+        {
+            for (int n = 0; n < m_animationList.size(); n++)
+            {
+                const bool is_selected = (m_selectedAnimationTypeName == m_animationList[n]);
+                if (ImGui::Selectable(m_animationList[n], is_selected))
+                {
+                    m_selectedAnimationTypeName = m_animationList[n];
+                }
+                // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+
+            ImGui::EndCombo();
         }
     }
 
@@ -129,9 +164,9 @@ public:
                     const bool is_selected = (m_selectedAnimation == n);
                     if (ImGui::Selectable(animations[n].path.stem().string().c_str(), is_selected))
                     {
-                        m_selectedAnimation = n;
-                        m_selectedNode      = -1;
-                        m_selectedTransition= -1;
+                        m_selectedAnimation  = n;
+                        m_selectedNode       = -1;
+                        m_selectedTransition = -1;
                     }
                     // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                     if (is_selected)
@@ -208,24 +243,6 @@ public:
                     ImGui::SetItemTooltip("By %s", authorNode.Scalar().c_str());
             }
 
-            if (m_isCreatingPet)
-            {
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn();
-
-                ImGui::SetKeyboardFocusHere();
-                if (ImGui::InputText("##unique_id", m_strBuffer64, IM_ARRAYSIZE(m_strBuffer64),
-                                     ImGuiInputTextFlags_EnterReturnsTrue))
-                {
-                    if (m_strBuffer64[0] != '\0')
-                    {
-                        m_isCreatingPet = false;
-                        PetManager::instance().createNewPet(m_strBuffer64);
-                        m_strBuffer64[0] = '\0';
-                    }
-                }
-            }
-
             addButtonSize.x = ImGui::GetCurrentTable()->BgClipRect.GetWidth();
 
             ImGui::TableNextRow(0, ImGui::GetContentRegionAvail().y -
@@ -241,10 +258,40 @@ public:
         ImGui::EndGroup();
     }
 
-    void displayAnimationSprite(YAML::Node& animGraph, std::vector<YAML::Node>& items, ImVec2 size)
+    void displayPetCreation()
+    {
+        ImGui::SetKeyboardFocusHere();
+        if (ImGui::InputText("##unique_id", m_strBuffer64, IM_ARRAYSIZE(m_strBuffer64),
+                             ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            if (m_strBuffer64[0] != '\0')
+            {
+                m_isCreatingPet = false;
+                PetManager::instance().createNewPet(m_strBuffer64);
+                m_strBuffer64[0] = '\0';
+            }
+        }
+    }
+
+    void displayAnimationNodeCreation()
+    {
+        ImGui::SetKeyboardFocusHere();
+        if (ImGui::InputText("##unique_id", m_strBuffer64, IM_ARRAYSIZE(m_strBuffer64),
+                             ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            if (m_strBuffer64[0] != '\0')
+            {
+                m_isCreatingPet = false;
+                // PetManager::instance().createNewPet(m_strBuffer64);
+                m_strBuffer64[0] = '\0';
+            }
+        }
+    }
+
+    void displayAnimationSprite(YAML::Node& animGraph, YAML::Node& currentAnimationNode, ImVec2 size)
     {
         // TODO: not safe and don't handle the case if the sprite don't exist in resource manager
-        std::string  spriteKey                = items[m_selectedNode]["sprite"].Scalar();
+        std::string  spriteKey                = currentAnimationNode["sprite"].Scalar();
         SpriteSheet* sprite                   = datas.spriteSheets.get(spriteKey);
         int          spriteSheetID            = sprite->getID();
         ImVec2       spriteSheetAvailableSize = size;
@@ -252,7 +299,6 @@ public:
             size.x * 2 - ImGui::GetStyle().ItemSpacing.x * 2 - ImGui::GetStyle().FramePadding.x * 2;
         spriteSheetAvailableSize.y = std::min(
             sprite->getHeight() / (float)sprite->getWidth() * spriteSheetAvailableSize.x, spriteSheetAvailableSize.y);
-        ImGui::SameLine();
         ImGui::ImageWithGrid((ImTextureID)spriteSheetID, spriteSheetAvailableSize,
                              ImVec2(sprite->getWidth(), sprite->getHeight()), ImVec2(0, 1), ImVec2(1, 0),
                              ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 0.5));
@@ -262,7 +308,7 @@ public:
         previewSize.x = spriteSheetAvailableSize.y;
         previewSize.y = spriteSheetAvailableSize.y;
 
-        displayPreview(*sprite, items[m_selectedNode], previewSize);
+        displayPreview(*sprite, currentAnimationNode, previewSize);
     }
 
     void displayPreview(SpriteSheet& sprite, YAML::Node& currentAnimationNode, ImVec2 size)
@@ -302,18 +348,20 @@ public:
 
         if (ImGui::BeginTable("##unique_id", 1, flags))
         {
-            for (int i = 0; i < items.size(); ++i)
+            int i = 0;
+            for (YAML::const_iterator it = nodesSection.begin(); it != nodesSection.end(); ++it)
             {
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
 
-                std::string label          = items[i]["name"].Scalar() + "##unique_id";
-
+                std::string label = it->second["name"].Scalar() + "##unique_id";
 
                 if (ImGui::Selectable(label.c_str(), (m_selectedNode == i), ImGuiSelectableFlags_SpanAvailWidth))
                 {
                     m_selectedNode = i;
+                    m_selectedAnimationTypeName = it->first.Scalar();
                 }
+                i++;
             }
 
             if (m_isCreatingAnimationNode)
@@ -328,17 +376,15 @@ public:
                     if (m_strBuffer64[0] != '\0')
                     {
                         m_isCreatingAnimationNode = false;
-                        //PetManager::instance().createNewPet(m_strBuffer64);
+                        // PetManager::instance().createNewPet(m_strBuffer64);
                         m_strBuffer64[0] = '\0';
                     }
                 }
             }
-            
+
             addButtonSize.x = ImGui::GetCurrentTable()->BgClipRect.GetWidth();
 
-            ImGui::TableNextRow(
-                0, ImGui::GetContentRegionAvail().y -
-                       ImGui::GetStyle().ColumnsMinSpacing -
+            ImGui::TableNextRow(0, ImGui::GetContentRegionAvail().y - ImGui::GetStyle().ColumnsMinSpacing -
                                        addButtonSize.y); // Fill the rest of the window with void
 
             ImGui::EndTable();
@@ -354,10 +400,10 @@ public:
         ImGui::EndGroup();
     }
 
-    void displayTransitionList(YAML::Node& animGraph, std::vector<YAML::Node>& items, ImVec2 size)
+    void displayTransitionList(YAML::Node& animGraph, YAML::Node& currentAnimationNode, ImVec2 size)
     {
         YAML::Node  transitionNode   = animGraph["Transitions"];
-        std::string nodeSelectedName = items[m_selectedNode]["name"].Scalar().c_str();
+        std::string nodeSelectedName = currentAnimationNode["name"].Scalar().c_str();
 
         std::vector<const char*> transitions;
 
