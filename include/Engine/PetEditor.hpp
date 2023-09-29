@@ -297,11 +297,11 @@ public:
     void displayAnimationSprite(YAML::Node& animGraph, YAML::Node& currentAnimationNode, ImVec2 size)
     {
         // TODO: not safe and don't handle the case if the sprite don't exist in resource manager
-        YAML::Node   spriteNode               = currentAnimationNode["sprite"];
+        YAML::Node spriteNode = currentAnimationNode["sprite"];
         if (!spriteNode)
             return;
 
-        std::string  spriteKey                = spriteNode.Scalar();
+        std::string spriteKey = spriteNode.Scalar();
         if (spriteKey.empty())
             return;
 
@@ -463,8 +463,17 @@ public:
                     {
                         if (ImGui::Selectable(m_transitionsList[n], false))
                         {
-                            //PetManager::instance().createTransition(m_transitionsList[n]);
-                            m_isCreatingTransitionNode  = false;
+                            YAML::Node           nodesSection = animGraph["Nodes"];
+                            YAML::const_iterator it           = nodesSection.begin();
+                            for (size_t i = 0; i < m_selectedNode; i++)
+                            {
+                                it++;
+                            }
+
+                            PetManager::instance().createTransition(m_selectedPetType, m_selectedAnimation,
+                                                                    m_transitionsList[n],
+                                                                    it->second["name"].Scalar().c_str(), "");
+                            m_isCreatingTransitionNode = false;
                         }
                     }
 
