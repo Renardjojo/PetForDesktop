@@ -314,7 +314,7 @@ public:
             sprite->getHeight() / (float)sprite->getWidth() * spriteSheetAvailableSize.x, spriteSheetAvailableSize.y);
         ImGui::ImageWithGrid((ImTextureID)spriteSheetID, spriteSheetAvailableSize,
                              ImVec2(sprite->getWidth(), sprite->getHeight()), ImVec2(0, 1), ImVec2(1, 0),
-                             ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 0.5));
+                             ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 0.5), ImVec4(0, 0, 0, 0.5));
 
         ImVec2 previewSize;
 
