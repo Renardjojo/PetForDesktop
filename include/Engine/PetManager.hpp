@@ -113,6 +113,26 @@ public:
         pets[petTypeID]->animations.emplace_back(YAMLFile{filePath + ".yaml", root});
     }
 
+    void createAnimation(unsigned int petTypeID, unsigned int animationSetID, const char* animationName)
+    {
+        refresh();
+        YAML::Node animation    = YAML::Node{};
+        animation["name"]       = animationName;
+        animation["sprite"]     = "";
+        animation["sizeFactor"] = 1;
+        animation["tileCount"]  = 0;
+        animation["framerate"]  = 5;
+        animation["loop"]       = true;
+
+        YAML::Node animNode = pets[petTypeID]->animations[animationSetID].file;
+        animNode["Nodes"].force_insert("AnimationNode", animation);
+        std::string path = pets[petTypeID]->animations[animationSetID].path.string();
+        if (!saveYAML(animNode, path))
+        {
+            return;
+        }
+    }
+
     bool saveYAML(YAML::Node& node, std::string& path)
     {
         YAML::Emitter out;

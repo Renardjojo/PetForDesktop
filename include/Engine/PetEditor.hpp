@@ -13,18 +13,22 @@
 class PetEditor
 {
 protected:
-    int                            m_selectedPetType         = -1;
-    int                            m_selectedNode            = -1;
-    int                            m_selectedAnimation       = -1;
-    std::string                    m_selectedAnimationTypeName   = "";
-    int                            m_selectedTransition      = -1;
-    int                            m_previewCurrentFrame     = 0;
-    bool                           m_isCreatingPet           = false;
-    bool                           m_isCreatingAnimation     = false;
-    bool                           m_isCreatingAnimationNode = false;
-    char                           m_strBuffer64[64]         = "";
-    const std::vector<const char*> m_animationList           = {"AnimationNode", "GrabNode", "MovementDirectionNode",
-                                                                "PetJumpNode"};
+    int                            m_selectedPetType           = -1;
+    int                            m_selectedNode              = -1;
+    int                            m_selectedAnimation         = -1;
+    std::string                    m_selectedAnimationTypeName = "";
+    int                            m_selectedTransition        = -1;
+    int                            m_previewCurrentFrame       = 0;
+    bool                           m_isCreatingPet             = false;
+    bool                           m_isCreatingAnimation       = false;
+    bool                           m_isCreatingAnimationNode   = false;
+    bool                           m_isCreatingTransitionNode  = false;
+    char                           m_strBuffer64[64]           = "";
+    const std::vector<const char*> m_animationList             = {"AnimationNode", "GrabNode", "MovementDirectionNode",
+                                                                  "PetJumpNode"};
+    const std::vector<const char*> m_transitionsList           = {
+        "StartLeftClicTransition", "TouchScreenEdgeTransition", "IsNotGroundedTransition", "RandomDelayTransition",
+        "AnimationEndTransition",  "EndLeftClicTransition",     "IsGroundedTransition"};
 
     GameData& datas;
 
@@ -102,7 +106,9 @@ public:
             if (m_selectedNode != -1)
             {
                 displayTransitionList(animGraph.file, items[m_selectedNode], listWinSize);
+                // ImGui::SetCursorScreenPos(ImGui::GetCurrentWindow()->DC.CursorPosPrevLine);
                 ImGui::SameLine();
+                ImGui::GetCurrentWindow()->DC.PrevLineSize = ImVec2(100, 0);
                 ImGui::BeginGroup();
                 displayAnimationNodeType(animGraph.file, items[m_selectedNode]);
                 displayAnimationSprite(animGraph.file, items[m_selectedNode], listWinSize);
@@ -291,7 +297,14 @@ public:
     void displayAnimationSprite(YAML::Node& animGraph, YAML::Node& currentAnimationNode, ImVec2 size)
     {
         // TODO: not safe and don't handle the case if the sprite don't exist in resource manager
-        std::string  spriteKey                = currentAnimationNode["sprite"].Scalar();
+        YAML::Node   spriteNode               = currentAnimationNode["sprite"];
+        if (!spriteNode)
+            return;
+
+        std::string  spriteKey                = spriteNode.Scalar();
+        if (spriteKey.empty())
+            return;
+
         SpriteSheet* sprite                   = datas.spriteSheets.get(spriteKey);
         int          spriteSheetID            = sprite->getID();
         ImVec2       spriteSheetAvailableSize = size;
@@ -341,11 +354,11 @@ public:
             items.emplace_back(it->second);
         }
 
-        ImGui::BeginGroup();
         ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
                                 ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_RowBg |
                                 ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX;
 
+        ImGui::BeginGroup();
         if (ImGui::BeginTable("##unique_id", 1, flags))
         {
             int i = 0;
@@ -358,7 +371,7 @@ public:
 
                 if (ImGui::Selectable(label.c_str(), (m_selectedNode == i), ImGuiSelectableFlags_SpanAvailWidth))
                 {
-                    m_selectedNode = i;
+                    m_selectedNode              = i;
                     m_selectedAnimationTypeName = it->first.Scalar();
                 }
                 i++;
@@ -376,7 +389,7 @@ public:
                     if (m_strBuffer64[0] != '\0')
                     {
                         m_isCreatingAnimationNode = false;
-                        // PetManager::instance().createNewPet(m_strBuffer64);
+                        PetManager::instance().createAnimation(m_selectedPetType, m_selectedAnimation, m_strBuffer64);
                         m_strBuffer64[0] = '\0';
                     }
                 }
@@ -402,6 +415,9 @@ public:
 
     void displayTransitionList(YAML::Node& animGraph, YAML::Node& currentAnimationNode, ImVec2 size)
     {
+        ImVec2 addButtonSize = ImVec2(size.x, 40);
+        size.y -= addButtonSize.y + ImGui::GetStyle().FramePadding.y;
+
         YAML::Node  transitionNode   = animGraph["Transitions"];
         std::string nodeSelectedName = currentAnimationNode["name"].Scalar().c_str();
 
@@ -416,15 +432,59 @@ public:
         }
 
         ImGui::SameLine();
-        ImGui::BeginChild("TransitionsWindow", size, true);
-        for (int i = 0; i < transitions.size(); ++i)
+
+        ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
+                                ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_RowBg |
+                                ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX;
+
+        ImGui::BeginGroup();
+        if (ImGui::BeginTable("TransitionsWindow##unique_id", 1, flags))
         {
-            if (ImGui::Selectable(transitions[i], m_selectedTransition == i))
+            for (int i = 0; i < transitions.size(); ++i)
             {
-                m_selectedTransition = i;
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+
+                if (ImGui::Selectable(transitions[i], m_selectedTransition == i, ImGuiSelectableFlags_SpanAvailWidth))
+                {
+                    m_selectedTransition = i;
+                }
+                ImGui::SetItemTooltip("Info transition");
             }
-            ImGui::SetItemTooltip("Info transition");
+
+            if (m_isCreatingTransitionNode)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+
+                if (ImGui::BeginCombo("##unique_id", ""))
+                {
+                    for (int n = 0; n < m_transitionsList.size(); n++)
+                    {
+                        if (ImGui::Selectable(m_transitionsList[n], false))
+                        {
+                            //PetManager::instance().createTransition(m_transitionsList[n]);
+                            m_isCreatingTransitionNode  = false;
+                        }
+                    }
+
+                    ImGui::EndCombo();
+                }
+            }
+
+            addButtonSize.x = ImGui::GetCurrentTable()->BgClipRect.GetWidth();
+
+            ImGui::TableNextRow(0, ImGui::GetContentRegionAvail().y - ImGui::GetStyle().ColumnsMinSpacing -
+                                       addButtonSize.y); // Fill the rest of the window with void
+            ImGui::EndTable();
+
+            ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0, 0.5));
+            if (ImGui::Button("Create new transition", addButtonSize))
+            {
+                m_isCreatingTransitionNode = true;
+            }
+            ImGui::PopStyleVar();
         }
-        ImGui::EndChild();
+        ImGui::EndGroup();
     }
 };
