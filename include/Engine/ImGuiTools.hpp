@@ -572,7 +572,7 @@ inline bool IsPointHoveringRect(const ImVec2& point, const ImVec2& r_min, const 
 inline std::filesystem::path FileDropArea(GameData& datas, 
                                           ImVec2 size = ImVec2(0.f, 0.f))
 {
-    static std::filesystem::path file = "";
+    std::filesystem::path file = "";
 
     if (size.x <= 0)
         size.x = ImGui::GetContentRegionAvail().x;

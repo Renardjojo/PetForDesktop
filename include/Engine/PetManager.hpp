@@ -130,17 +130,18 @@ public:
         saveYAML(animNode, path);
     }
 
-    void createTransition(unsigned int petTypeID, unsigned int animationSetID, const char* type, const char* from, const char* to)
+    void createTransition(unsigned int petTypeID, unsigned int animationSetID, const char* type, const char* from,
+                          const char* to)
     {
         refresh();
         YAML::Node transition = YAML::Node{};
         transition["from"]    = from;
         transition["to"]      = to;
 
-        YAML::Node animNode = pets[petTypeID]->animations[animationSetID].file;
-        animNode["Transitions"].force_insert(type, transition);
+        YAML::Node node = pets[petTypeID]->animations[animationSetID].file;
+        node["Transitions"].force_insert(type, transition);
         std::string path = pets[petTypeID]->animations[animationSetID].path.string();
-        saveYAML(animNode, path);
+        saveYAML(node, path);
     }
 
     bool saveYAML(YAML::Node& node, std::string& path)

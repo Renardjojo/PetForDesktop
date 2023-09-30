@@ -112,7 +112,32 @@ public:
                 ImGui::BeginGroup();
                 displayAnimationNodeType(animGraph.file, items[m_selectedNode]);
                 displayAnimationSprite(animGraph.file, items[m_selectedNode], listWinSize);
-                ImGui::FileDropArea(datas);
+                std::filesystem::path path = ImGui::FileDropArea(datas);
+                if (!path.empty() && std::filesystem::exists(path))
+                {
+                    // Add file in memory
+                    datas.spriteSheets.add(path.filename().string(), path.string().c_str(), 1, 1.f);
+
+                    // Copy file to resources
+                    std::shared_ptr<PetManager::PetInfo>     petInfo  = PetManager::instance().getPetsTypes()[m_selectedPetType];
+                    std::filesystem::path rootPath = petInfo->rootPath;
+                    std::filesystem::copy_file(path, rootPath / "sprites" / path.filename());
+
+                    // Copy reference to animation
+                    YAML::Node animGraph = petInfo->animations[m_selectedAnimation].file;
+                    YAML::Node           nodesSection = animGraph["Nodes"];
+                    YAML::iterator it            = nodesSection.begin();
+                    for (size_t i = 0; i < m_selectedNode; i++)
+                        it++;
+                    it->second["sprite"] = path.filename().string();
+                    it->second["tileCount"] = 1;
+                    it->second["sizeFactor"] = 1.f;
+
+                    // Save asset
+                    std::string animGraphPath = petInfo->animations[m_selectedAnimation].path.string();
+                    PetManager::instance().saveYAML(animGraph, animGraphPath);
+                }
+
                 ImGui::EndGroup();
             }
         }
