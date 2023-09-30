@@ -112,6 +112,7 @@ public:
                 ImGui::BeginGroup();
                 displayAnimationNodeType(animGraph.file, items[m_selectedNode]);
                 displayAnimationSprite(animGraph.file, items[m_selectedNode], listWinSize);
+                ImGui::FileDropArea(datas);
                 ImGui::EndGroup();
             }
         }

@@ -1,11 +1,13 @@
 #pragma once
 
+#include "Game/GameData.hpp"
+#include "Engine/Graphics/WindowOGL.hpp"
 #include "Engine/FileExplorer.hpp"
 #include "imgui.h"
 #include "imgui_internal.h" //ImGuiItemFlags_Disabled, PushItemFlag
 
-#include <vector>
 #include <string>
+#include <vector>
 
 // Thank's to : https://github.com/ocornut/imgui/issues/211#issuecomment-812293268
 namespace ImGui
@@ -131,11 +133,12 @@ inline void displayBar(float current, float max, const ImVec2& size_arg, float r
                           bb.Max, overlay, NULL, &overlay_size, ImVec2(0.0f, 0.5f), &bb);
 }
 
-inline IMGUI_API bool Combo(const char* label, int* current_item, std::vector<std::string> items, int popup_max_height_in_items = -1)
+inline IMGUI_API bool Combo(const char* label, int* current_item, std::vector<std::string> items,
+                            int popup_max_height_in_items = -1)
 {
     return ImGui::Combo(
         label, current_item,
-        [](void* vec, int idx) -> const char*{
+        [](void* vec, int idx) -> const char* {
             std::vector<std::string>* vector = reinterpret_cast<std::vector<std::string>*>(vec);
             if (idx < 0 || idx >= vector->size())
                 return nullptr;
@@ -216,8 +219,7 @@ inline IMGUI_API void ContentRectBackground(ImVec4 color = ImVec4(0.1f, 0.1f, 0.
 {
     // Draw a semi-transparent gray background based on the current window size and position
     ImGui::GetWindowDrawList()->AddRectFilled(GImGui->CurrentWindow->ContentRegionRect.Min,
-                                              GImGui->CurrentWindow->ContentRegionRect.Max,
-                                              ImGui::GetColorU32(color));
+                                              GImGui->CurrentWindow->ContentRegionRect.Max, ImGui::GetColorU32(color));
 }
 
 // https://github.com/ocornut/imgui/issues/1096#issuecomment-293544142
@@ -455,6 +457,154 @@ inline void textURL(const char* name, const char* URL, int sameLineBefore, int s
     {
         ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
     }
+}
+
+inline void ImGuiBorderedBackground(const ImVec2& size    = ImVec2(0, 0),
+                                    const ImVec4& bgColor = ImVec4(0.8f, 0.8f, 0.8f, 1.0f), float borderSize = 1.0f,
+                                    const ImVec4& borderColor = ImVec4(0.0f, 0.0f, 0.0f, 1.0f))
+{
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    if (window->SkipItems)
+        return;
+
+    ImGuiContext&     g     = *GImGui;
+    const ImGuiStyle& style = g.Style;
+
+    // Calculate the actual size based on the argument
+    ImVec2 contentSize = size;
+    if (size.x <= 0)
+        contentSize.x = ImGui::GetContentRegionAvail().x;
+    if (size.y <= 0)
+        contentSize.y = ImGui::GetContentRegionAvail().y;
+
+    const ImRect frame_bb(window->DC.CursorPos, window->DC.CursorPos + contentSize);
+
+    // Draw background
+    if (bgColor.w > 0.0f)
+    {
+        window->DrawList->AddRectFilled(frame_bb.Min, frame_bb.Max, ImGui::ColorConvertFloat4ToU32(bgColor));
+    }
+
+    // Draw border
+    if (borderSize > 0.0f && borderColor.w > 0.0f)
+    {
+        window->DrawList->AddRect(frame_bb.Min, frame_bb.Max, ImGui::ColorConvertFloat4ToU32(borderColor), 0.0f, 0,
+                                  borderSize);
+    }
+
+    // Update cursor position
+    window->DC.CursorPos = frame_bb.Max;
+    ImGui::ItemSize(frame_bb);
+}
+
+inline void ImGuiBorderedBackground(const char* text = nullptr, const ImTextureID image = nullptr,
+                                    const ImVec2& size    = ImVec2(0, 0),
+                                    const ImVec4& bgColor = ImVec4(0.8f, 0.8f, 0.8f, 1.0f), float borderSize = 1.0f,
+                                    const ImVec4& borderColor = ImVec4(0.0f, 0.0f, 0.0f, 1.0f))
+{
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    if (window->SkipItems)
+        return;
+
+    ImGuiContext&     g     = *GImGui;
+    const ImGuiStyle& style = g.Style;
+
+    // Calculate the actual size based on the argument
+    ImVec2 contentSize = size;
+    if (size.x <= 0)
+        contentSize.x = ImGui::GetContentRegionAvail().x;
+    if (size.y <= 0)
+        contentSize.y = ImGui::GetContentRegionAvail().y;
+
+    const ImRect frame_bb(window->DC.CursorPos, window->DC.CursorPos + contentSize);
+
+    // Draw background
+    if (bgColor.w > 0.0f)
+    {
+        window->DrawList->AddRectFilled(frame_bb.Min, frame_bb.Max, ImGui::ColorConvertFloat4ToU32(bgColor));
+    }
+
+    // Draw border
+    if (borderSize > 0.0f && borderColor.w > 0.0f)
+    {
+        window->DrawList->AddRect(frame_bb.Min, frame_bb.Max, ImGui::ColorConvertFloat4ToU32(borderColor), 0.0f, 0,
+                                  borderSize);
+    }
+
+    // Update cursor position
+    window->DC.CursorPos = frame_bb.Max;
+    ImGui::ItemSize(frame_bb);
+
+    // Calculate the position for the text and image
+    ImVec2 textPos  = frame_bb.Min + (frame_bb.GetSize() - ImGui::CalcTextSize(text)) * 0.5f;
+    ImVec2 imagePos = frame_bb.Min + (frame_bb.GetSize() - ImVec2(0, 50)) * 0.5f;
+
+    // Add the image if provided
+    if (image)
+    {
+        window->DrawList->AddImage(image, imagePos, imagePos + ImVec2(50, 50));
+    }
+
+    // Add the text if provided
+    if (text)
+    {
+        window->DrawList->AddText(textPos, ImGui::GetColorU32(ImGuiCol_Text), text);
+    }
+}
+
+inline bool IsPointHoveringRect(const ImVec2& point, const ImVec2& r_min, const ImVec2& r_max, bool clip = false)
+{
+    ImGuiContext& g = *GImGui;
+
+    // Clip
+    ImRect rect_clipped(r_min, r_max);
+    if (clip)
+        rect_clipped.ClipWith(g.CurrentWindow->ClipRect);
+
+    // Expand for touch input
+    const ImRect rect_for_touch(rect_clipped.Min - g.Style.TouchExtraPadding,
+                                rect_clipped.Max + g.Style.TouchExtraPadding);
+    if (!rect_for_touch.Contains(point))
+        return false;
+    return true;
+}
+
+inline std::filesystem::path FileDropArea(GameData& datas, 
+                                          ImVec2 size = ImVec2(0.f, 0.f))
+{
+    static std::filesystem::path file = "";
+
+    if (size.x <= 0)
+        size.x = ImGui::GetContentRegionAvail().x;
+    if (size.y <= 0)
+        size.y = ImGui::GetContentRegionAvail().y;
+
+    const bool isHovered = IsPointHoveringRect(ImVec2(datas.cursorPos.x, datas.cursorPos.y), ImGui::GetCurrentWindow()->DC.CursorPos,
+                                                 ImGui::GetCurrentWindow()->DC.CursorPos + size);
+    ImGuiBorderedBackground("Drop image or click to select it", nullptr, size, ImGui::GetStyle().Colors[isHovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg],
+                            1.0f, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    if (isHovered)
+    {
+        if (!datas.droppedFiles.empty())
+        {
+            file = datas.droppedFiles[0];
+            datas.droppedFiles.clear();
+        }
+
+        if (ImGui::IsMouseClicked(0))
+        {
+            datas.window->setMousePassThrough(true);
+            datas.window->setForwardWindow(false);
+            file = openFileExplorerAndGetAbsoluePath();
+
+            if (datas.useForwardWindow)
+            {
+                datas.window->setForwardWindow(true);
+            }
+        }
+    }
+    return file;
 }
 
 } // namespace ImGui

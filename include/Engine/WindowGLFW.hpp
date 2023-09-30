@@ -6,6 +6,7 @@
 
 #include <GLFW/glfw3.h>
 
+void dropCallback(GLFWwindow* window, int count, const char** paths);
 void cursorPositionCallback(GLFWwindow* window, double x, double y);
 void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods);
 void processInput(GLFWwindow* window);
@@ -16,6 +17,7 @@ protected:
     GLFWwindow* window = nullptr;
 
     bool isMousePassThrough;
+    bool isForwardWindow;
     bool useMousePassThrough;
 
 protected:
@@ -43,6 +45,15 @@ public:
 
         isMousePassThrough = flag;
         glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, isMousePassThrough);
+    }
+
+    void setForwardWindow(bool flag)
+    {
+        if (isForwardWindow && isForwardWindow == flag)
+            return;
+
+        isForwardWindow = flag;
+        glfwSetWindowAttrib(window, GLFW_FLOATING, isForwardWindow);
     }
 
     void setSize(const Vec2 windowSize) noexcept

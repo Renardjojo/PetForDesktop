@@ -1,8 +1,8 @@
 #include "Engine/WindowGLFW.hpp"
 
-#include "Game/GameData.hpp"
-#include "Engine/Log.hpp"
 #include "Engine/Graphics/WindowOGL.hpp"
+#include "Engine/Log.hpp"
+#include "Game/GameData.hpp"
 #include "Game/Pet.hpp"
 
 void WindowGLFW::initGLFW()
@@ -17,6 +17,7 @@ void WindowGLFW::preSetupWindow(const GameData& datas)
     glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, !datas.showFrameBufferBackground);
     glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
     glfwWindowHint(GLFW_FLOATING, datas.useForwardWindow);
+    isForwardWindow = datas.useForwardWindow;
 
     // Disable depth and stencil buffers
     glfwWindowHint(GLFW_DEPTH_BITS, 0);
@@ -26,14 +27,15 @@ void WindowGLFW::preSetupWindow(const GameData& datas)
 void WindowGLFW::postSetupWindow(GameData& datas)
 {
     useMousePassThrough = datas.useMousePassThoughWindow;
-    isMousePassThrough = true;
-    glfwSetWindowAttrib(datas.window->getWindow(), GLFW_MOUSE_PASSTHROUGH, isMousePassThrough);
-    glfwSetWindowAttrib(datas.window->getWindow(), GLFW_TRANSPARENT_FRAMEBUFFER, true);
+    isMousePassThrough  = true;
+    glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, isMousePassThrough);
+    glfwSetWindowAttrib(window, GLFW_TRANSPARENT_FRAMEBUFFER, true);
     glfwSetWindowAttrib(window, GLFW_DECORATED, datas.showWindow);
     glfwSetWindowAttrib(window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
     glfwSetWindowUserPointer(window, &datas);
     glfwSetMouseButtonCallback(window, mousButtonCallBack);
     glfwSetCursorPosCallback(window, cursorPositionCallback);
+    glfwSetDropCallback(window, dropCallback);
 
     glfwDefaultWindowHints();
 }
@@ -58,6 +60,16 @@ void WindowGLFW::initWindow(GameData& datas)
     glfwSetWindowPos(window, m_position.x, m_position.y);
 }
 
+void dropCallback(GLFWwindow* window, int count, const char** paths)
+{
+    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
+    datas.droppedFiles.clear();
+    for (int i = 0; i < count; i++)
+    {
+        datas.droppedFiles.emplace_back(paths[i]);
+    }
+}
+
 void cursorPositionCallback(GLFWwindow* window, double x, double y)
 {
     GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
@@ -78,12 +90,12 @@ void cursorPositionCallback(GLFWwindow* window, double x, double y)
 void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
 {
     GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
-   
+
     switch (button)
     {
     case GLFW_MOUSE_BUTTON_LEFT:
         datas.leftButtonEvent = action;
-   
+
         switch (action)
         {
         case GLFW_PRESS: {
@@ -115,7 +127,7 @@ void processInput(GLFWwindow* window)
     double cursPosX, cursPosY;
     glfwGetCursorPos(window, &cursPosX, &cursPosY);
     datas.cursorPos = {static_cast<int>(floor(cursPosX)), static_cast<int>(floor(cursPosY))};
-    
+
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }

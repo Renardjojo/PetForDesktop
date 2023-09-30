@@ -239,6 +239,9 @@ public:
                 // swap front and back buffers
                 datas.window->renderFrame();
                 datas.shouldUpdateFrame = false;
+                
+                // clear
+                datas.droppedFiles.clear();
             }
         }};
 

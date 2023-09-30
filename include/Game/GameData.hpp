@@ -41,6 +41,7 @@ struct GameData
     std::unique_ptr<class ScreenSpaceQuad> pFullScreenQuad     = nullptr;
 
     std::vector<class YAML::Node> animGraphs;
+    std::vector<std::filesystem::path> droppedFiles;
 
     Vec2i cursorPos;
     float prevCursorPosX   = 0;
