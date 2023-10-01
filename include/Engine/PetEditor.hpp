@@ -106,6 +106,11 @@ public:
             if (m_selectedNode != -1)
             {
                 displayTransitionList(animGraph.file, items[m_selectedNode], listWinSize);
+                if (m_selectedTransition != -1)
+                {
+                    ImGui::SameLine();
+                    displayTransitionsInfo(animGraph.file, items[m_selectedNode]);
+                }
                 // ImGui::SetCursorScreenPos(ImGui::GetCurrentWindow()->DC.CursorPosPrevLine);
                 ImGui::SameLine();
                 ImGui::GetCurrentWindow()->DC.PrevLineSize = ImVec2(100, 0);
@@ -119,18 +124,19 @@ public:
                     datas.spriteSheets.add(path.filename().string(), path.string().c_str(), 1, 1.f);
 
                     // Copy file to resources
-                    std::shared_ptr<PetManager::PetInfo>     petInfo  = PetManager::instance().getPetsTypes()[m_selectedPetType];
+                    std::shared_ptr<PetManager::PetInfo> petInfo =
+                        PetManager::instance().getPetsTypes()[m_selectedPetType];
                     std::filesystem::path rootPath = petInfo->rootPath;
                     std::filesystem::copy_file(path, rootPath / "sprites" / path.filename());
 
                     // Copy reference to animation
-                    YAML::Node animGraph = petInfo->animations[m_selectedAnimation].file;
-                    YAML::Node           nodesSection = animGraph["Nodes"];
-                    YAML::iterator it            = nodesSection.begin();
+                    YAML::Node     animGraph    = petInfo->animations[m_selectedAnimation].file;
+                    YAML::Node     nodesSection = animGraph["Nodes"];
+                    YAML::iterator it           = nodesSection.begin();
                     for (size_t i = 0; i < m_selectedNode; i++)
                         it++;
-                    it->second["sprite"] = path.filename().string();
-                    it->second["tileCount"] = 1;
+                    it->second["sprite"]     = path.filename().string();
+                    it->second["tileCount"]  = 1;
                     it->second["sizeFactor"] = 1.f;
 
                     // Save asset
@@ -517,6 +523,60 @@ public:
             if (ImGui::Button("Create new transition", addButtonSize))
             {
                 m_isCreatingTransitionNode = true;
+            }
+            ImGui::PopStyleVar();
+        }
+        ImGui::EndGroup();
+    }
+
+    void displayTransitionsInfo(YAML::Node& animGraph, YAML::Node& currentAnimationNode)
+    {
+        ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
+                                ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_RowBg |
+                                ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX;
+
+        ImGui::BeginGroup();
+        if (ImGui::BeginTable("TransitionTarget##unique_id", 1, flags))
+        {
+            YAML::Node     transitionsNode = animGraph["Transitions"];
+            std::string    nodeSelectedName = currentAnimationNode["name"].Scalar().c_str();
+            YAML::iterator currentTransitionNode = transitionsNode.begin();
+            for (size_t i = 0; i < m_selectedTransition; i++)
+            {
+                currentTransitionNode++;
+            }
+
+            YAML::Node toNode = currentTransitionNode->second["to"];
+
+            if (toNode.IsSequence())
+            {
+                for (size_t i = 0; i < toNode.size(); i++)
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+
+                    ImGui::Text(toNode[i].Scalar().c_str());
+                }
+            }
+            else
+            {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+
+                ImGui::Text(toNode.Scalar().c_str());
+            }
+
+            const char* addButtonLabel = "Add new target";
+            ImVec2 addButtonSize =
+                ImVec2(std::max(ImGui::GetCurrentTable()->BgClipRect.GetWidth(), ImGui::CalcTextSize(addButtonLabel).x),
+                       40 + ImGui::GetStyle().FramePadding.y);
+
+            ImGui::EndTable();
+
+            ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0, 0.5));
+            if (ImGui::Button(addButtonLabel, addButtonSize))
+            {
+                // TODO:
             }
             ImGui::PopStyleVar();
         }
