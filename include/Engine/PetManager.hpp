@@ -144,6 +144,19 @@ public:
         saveYAML(node, path);
     }
 
+    YAML::iterator getTransition(unsigned int petTypeID, unsigned int animationSetID, unsigned int transitionID)
+    {
+        YAML::Node& node = pets[petTypeID]->animations[animationSetID].file;
+        YAML::Node transitionsNode = node["Transitions"];
+
+        YAML::iterator currentTransitionNode = transitionsNode.begin();
+        for (size_t i = 0; i < transitionID; i++)
+        {
+            currentTransitionNode++;
+        }
+        return currentTransitionNode;
+    }
+
     bool saveYAML(YAML::Node& node, std::string& path)
     {
         YAML::Emitter out;

@@ -23,6 +23,7 @@ protected:
     bool                           m_isCreatingAnimation       = false;
     bool                           m_isCreatingAnimationNode   = false;
     bool                           m_isCreatingTransitionNode  = false;
+    bool                           m_isSelectingTransitionTo   = false;
     char                           m_strBuffer64[64]           = "";
     const std::vector<const char*> m_animationList             = {"AnimationNode", "GrabNode", "MovementDirectionNode",
                                                                   "PetJumpNode"};
@@ -538,15 +539,10 @@ public:
         ImGui::BeginGroup();
         if (ImGui::BeginTable("TransitionTarget##unique_id", 1, flags))
         {
-            YAML::Node     transitionsNode = animGraph["Transitions"];
-            std::string    nodeSelectedName = currentAnimationNode["name"].Scalar().c_str();
-            YAML::iterator currentTransitionNode = transitionsNode.begin();
-            for (size_t i = 0; i < m_selectedTransition; i++)
-            {
-                currentTransitionNode++;
-            }
+            YAML::iterator currentTransition =
+                PetManager::instance().getTransition(m_selectedPetType, m_selectedAnimation, m_selectedTransition);
 
-            YAML::Node toNode = currentTransitionNode->second["to"];
+            YAML::Node toNode = currentTransition->second["to"];
 
             if (toNode.IsSequence())
             {
@@ -566,8 +562,39 @@ public:
                 ImGui::Text(toNode.Scalar().c_str());
             }
 
+            if (m_isSelectingTransitionTo)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+
+                if (ImGui::BeginCombo("##unique_id", ""))
+                {
+                    YAML::Node nodesSection = animGraph["Nodes"];
+                    for (YAML::const_iterator it = nodesSection.begin(); it != nodesSection.end(); ++it)
+                    {
+                        const char* selectableName = it->second["name"].Scalar().c_str();
+                        if (ImGui::Selectable(selectableName, false))
+                        {
+                            YAML::Node toNode = currentTransition->second["to"];
+                            if (toNode.IsScalar())
+                            {
+                                toNode = std::vector<const char*>{toNode.Scalar().c_str(), selectableName};
+                            }
+                            else
+                            {
+                                toNode.push_back(selectableName);
+                            }
+
+                            m_isSelectingTransitionTo = false;
+                        }
+                    }
+
+                    ImGui::EndCombo();
+                }
+            }
+
             const char* addButtonLabel = "Add new target";
-            ImVec2 addButtonSize =
+            ImVec2      addButtonSize =
                 ImVec2(std::max(ImGui::GetCurrentTable()->BgClipRect.GetWidth(), ImGui::CalcTextSize(addButtonLabel).x),
                        40 + ImGui::GetStyle().FramePadding.y);
 
@@ -576,7 +603,7 @@ public:
             ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0, 0.5));
             if (ImGui::Button(addButtonLabel, addButtonSize))
             {
-                // TODO:
+                m_isSelectingTransitionTo = true;
             }
             ImGui::PopStyleVar();
         }
