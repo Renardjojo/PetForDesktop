@@ -198,6 +198,12 @@ inline IMGUI_API bool Selectable(ImTextureID imageTexture, const ImVec2& imageSi
                                  const ImVec4& border_col = ImVec4(0, 0, 0, 0))
 {
     ImGui::BeginGroup();
+
+    // Allow to not override item 
+    ImGuiContext&   g          = *GImGui;
+    ImGuiGroupData& group_data = g.GroupStack.back();
+    group_data.EmitItem        = false;
+
     if (imageTexture != nullptr)
     {
         ImGui::Image(imageTexture, imageSize, uv0, uv1, tint_col, border_col);

@@ -2,6 +2,7 @@
 
 #include "Engine/Log.hpp"
 #include "Engine/Singleton.hpp"
+#include "Engine/FileExplorer.hpp"
 
 #include <filesystem>
 #include <memory>
@@ -92,6 +93,15 @@ public:
             std::make_shared<PetInfo>(PetInfo{filename, std::filesystem::path(PETS_PATH) / filename, node}));
     }
 
+    void deletePet(const char* filename)
+    {
+        std::filesystem::path directoryPath = PETS_PATH;
+        directoryPath /= filename;
+        recycleFileOrDirectory(directoryPath);
+
+        refresh();
+    }
+
     void createNewPetAnimation(unsigned int petTypeID, const char* animationName)
     {
         refresh();
@@ -146,8 +156,8 @@ public:
 
     YAML::iterator getTransition(unsigned int petTypeID, unsigned int animationSetID, unsigned int transitionID)
     {
-        YAML::Node& node = pets[petTypeID]->animations[animationSetID].file;
-        YAML::Node transitionsNode = node["Transitions"];
+        YAML::Node& node            = pets[petTypeID]->animations[animationSetID].file;
+        YAML::Node  transitionsNode = node["Transitions"];
 
         YAML::iterator currentTransitionNode = transitionsNode.begin();
         for (size_t i = 0; i < transitionID; i++)

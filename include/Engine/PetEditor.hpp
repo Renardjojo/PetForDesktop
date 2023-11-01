@@ -69,7 +69,7 @@ public:
     void displayPetTitle()
     {
         const char* petTypeName = PetManager::instance().getPetsTypes()[m_selectedPetType]->filename.c_str();
-        ImVec2      prevAlign = ImGui::GetStyle().SelectableTextAlign;
+        ImVec2      prevAlign   = ImGui::GetStyle().SelectableTextAlign;
         ImGui::GetStyle().SelectableTextAlign = ImVec2(0.5, 0.5);
         if (ImGui::Selectable(petTypeName))
         {
@@ -133,13 +133,13 @@ public:
                     std::filesystem::copy_file(path, rootPath / "sprites" / path.filename());
 
                     // Copy reference to animation
-                    YAML::Node     animGraph = petInfo->animations[m_selectedAnimation].file;
+                    YAML::Node     animGraph    = petInfo->animations[m_selectedAnimation].file;
                     YAML::Node     nodesSection = animGraph["Nodes"];
-                    YAML::iterator it = nodesSection.begin();
+                    YAML::iterator it           = nodesSection.begin();
                     for (size_t i = 0; i < m_selectedNode; i++)
                         it++;
-                    it->second["sprite"] = path.filename().string();
-                    it->second["tileCount"] = 1;
+                    it->second["sprite"]     = path.filename().string();
+                    it->second["tileCount"]  = 1;
                     it->second["sizeFactor"] = 1.f;
 
                     // Save asset
@@ -156,14 +156,15 @@ public:
         }
     }
 
-    void displayIntNodeProperty(YAML::Node& node, const char* displayName, const char* propertyName, int min = 0, int max = 0)
+    void displayIntNodeProperty(YAML::Node& node, const char* displayName, const char* propertyName, int min = 0,
+                                int max = 0)
     {
-        YAML::Node property  = node[propertyName];
+        YAML::Node property = node[propertyName];
 
         if (!property)
             return;
 
-        int        value    = property.as<int>();
+        int value = property.as<int>();
         if (ImGui::DragInt(displayName, &value))
         {
             property = value;
@@ -321,8 +322,26 @@ public:
                 }
 
                 YAML::Node authorNode = petTypes[i]->settings["author"];
+
                 if (authorNode)
                     ImGui::SetItemTooltip("By %s", authorNode.Scalar().c_str());
+
+                if (ImGui::BeginPopupContextItem())
+                {
+                    if (ImGui::Button("Delete##unique_id"))
+                    {
+                        m_selectedPetType     = -1;
+                        m_selectedNode        = -1;
+                        m_selectedAnimation   = -1;
+                        m_selectedTransition  = -1;
+                        m_previewCurrentFrame = 0;
+
+                        PetManager::instance().deletePet(petTypes[i]->filename.c_str());
+
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::EndPopup();
+                }
             }
 
             addButtonSize.x = ImGui::GetCurrentTable()->BgClipRect.GetWidth();
