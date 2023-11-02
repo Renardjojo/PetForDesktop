@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Engine/FileExplorer.hpp"
 #include "Engine/Log.hpp"
 #include "Engine/Singleton.hpp"
-#include "Engine/FileExplorer.hpp"
 
 #include <filesystem>
 #include <memory>
@@ -123,6 +123,13 @@ public:
         pets[petTypeID]->animations.emplace_back(YAMLFile{filePath + ".yaml", root});
     }
 
+    void deletePetAnimation(unsigned int petTypeID, const char* animationName)
+    {
+        std::string filePath = (pets[petTypeID]->rootPath / "animations" / animationName).string() + ".yaml";
+        recycleFileOrDirectory(filePath);
+        refresh();
+    }
+
     void createAnimation(unsigned int petTypeID, unsigned int animationSetID, const char* animationName)
     {
         refresh();
@@ -138,6 +145,26 @@ public:
         animNode["Nodes"].force_insert("AnimationNode", animation);
         std::string path = pets[petTypeID]->animations[animationSetID].path.string();
         saveYAML(animNode, path);
+    }
+
+    void deleteAnimation(unsigned int petTypeID, unsigned int animationSetID, const char* animationName)
+    {
+        refresh();
+
+        YAML::Node animNodes = pets[petTypeID]->animations[animationSetID].file;
+        YAML::Node       animNodesSection = animNodes["Nodes"];
+
+        for (YAML::const_iterator it = animNodesSection.begin(); it != animNodesSection.end(); ++it)
+        {
+            if (it->second["name"].Scalar() == animationName)
+            {
+                animNodesSection.remove(it->first);
+                break;
+            }
+        }
+
+        std::string path = pets[petTypeID]->animations[animationSetID].path.string();
+        saveYAML(animNodes, path);
     }
 
     void createTransition(unsigned int petTypeID, unsigned int animationSetID, const char* type, const char* from,

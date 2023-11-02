@@ -254,6 +254,22 @@ public:
                     // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                     if (is_selected)
                         ImGui::SetItemDefaultFocus();
+
+                    if (ImGui::BeginPopupContextItem())
+                    {
+                        if (ImGui::Button("Delete##unique_id"))
+                        {
+                            PetManager::instance().deletePetAnimation(m_selectedPetType,
+                                                                      animations[n].path.stem().string().c_str());
+
+                            m_selectedAnimation  = -1;
+                            m_selectedNode       = -1;
+                            m_selectedTransition = -1;
+
+                            ImGui::CloseCurrentPopup();
+                        }
+                        ImGui::EndPopup();
+                    }
                 }
 
                 if (m_isCreatingAnimation)
@@ -469,6 +485,22 @@ public:
                     m_selectedNode              = i;
                     m_selectedAnimationTypeName = it->first.Scalar();
                 }
+
+                if (ImGui::BeginPopupContextItem())
+                {
+                    if (ImGui::Button("Delete##unique_id"))
+                    {
+                        PetManager::instance().deleteAnimation(m_selectedPetType, m_selectedAnimation,
+                                                               it->second["name"].Scalar().c_str());
+
+                        m_selectedNode = -1;
+                        m_selectedAnimationTypeName = "";
+
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::EndPopup();
+                }
+
                 i++;
             }
 
