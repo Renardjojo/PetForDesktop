@@ -151,8 +151,8 @@ public:
     {
         refresh();
 
-        YAML::Node animNodes = pets[petTypeID]->animations[animationSetID].file;
-        YAML::Node       animNodesSection = animNodes["Nodes"];
+        YAML::Node animNodes        = pets[petTypeID]->animations[animationSetID].file;
+        YAML::Node animNodesSection = animNodes["Nodes"];
 
         for (YAML::const_iterator it = animNodesSection.begin(); it != animNodesSection.end(); ++it)
         {
@@ -179,6 +179,32 @@ public:
         node["Transitions"].force_insert(type, transition);
         std::string path = pets[petTypeID]->animations[animationSetID].path.string();
         saveYAML(node, path);
+    }
+
+    void deleteTransition(unsigned int petTypeID, unsigned int animationSetID, unsigned int transitionID)
+    {
+        refresh();
+
+        YAML::Node& animNodes       = pets[petTypeID]->animations[animationSetID].file;
+        YAML::Node  transitionsNode = animNodes["Transitions"];
+
+        YAML::iterator currentTransitionNode = transitionsNode.begin();
+        for (size_t i = 0; i < transitionID; i++)
+        {
+            currentTransitionNode++;
+        }
+
+        transitionsNode.remove(currentTransitionNode->first);
+
+        std::string path = pets[petTypeID]->animations[animationSetID].path.string();
+        saveYAML(animNodes, path);
+    }
+
+    void savePetAnimation(unsigned int petTypeID, unsigned int animationSetID)
+    {
+        YAML::Node& animNodes = pets[petTypeID]->animations[animationSetID].file;
+        std::string path = pets[petTypeID]->animations[animationSetID].path.string();
+        saveYAML(animNodes, path);
     }
 
     YAML::iterator getTransition(unsigned int petTypeID, unsigned int animationSetID, unsigned int transitionID)

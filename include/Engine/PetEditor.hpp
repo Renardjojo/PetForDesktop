@@ -165,7 +165,22 @@ public:
             return;
 
         int value = property.as<int>();
-        if (ImGui::DragInt(displayName, &value))
+        if (ImGui::DragInt(displayName, &value, 1.0, min, max))
+        {
+            property = value;
+        }
+    }
+
+    void displayFloatNodeProperty(YAML::Node& node, const char* displayName, const char* propertyName, float min = 0,
+                                float max = 0)
+    {
+        YAML::Node property = node[propertyName];
+
+        if (!property)
+            return;
+
+        float value = property.as<float>();
+        if (ImGui::DragFloat(displayName, &value, 1.0, min, max))
         {
             property = value;
         }
@@ -191,8 +206,8 @@ public:
         displayIntNodeProperty(currentAnimationNode, "Size factor", "sizeFactor");
         displayIntNodeProperty(currentAnimationNode, "Tile count", "tileCount");
         displayIntNodeProperty(currentAnimationNode, "Framerate", "framerate");
-        displayIntNodeProperty(currentAnimationNode, "Vertical thrust", "verticalThrust");
-        displayIntNodeProperty(currentAnimationNode, "Horizontal thrust", "horizontalThrust");
+        displayFloatNodeProperty(currentAnimationNode, "Vertical thrust", "verticalThrust");
+        displayFloatNodeProperty(currentAnimationNode, "Horizontal thrust", "horizontalThrust");
         displayBoolNodeProperty(currentAnimationNode, "Loop", "loop");
         displayBoolNodeProperty(currentAnimationNode, "Apply gravity", "applyGravity");
         ImGui::EndGroup();
@@ -493,7 +508,7 @@ public:
                         PetManager::instance().deleteAnimation(m_selectedPetType, m_selectedAnimation,
                                                                it->second["name"].Scalar().c_str());
 
-                        m_selectedNode = -1;
+                        m_selectedNode              = -1;
                         m_selectedAnimationTypeName = "";
 
                         ImGui::CloseCurrentPopup();
@@ -576,6 +591,20 @@ public:
                 {
                     m_selectedTransition = i;
                 }
+
+                if (ImGui::BeginPopupContextItem())
+                {
+                    if (ImGui::Button("Delete##unique_id"))
+                    {
+                        PetManager::instance().deleteTransition(m_selectedPetType, m_selectedAnimation, i);
+                        if (i == m_selectedTransition)
+                            m_selectedTransition = -1;
+
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::EndPopup();
+                }
+
                 ImGui::SetItemTooltip("Info transition");
             }
 
@@ -645,7 +674,18 @@ public:
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
 
-                    ImGui::Text(toNode[i].Scalar().c_str());
+                    ImGui::Selectable((toNode[i].Scalar() + "##unique_id").c_str());
+
+                    if (toNode.size() > 1 && ImGui::BeginPopupContextItem())
+                    {
+                        if (ImGui::Button("Delete##unique_id"))
+                        {
+                            toNode.remove(i);
+                            PetManager::instance().savePetAnimation(m_selectedPetType, m_selectedAnimation);
+                            ImGui::CloseCurrentPopup();
+                        }
+                        ImGui::EndPopup();
+                    }
                 }
             }
             else
@@ -653,7 +693,8 @@ public:
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
 
-                ImGui::Text(toNode.Scalar().c_str());
+                ImGui::Selectable(toNode.Scalar().c_str());
+                // Delete to node is not allowed
             }
 
             if (m_isSelectingTransitionTo)
@@ -669,7 +710,6 @@ public:
                         const char* selectableName = it->second["name"].Scalar().c_str();
                         if (ImGui::Selectable(selectableName, false))
                         {
-                            YAML::Node toNode = currentTransition->second["to"];
                             if (toNode.IsScalar())
                             {
                                 toNode = std::vector<const char*>{toNode.Scalar().c_str(), selectableName};
@@ -679,6 +719,7 @@ public:
                                 toNode.push_back(selectableName);
                             }
 
+                            PetManager::instance().savePetAnimation(m_selectedPetType, m_selectedAnimation);
                             m_isSelectingTransitionTo = false;
                         }
                     }
