@@ -67,14 +67,16 @@ public:
     {
         logf("%s %s\n", PROJECT_NAME, PROJECT_VERSION);
         
-        Localization::instance().init();
         Setting::instance().importFile(RESOURCE_PATH "/setting/setting.yaml", datas);
+        Localization::instance().init();
+
+        datas.window = std::make_unique<Window>();
+        datas.window->init(datas);
+
         TimeManager::instance().Init(datas);
         physicSystem = std::make_unique<PhysicSystem>(datas);
 
         glfwSetMonitorCallback(setMonitorCallback);
-        datas.window = std::make_unique<Window>();
-        datas.window->init(datas);
         datas.monitors.init();
         Vec2i monitorSize    = datas.monitors.getMonitorsSize();
         Vec2i monitorsSizeMM = datas.monitors.getMonitorPhysicalSize();

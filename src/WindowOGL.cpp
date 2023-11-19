@@ -31,8 +31,10 @@ void Window::init(GameData& datas)
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
+    preSetupWindow(datas);
     initWindow(datas);
     initGraphicAPI();
+    postSetupWindow(datas);
 }
 
 void Window::initDrawContext()

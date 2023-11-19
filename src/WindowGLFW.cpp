@@ -5,8 +5,15 @@
 #include "Game/GameData.hpp"
 #include "Game/Pet.hpp"
 
+static void error_callback(int error, const char* description)
+{
+    warning(std::string("GLFW error:") + description);
+}
+
 void WindowGLFW::initGLFW()
 {
+    glfwSetErrorCallback(error_callback);
+
     // initialize the library
     if (!glfwInit())
         errorAndExit("glfw initialization error");
@@ -29,7 +36,6 @@ void WindowGLFW::postSetupWindow(GameData& datas)
     useMousePassThrough = datas.useMousePassThoughWindow;
     isMousePassThrough  = true;
     glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, isMousePassThrough);
-    glfwSetWindowAttrib(window, GLFW_TRANSPARENT_FRAMEBUFFER, true);
     glfwSetWindowAttrib(window, GLFW_DECORATED, datas.showWindow);
     glfwSetWindowAttrib(window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
     glfwSetWindowUserPointer(window, &datas);
@@ -38,12 +44,13 @@ void WindowGLFW::postSetupWindow(GameData& datas)
     glfwSetDropCallback(window, dropCallback);
 
     glfwDefaultWindowHints();
+
+    glfwShowWindow(window);
+    glfwSetWindowPos(window, m_position.x, m_position.y);
 }
 
 void WindowGLFW::initWindow(GameData& datas)
 {
-    preSetupWindow(datas);
-
     m_size = {1.f, 1.f};
     window = glfwCreateWindow(m_size.x, m_size.y, PROJECT_NAME, NULL, NULL);
     if (!window)
@@ -51,13 +58,7 @@ void WindowGLFW::initWindow(GameData& datas)
         glfwTerminate();
         errorAndExit("Create Window error");
     }
-
     glfwMakeContextCurrent(window);
-    postSetupWindow(datas);
-
-    glfwShowWindow(window);
-
-    glfwSetWindowPos(window, m_position.x, m_position.y);
 }
 
 void dropCallback(GLFWwindow* window, int count, const char** paths)
