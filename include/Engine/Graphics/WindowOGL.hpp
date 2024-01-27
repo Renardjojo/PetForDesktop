@@ -1,14 +1,11 @@
 #pragma once
 
-#include "Engine/WindowGLFW.hpp"
+#include "Engine/WindowSDL.hpp"
 
 #include <glad/glad.h>
 
-class Window : public WindowGLFW
+class Window : public WindowSDL
 {
-protected:
-    void initGraphicAPI();
-
 public:
     void init(struct GameData& datas);
 
@@ -19,6 +16,6 @@ public:
         if (m_size == windowSize)
             return;
 
-        WindowGLFW::setSize(windowSize);
+        WindowSDL::setSize(windowSize);
     }
 };

@@ -180,7 +180,7 @@ public:
     void run()
     {
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
-            processInput(datas.window->getWindow());
+            datas.window->processInput();
 
             // poll for and process events
             glfwPollEvents();

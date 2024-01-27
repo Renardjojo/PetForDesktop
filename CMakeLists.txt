@@ -80,6 +80,11 @@ set (GLFW_INSTALL OFF)
 add_subdirectory(${ABS_DEPS_DIR}/glfw)
 target_link_libraries(${PROJECT_NAME} glfw)
 
+#SDL
+set (SDL_TEST_LIBRARY OFF)
+add_subdirectory(${ABS_DEPS_DIR}/SDL EXCLUDE_FROM_ALL)
+target_link_libraries(${PROJECT_NAME} SDL3::SDL3)
+
 # Graphic API
 if(USE_OPENGL_API)
     find_package(OpenGL REQUIRED)

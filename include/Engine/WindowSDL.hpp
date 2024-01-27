@@ -4,25 +4,23 @@
 #include "Engine/Vector2.hpp"
 #include "Engine/Canvas.hpp"
 
-#include <GLFW/glfw3.h>
+#include <SDL3/SDL.h>
 
-void dropCallback(GLFWwindow* window, int count, const char** paths);
-void cursorPositionCallback(GLFWwindow* window, double x, double y);
-void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods);
-void processInput(GLFWwindow* window);
-
-class WindowGLFW : public Canvas
+class WindowSDL : public Canvas
 {
 protected:
-    GLFWwindow* window = nullptr;
+    SDL_GLContext m_glcontext = nullptr;
+    SDL_Renderer* m_renderer = nullptr;
+    SDL_Window*   m_window   = nullptr;
 
-    bool isMousePassThrough;
-    bool isForwardWindow;
-    bool useMousePassThrough;
+    bool m_isMousePassThrough;
+    bool m_isForwardWindow;
+    bool m_useMousePassThrough;
+    bool m_shouldClose;
 
 protected:
-    void initGLFW();
-    void preSetupWindow(const struct GameData& datas);
+    void init();
+    void preSetupWindow(const struct GameData& datas){}
     void postSetupWindow(struct GameData& datas);
     void initWindow(struct GameData& datas);
 
@@ -30,30 +28,30 @@ protected:
     {
         if (encapsulate(other))
         {
-            glfwSetWindowSize(window, m_size.x, m_size.y);
-            glfwSetWindowPos(window, m_position.x, m_position.y);
+            SDL_SetWindowSize(m_window, m_size.x, m_size.y);
+            SDL_SetWindowPosition(m_window, m_position.x, m_position.y);
         }
     }
 
 public:
-    GETTER_BY_VALUE(Window, window)
+    GETTER_BY_VALUE(Window, m_window)
 
     void setMousePassThrough(bool flag)
     {
-        if (useMousePassThrough && isMousePassThrough == flag)
+        if (m_useMousePassThrough && m_isMousePassThrough == flag)
             return;
 
-        isMousePassThrough = flag;
-        glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, isMousePassThrough);
+        m_isMousePassThrough = flag;
+        SDL_CaptureMouse(m_isMousePassThrough);
     }
 
     void setForwardWindow(bool flag)
     {
-        if (isForwardWindow && isForwardWindow == flag)
+        if (m_isForwardWindow && m_isForwardWindow == flag)
             return;
 
-        isForwardWindow = flag;
-        glfwSetWindowAttrib(window, GLFW_FLOATING, isForwardWindow);
+        m_isForwardWindow = flag;
+        SDL_SetWindowAlwaysOnTop(m_window, m_isForwardWindow);
     }
 
     void setSize(const Vec2 windowSize) noexcept
@@ -61,7 +59,7 @@ public:
         if (windowSize == m_size)
             return;
         Canvas::setSize(windowSize);
-        glfwSetWindowSize(window, windowSize.x, windowSize.y);
+        SDL_SetWindowSize(m_window, windowSize.x, windowSize.y);
     }
 
     void setPosition(const Vec2 windowPos) noexcept
@@ -70,7 +68,7 @@ public:
             return;
 
         Canvas::setPosition(windowPos);
-        glfwSetWindowPos(window, windowPos.x, windowPos.y);
+        SDL_SetWindowPosition(m_window, windowPos.x, windowPos.y);
     }
 
     void setPositionSize(const Vec2 windowPos, const Vec2 windowSize) noexcept
@@ -81,17 +79,23 @@ public:
 
     inline bool shouldClose() const noexcept
     {
-        return glfwWindowShouldClose(window);
+        return m_shouldClose;
     }
 
-    ~WindowGLFW()
+    ~WindowSDL()
     {
-        glfwTerminate();
+        SDL_GL_DeleteContext(m_glcontext); 
+        SDL_DestroyRenderer(m_renderer);
+        SDL_DestroyWindow(m_window);
+
+        SDL_Quit();
     }
+
+    void processInput();
 
     void renderFrame()
     {
-        glfwSwapBuffers(window);
+        SDL_RenderPresent(m_renderer);
     }
 
     void addElement(Rect& element)

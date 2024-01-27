@@ -1,81 +1,91 @@
-#include "Engine/WindowGLFW.hpp"
+#include "Engine/WindowSDL.hpp"
 
 #include "Engine/Graphics/WindowOGL.hpp"
 #include "Engine/Log.hpp"
 #include "Game/GameData.hpp"
 #include "Game/Pet.hpp"
 
-static void error_callback(int error, const char* description)
+void WindowSDL::init()
 {
-    warning(std::string("GLFW error:") + description);
-}
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+        errorAndExit(std::string("SDL initialization error") + SDL_GetError());
 
-void WindowGLFW::initGLFW()
-{
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    SDL_GL_LoadLibrary(NULL);
+
+    // Request an OpenGL 4.5 context (should be core)
+    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 
 #ifdef _DEBUG
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
-
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-    glfwSetErrorCallback(error_callback);
-
-    // initialize the library
-    if (!glfwInit())
-        errorAndExit("glfw initialization error");
 }
 
-void WindowGLFW::preSetupWindow(const GameData& datas)
+void WindowSDL::initWindow(GameData& datas)
 {
-    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, !datas.showFrameBufferBackground);
-    glfwWindowHint(GLFW_VISIBLE, datas.showFrameBufferBackground);
-    glfwWindowHint(GLFW_FLOATING, datas.useForwardWindow);
-    isForwardWindow = datas.useForwardWindow;
+    int windowFlags = SDL_WINDOW_OPENGL;
 
-    // Disable depth and stencil buffers
-    glfwWindowHint(GLFW_DEPTH_BITS, 0);
-    glfwWindowHint(GLFW_STENCIL_BITS, 0);
+    if (!datas.showFrameBufferBackground)
+        windowFlags |= SDL_WINDOW_TRANSPARENT;
+    
+    m_isForwardWindow = datas.useForwardWindow;
+    if (m_isForwardWindow)
+        windowFlags |= SDL_WINDOW_ALWAYS_ON_TOP;
+    
+    if (!datas.showWindow)
+        windowFlags |= SDL_WINDOW_BORDERLESS;
+
+    m_size = {300.f, 300.f};
+    m_window = SDL_CreateWindow(PROJECT_NAME, m_size.x, m_size.y, windowFlags);
+
+    m_glcontext = SDL_GL_CreateContext(m_window);
+    if (m_glcontext == NULL)
+        errorAndExit(std::string("Failed to create OpenGL context: ") + SDL_GetError());
+
+    if (!m_window)
+        errorAndExit(std::string("Create Window error") + SDL_GetError());
+
+    int rendererFlags = SDL_RENDERER_ACCELERATED;
+    m_renderer        = SDL_CreateRenderer(m_window, NULL, rendererFlags);
+
+    if (!m_renderer)
+        errorAndExit(std::string("Failed to create renderer: ") + SDL_GetError());
 }
 
-void WindowGLFW::postSetupWindow(GameData& datas)
+void WindowSDL::postSetupWindow(GameData& datas)
 {
-    useMousePassThrough = datas.useMousePassThoughWindow;
-    isMousePassThrough  = true;
-    glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, isMousePassThrough);
-    glfwSetWindowAttrib(window, GLFW_DECORATED, datas.showWindow);
-    glfwSetWindowAttrib(window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
-    glfwSetWindowUserPointer(window, &datas);
-    glfwSetMouseButtonCallback(window, mousButtonCallBack);
-    glfwSetCursorPosCallback(window, cursorPositionCallback);
-    glfwSetDropCallback(window, dropCallback);
+    m_useMousePassThrough = datas.useMousePassThoughWindow;
+    m_isMousePassThrough  = true;
+    SDL_CaptureMouse(m_isMousePassThrough);
+    // glfwSetWindowAttrib(window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+    // glfwSetWindowUserPointer(window, &datas);
+    // glfwSetMouseButtonCallback(window, mousButtonCallBack);
+    // glfwSetCursorPosCallback(window, cursorPositionCallback);
+    // glfwSetDropCallback(window, dropCallback);
 
-    glfwDefaultWindowHints();
-
-    glfwShowWindow(window);
-    glfwSetWindowPos(window, m_position.x, m_position.y);
+    SDL_ShowWindow(m_window);
+    SDL_SetWindowPosition(m_window, m_position.x, m_position.y);
 
     // glad: load all OpenGL function pointers
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
         errorAndExit("Failed to initialize OpenGL (GLAD)");
 }
 
-void WindowGLFW::initWindow(GameData& datas)
+void WindowSDL::processInput()
 {
-    m_size = {1.f, 1.f};
-    window = glfwCreateWindow(m_size.x, m_size.y, PROJECT_NAME, NULL, NULL);
-    if (!window)
+    SDL_Event event;
+    while (SDL_PollEvent(&event))
     {
-        glfwTerminate();
-        errorAndExit("Create Window error");
+        if (event.type == SDL_EVENT_QUIT)
+        {
+            m_shouldClose = 1;
+            break;
+        }
     }
-    glfwMakeContextCurrent(window);
 }
 
+/*
 void dropCallback(GLFWwindow* window, int count, const char** paths)
 {
     GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
@@ -146,4 +156,4 @@ void processInput(GLFWwindow* window)
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-}
+}*/

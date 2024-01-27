@@ -4,37 +4,17 @@
 #include "Engine/Log.hpp"
 #include "Game/GameData.hpp"
 
-void Window::initGraphicAPI()
+void Window::init(GameData& datas)
 {
-    // glad: load all OpenGL function pointers
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-        errorAndExit("Failed to initialize OpenGL (GLAD)");
+    WindowSDL::init();
 
-    #ifdef _DEBUG
+    initWindow(datas);
+    postSetupWindow(datas);
+
+#ifdef _DEBUG
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(GLDebugMessageCallback, NULL);
 #endif
-}
-
-void Window::init(GameData& datas)
-{
-    initGLFW();
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-
-#ifdef _DEBUG
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-#endif
-
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-    preSetupWindow(datas);
-    initWindow(datas);
-    initGraphicAPI();
-    postSetupWindow(datas);
 }
 
 void Window::initDrawContext()
@@ -48,6 +28,7 @@ void Window::initDrawContext()
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glActiveTexture(GL_TEXTURE0);
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_STENCIL_TEST);
     glDepthMask(GL_TRUE);
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_CULL_FACE);
