@@ -29,7 +29,6 @@
 #include "imgui.h"
 #include "yaml-cpp/yaml.h"
 
-#include <GLFW/glfw3.h>
 #include <functional>
 
 class Game
@@ -73,13 +72,13 @@ public:
         datas.window = std::make_unique<Window>();
         datas.window->init(datas);
 
-        while (!datas.window->shouldClose())
-        {
-            datas.window->processInput();
-        }
-
         TimeManager::instance().Init(datas);
         physicSystem = std::make_unique<PhysicSystem>(datas);
+
+        while (!datas.window->shouldClose())
+        {
+            datas.window->pollEvents(datas);
+        }
 
         glfwSetMonitorCallback(setMonitorCallback);
         datas.monitors.init();
@@ -186,11 +185,7 @@ public:
     void run()
     {
         const std::function<void(double)> unlimitedUpdate{[&](double deltaTime) {
-            datas.window->processInput();
-
-            // poll for and process events
-            glfwPollEvents();
-
+            datas.window->pollEvents(datas);
             datas.interactionSystem->update(datas);
 
             for (const std::shared_ptr<Pet>& pet : datas.pets)

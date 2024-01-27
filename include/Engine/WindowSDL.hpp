@@ -92,7 +92,7 @@ public:
         SDL_Quit();
     }
 
-    void processInput();
+    void pollEvents(struct GameData& datas);
 
     void renderFrame()
     {

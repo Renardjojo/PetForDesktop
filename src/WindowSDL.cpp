@@ -28,15 +28,15 @@ void WindowSDL::initWindow(GameData& datas)
 
     if (!datas.showFrameBufferBackground)
         windowFlags |= SDL_WINDOW_TRANSPARENT;
-    
+
     m_isForwardWindow = datas.useForwardWindow;
     if (m_isForwardWindow)
         windowFlags |= SDL_WINDOW_ALWAYS_ON_TOP;
-    
+
     if (!datas.showWindow)
         windowFlags |= SDL_WINDOW_BORDERLESS;
 
-    m_size = {300.f, 300.f};
+    m_size   = {1.f, 1.f};
     m_window = SDL_CreateWindow(PROJECT_NAME, m_size.x, m_size.y, windowFlags);
 
     m_glcontext = SDL_GL_CreateContext(m_window);
@@ -58,11 +58,6 @@ void WindowSDL::postSetupWindow(GameData& datas)
     m_useMousePassThrough = datas.useMousePassThoughWindow;
     m_isMousePassThrough  = true;
     SDL_CaptureMouse(m_isMousePassThrough);
-    // glfwSetWindowAttrib(window, GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
-    // glfwSetWindowUserPointer(window, &datas);
-    // glfwSetMouseButtonCallback(window, mousButtonCallBack);
-    // glfwSetCursorPosCallback(window, cursorPositionCallback);
-    // glfwSetDropCallback(window, dropCallback);
 
     SDL_ShowWindow(m_window);
     SDL_SetWindowPosition(m_window, m_position.x, m_position.y);
@@ -72,88 +67,77 @@ void WindowSDL::postSetupWindow(GameData& datas)
         errorAndExit("Failed to initialize OpenGL (GLAD)");
 }
 
-void WindowSDL::processInput()
+void WindowSDL::pollEvents(GameData& datas)
 {
+    // Need always capture the mouse position to trigger the pass through
+    float cursPosX, cursPosY;
+    SDL_GetGlobalMouseState(&cursPosX, &cursPosY);
+    datas.cursorPos = {static_cast<int>(floor(cursPosX)), static_cast<int>(floor(cursPosY))};
+
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
-        if (event.type == SDL_EVENT_QUIT)
+        switch (event.type)
         {
+        case SDL_EVENT_QUIT:
             m_shouldClose = 1;
             break;
-        }
-    }
-}
 
-/*
-void dropCallback(GLFWwindow* window, int count, const char** paths)
-{
-    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
-    datas.droppedFiles.clear();
-    for (int i = 0; i < count; i++)
-    {
-        datas.droppedFiles.emplace_back(paths[i]);
-    }
-}
-
-void cursorPositionCallback(GLFWwindow* window, double x, double y)
-{
-    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
-    if (datas.leftButtonEvent == GLFW_PRESS)
-    {
-        float globalScreenPosX = static_cast<float>(datas.window->getPosition().x + x);
-        float globalScreenPosY = static_cast<float>(datas.window->getPosition().y + y);
-        datas.deltaCursorPosX += globalScreenPosX - datas.prevCursorPosX;
-        datas.deltaCursorPosY += globalScreenPosY - datas.prevCursorPosY;
-        datas.prevCursorPosX = globalScreenPosX;
-        datas.prevCursorPosY = globalScreenPosY;
-        Vec2 delta(datas.deltaCursorPosX, datas.deltaCursorPosY);
-        datas.deltasCursorPosBuffer.emplace(GameData::DeltaCursosPosElem{(float)datas.timeAcc, delta});
-        datas.deltaCursorAcc += delta;
-    }
-}
-
-void mousButtonCallBack(GLFWwindow* window, int button, int action, int mods)
-{
-    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
-
-    switch (button)
-    {
-    case GLFW_MOUSE_BUTTON_LEFT:
-        datas.leftButtonEvent = action;
-
-        switch (action)
-        {
-        case GLFW_PRESS: {
-            datas.prevCursorPosX  = static_cast<float>(datas.window->getPosition().x + datas.cursorPos.x);
-            datas.prevCursorPosY  = static_cast<float>(datas.window->getPosition().y + datas.cursorPos.y);
-            datas.deltaCursorPosX = 0.f;
-            datas.deltaCursorPosY = 0.f;
+        case SDL_EVENT_MOUSE_MOTION:
+            if (datas.leftButtonEvent == SDL_PRESSED)
+            {
+                float globalScreenPosX = static_cast<float>(datas.window->getPosition().x + event.motion.x);
+                float globalScreenPosY = static_cast<float>(datas.window->getPosition().y + event.motion.x);
+                datas.deltaCursorPosX += globalScreenPosX - datas.prevCursorPosX;
+                datas.deltaCursorPosY += globalScreenPosY - datas.prevCursorPosY;
+                datas.prevCursorPosX = globalScreenPosX;
+                datas.prevCursorPosY = globalScreenPosY;
+                Vec2 delta(datas.deltaCursorPosX, datas.deltaCursorPosY);
+                datas.deltasCursorPosBuffer.emplace(GameData::DeltaCursosPosElem{(float)datas.timeAcc, delta});
+                datas.deltaCursorAcc += delta;
+            }
             break;
-        }
-        case GLFW_RELEASE:
+
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            switch (event.button.button)
+            {
+            case SDL_BUTTON_LEFT:
+                datas.leftButtonEvent = event.button.state;
+                datas.prevCursorPosX  = static_cast<float>(datas.window->getPosition().x + datas.cursorPos.x);
+                datas.prevCursorPosY  = static_cast<float>(datas.window->getPosition().y + datas.cursorPos.y);
+                datas.deltaCursorPosX = 0.f;
+                datas.deltaCursorPosY = 0.f;
+                break;
+            case SDL_BUTTON_RIGHT:
+                datas.rightButtonEvent = event.button.state;
+                break;
+            default:
+                break;
+            }
+            break;
+
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+            switch (event.button.button)
+            {
+            case SDL_BUTTON_LEFT:
+                datas.leftButtonEvent = event.button.state;
+                break;
+            case SDL_BUTTON_RIGHT:
+                datas.rightButtonEvent = event.button.state;
+                break;
+            default:
+                break;
+            }
+            break;
+        case SDL_EVENT_DROP_FILE:
+            if (event.drop.type == SDL_EVENT_DROP_BEGIN)
+                datas.droppedFiles.clear();
+
+            datas.droppedFiles.emplace_back(event.drop.source);
+            SDL_free(event.drop.source); // Free dropped_filedir memory
             break;
         default:
             break;
         }
-        break;
-    case GLFW_MOUSE_BUTTON_RIGHT:
-        datas.rightButtonEvent = action;
-        break;
-    default:
-        break;
     }
 }
-
-void processInput(GLFWwindow* window)
-{
-    GameData& datas = *static_cast<GameData*>(glfwGetWindowUserPointer(window));
-
-    // Need always capture the mouse position to trigger the pass through
-    double cursPosX, cursPosY;
-    glfwGetCursorPos(window, &cursPosX, &cursPosY);
-    datas.cursorPos = {static_cast<int>(floor(cursPosX)), static_cast<int>(floor(cursPosY))};
-
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-}*/
