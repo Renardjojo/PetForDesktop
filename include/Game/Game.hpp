@@ -24,7 +24,7 @@
 #include "Engine/Utilities.hpp"
 #include "Engine/Vector2.hpp"
 
-#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "imgui.h"
 #include "yaml-cpp/yaml.h"
@@ -72,6 +72,11 @@ public:
 
         datas.window = std::make_unique<Window>();
         datas.window->init(datas);
+
+        while (!datas.window->shouldClose())
+        {
+            datas.window->processInput();
+        }
 
         TimeManager::instance().Init(datas);
         physicSystem = std::make_unique<PhysicSystem>(datas);
@@ -147,7 +152,8 @@ public:
             datas.styleName = "default";
 
         // Setup Platform/Renderer backends
-        ImGui_ImplGlfw_InitForOpenGL(datas.window->getWindow(), true);
+
+        ImGui_ImplSDL3_InitForOpenGL(datas.window->getWindow(), datas.window->getGLContext());
         ImGui_ImplOpenGL3_Init("#version 460");
     }
 
@@ -160,7 +166,7 @@ public:
     void updateUI()
     {
         ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
+        ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
     }
 
@@ -173,7 +179,7 @@ public:
     void cleanUI()
     {
         ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
+        ImGui_ImplSDL3_Shutdown();
         ImGui::DestroyContext();
     }
 

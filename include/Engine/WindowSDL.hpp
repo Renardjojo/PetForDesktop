@@ -35,6 +35,7 @@ protected:
 
 public:
     GETTER_BY_VALUE(Window, m_window)
+    GETTER_BY_VALUE(GLContext, m_glcontext)
 
     void setMousePassThrough(bool flag)
     {

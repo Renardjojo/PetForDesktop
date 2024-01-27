@@ -106,12 +106,12 @@ target_link_libraries(${PROJECT_NAME} cpr)
 
 # imgui
 set(IMGUI_IMPL_OPENGL3 ON)
-set(IMGUI_IMPL_GLFW ON)
+set(IMGUI_IMPL_SDL ON)
 
 set(IMGUI_EXAMPLES OFF)
 set(IMGUI_DEMO OFF)
 set(IMGUI_ENABLE_FREETYPE OFF)
-set(IMGUI_IMPL_SDL OFF)
+set(IMGUI_IMPL_GLFW OFF)
 set(IMGUI_IMPL_METAL OFF)
 set(IMGUI_IMPL_OSX OFF)
 set(IMGUI_IMPL_WIN32 OFF)
@@ -123,7 +123,7 @@ set(IMGUI_IMPL_DX11 OFF)
 set(IMGUI_IMPL_DX12 OFF)
 set(IMGUI_IMPL_VULKAN OFF)
 add_subdirectory(${ABS_DEPS_DIR}/imgui)
-target_link_libraries(${PROJECT_NAME} imgui imgui-glfw imgui-opengl3)
+target_link_libraries(${PROJECT_NAME} imgui imgui-sdl3 imgui-opengl3)
 
 # screen_capture_lite
 set (BUILD_EXAMPLE OFF)
