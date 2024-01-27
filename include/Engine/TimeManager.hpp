@@ -3,7 +3,7 @@
 #include "Engine/Singleton.hpp"
 #include "Game/GameData.hpp"
 
-#include <GLFW/glfw3.h>
+#include <SDL3/SDL.h>
 
 #include <functional>
 #include <queue>
@@ -32,7 +32,7 @@ struct TimerTask
 class TimeManager : public Singleton<TimeManager>
 {
 protected:
-    double m_time     = glfwGetTime();
+    double m_time     = SDL_GetTicks() / 1000.0;
     double m_tempTime = m_time;
 
     double    m_timeAccLoop    = 0.;
@@ -52,7 +52,7 @@ public:
     // improve first frame accurancy
     void start()
     {
-        m_time     = glfwGetTime();
+        m_time     = SDL_GetTicks() / 1000.0;
         m_tempTime = m_time;
     }
 
@@ -73,7 +73,7 @@ public:
         unlimitedUpdateFunction(m_deltaTime);
 
         /*Prepar the next frame*/
-        m_tempTime  = glfwGetTime();
+        m_tempTime  = SDL_GetTicks() / 1000.0;
         m_deltaTime = m_tempTime - m_time;
         m_time      = m_tempTime;
 
