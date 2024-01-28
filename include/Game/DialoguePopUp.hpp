@@ -11,6 +11,8 @@
 #include <map>
 #include <string>
 
+#include <SDL3/SDL.h>
+
 enum class EPopupType
 {
     Dialogue = 0,
@@ -178,7 +180,7 @@ public:
             m_utilitySystem.needs[i].reduce(0.5 * deltaTime);
         }
 
-        if (m_datas.leftButtonEvent == GLFW_PRESS)
+        if (m_datas.leftButtonEvent == SDL_PRESSED)
         {
             leftWasPressed = true;
         }

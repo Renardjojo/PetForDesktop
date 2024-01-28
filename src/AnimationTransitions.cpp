@@ -3,6 +3,8 @@
 #include "Game/Animations.hpp"
 #include "Game/Pet.hpp"
 
+#include <SDL3/SDL.h>
+
 bool IsGroundedTransition::canTransition(GameData& blackBoard)
 {
     return pet.getPhysicComponent().isGrounded;
@@ -47,7 +49,7 @@ bool EndLeftClicTransition::canTransition(GameData& blackBoard)
         leftWasPressed = true;
     }
 
-    if (blackBoard.leftButtonEvent != GLFW_PRESS && leftWasPressed)
+    if (blackBoard.leftButtonEvent != SDL_PRESSED && leftWasPressed)
     {
         leftWasPressed = false;
         return true;

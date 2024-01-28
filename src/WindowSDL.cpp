@@ -136,6 +136,12 @@ void WindowSDL::pollEvents(GameData& datas)
             datas.droppedFiles.emplace_back(event.drop.source);
             SDL_free(event.drop.source); // Free dropped_filedir memory
             break;
+        case SDL_EVENT_DISPLAY_ADDED:
+            Monitors::getInstance().addMonitor(event.display.displayID);
+            break;
+        case SDL_EVENT_DISPLAY_REMOVED:
+            Monitors::getInstance().removeMonitor(event.display.displayID);
+            break;
         default:
             break;
         }

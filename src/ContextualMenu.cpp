@@ -12,6 +12,7 @@
 
 #include <cpr/cpr.h>
 #include <format>
+#include <SDL3/SDL.h>
 
 ContextualMenu::ContextualMenu(GameData& inDatas, Pet& inPet, Vec2 inPosition)
     : UIMenu(inDatas, inPosition, Vec2(100.f, 150.f)), pet{inPet}
@@ -33,7 +34,7 @@ void ContextualMenu::update(double deltaTime)
                  ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
     shouldClose = !isWindowOpen;
 
-    if (datas.leftButtonEvent == GLFW_PRESS && !interactionComponent.isLeftSelected)
+    if (datas.leftButtonEvent == SDL_PRESSED && !interactionComponent.isLeftSelected)
         shouldClose = true;
 
     ImVec2 sizeButton = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);

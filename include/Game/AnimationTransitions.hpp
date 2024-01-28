@@ -3,8 +3,6 @@
 #include "Engine/StateMachine.hpp"
 #include "Game/GameData.hpp"
 
-#include <GLFW/glfw3.h>
-
 struct AnimationEndTransition : public StateMachine::Node::Transition
 {
     class Pet& pet;

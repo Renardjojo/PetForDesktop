@@ -6,6 +6,8 @@
 #include "Engine/Vector2.hpp"
 #include "Game/GameData.hpp"
 
+#include <SDL3/SDL.h>
+
 #include <list>
 
 class InteractionSystem
@@ -50,7 +52,7 @@ public:
                     comp->onMouseOver();
             }
 
-            if (!isLeftClickConsumed && comp->isMouseOver && data.leftButtonEvent == GLFW_PRESS)
+            if (!isLeftClickConsumed && comp->isMouseOver && data.leftButtonEvent == SDL_PRESSED)
             {
                 comp->isLeftSelected  = true;
                 comp->isLeftPressOver = true;
@@ -59,7 +61,7 @@ public:
                 if (comp->onLeftPressOver != nullptr)
                     comp->onLeftPressOver();
             }
-            else if (comp->isLeftSelected && data.leftButtonEvent == GLFW_RELEASE)
+            else if (comp->isLeftSelected && data.leftButtonEvent == SDL_RELEASED)
             {
                 comp->isLeftSelected = false;
                 comp->isLeftRelease  = true;
@@ -71,7 +73,7 @@ public:
                 }
             }
 
-            if (!isRightClickConsumed && comp->isMouseOver && data.rightButtonEvent == GLFW_PRESS)
+            if (!isRightClickConsumed && comp->isMouseOver && data.rightButtonEvent == SDL_PRESSED)
             {
                 comp->isRightSelected  = true;
                 comp->isRightPressOver = true;
@@ -80,7 +82,7 @@ public:
                 if (comp->onRightPressOver != nullptr)
                     comp->onRightPressOver();
             }
-            else if (comp->isRightSelected && data.rightButtonEvent == GLFW_RELEASE)
+            else if (comp->isRightSelected && data.rightButtonEvent == SDL_RELEASED)
             {
                 comp->isRightSelected = false;
                 comp->isRightRelease  = true;

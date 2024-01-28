@@ -10,6 +10,8 @@
 #include "Game/Pet.hpp"
 #include "imgui.h"
 
+#include <SDL3/SDL.h>
+
 SettingMenu::SettingMenu(GameData& inDatas, Pet& inPet, Vec2 inPosition)
     : UIMenu(inDatas, inPosition, Vec2(400.f, 400.f)), pet{inPet}
 {
@@ -29,7 +31,7 @@ void SettingMenu::update(double deltaTime)
 
     shouldClose = !isWindowOpen;
 
-    if (datas.leftButtonEvent == GLFW_PRESS && !interactionComponent.isLeftSelected)
+    if (datas.leftButtonEvent == SDL_PRESSED && !interactionComponent.isLeftSelected)
         shouldClose = true;
 
     if (ImGui::BeginTabBar("##settingMenuTabs", ImGuiTabBarFlags_None))

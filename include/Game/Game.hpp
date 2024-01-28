@@ -75,15 +75,8 @@ public:
         TimeManager::instance().Init(datas);
         physicSystem = std::make_unique<PhysicSystem>(datas);
 
-        while (!datas.window->shouldClose())
-        {
-            datas.window->pollEvents(datas);
-        }
-
-        glfwSetMonitorCallback(setMonitorCallback);
         datas.monitors.init();
         Vec2i monitorSize    = datas.monitors.getMonitorsSize();
-        Vec2i monitorsSizeMM = datas.monitors.getMonitorPhysicalSize();
 
         if (datas.fullScreenWindow)
         {
@@ -95,8 +88,7 @@ public:
         }
 
         // Evaluate pixel distance based on dpi and monitor size
-        datas.pixelPerMeter = {(float)monitorSize.x / (monitorsSizeMM.x * 0.001f),
-                               (float)monitorSize.y / (monitorsSizeMM.y * 0.001f)};
+        datas.pixelPerMeter = {(float)monitorSize.x, (float)monitorSize.y};
 
         datas.interactionSystem = std::make_unique<InteractionSystem>();
 
@@ -159,7 +151,6 @@ public:
     ~Game()
     {
         cleanUI();
-        glfwTerminate();
     }
 
     void updateUI()
